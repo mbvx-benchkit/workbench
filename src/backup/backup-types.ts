@@ -19,11 +19,18 @@ import type {
    ========================================================= */
 
 export const WORKBENCH_BACKUP_VERSION =
-    1 as const;
+    2 as const;
 
 
 export const DOCUMENT_TEMPLATES_VERSION =
     1 as const;
+
+
+export const PRINT_HISTORY_ARCHIVE_VERSION =
+    1 as const;
+
+// 出力側と復元側で共通の履歴件数上限。上限超過のバックアップは生成しない。
+export const MAX_PRINT_HISTORY_RECORDS = 5_000;
 
 
 export const PRESET_DOCUMENTS_VERSION =
@@ -183,6 +190,74 @@ export type PresetDocumentsArchive = {
 
 
 /* =========================================================
+   DOCUMENT BUILDER PDF History
+   ========================================================= */
+
+export type PrintHistoryRecord = {
+    id: string;
+    recipientName: string;
+    fileName: string;
+    createdAt: number;
+    pdfBlob: Blob;
+};
+
+export type PrintHistoryArchiveMetadata = {
+    id: string;
+    recipientName: string;
+    fileName: string;
+    createdAt: number;
+    pdfMimeType: "application/pdf";
+    pdfPath: string;
+};
+
+export type PrintHistoryArchive = {
+    version: typeof PRINT_HISTORY_ARCHIVE_VERSION;
+    documents: PrintHistoryArchiveMetadata[];
+};
+
+export function parsePrintHistoryArchive(value: unknown): PrintHistoryArchive {
+    const record = requireRecord(value, "document_builder/print-history/history.json");
+    if (record.version !== PRINT_HISTORY_ARCHIVE_VERSION || !Array.isArray(record.documents)) {
+        throw new Error("PDF出力履歴のバックアップ形式が不正です。");
+    }
+    if (record.documents.length > MAX_PRINT_HISTORY_RECORDS) {
+        throw new Error("PDF出力履歴の件数が多すぎます。");
+    }
+
+    const documents = record.documents.map((value, index) => {
+        const path = `printHistory.documents[${index}]`;
+        const item = requireRecord(value, path);
+        requireString(item.id, `${path}.id`, 256, true);
+        requireString(item.recipientName, `${path}.recipientName`, 512);
+        requireString(item.fileName, `${path}.fileName`, 1024, true);
+        if (!(item.fileName as string).toLowerCase().endsWith(".pdf")) {
+            throw new Error(`${path}.fileName はPDFファイル名である必要があります。`);
+        }
+        requireNonNegativeInteger(item.createdAt, `${path}.createdAt`);
+        if (item.pdfMimeType !== "application/pdf") {
+            throw new Error(`${path}.pdfMimeType が不正です。`);
+        }
+        const pdfPath = requireString(item.pdfPath, `${path}.pdfPath`, 2048, true);
+        requireSafeArchivePath(pdfPath, "document_builder/print-history/pdf/");
+        return {
+            id: item.id,
+            recipientName: item.recipientName,
+            fileName: item.fileName,
+            createdAt: item.createdAt,
+            pdfMimeType: "application/pdf",
+            pdfPath
+        } as PrintHistoryArchiveMetadata;
+    });
+
+    requireUniqueIds(documents, "PDF出力履歴");
+    if (new Set(documents.map(document => document.pdfPath)).size !== documents.length) {
+        throw new Error("PDF出力履歴に重複したファイルパスがあります。");
+    }
+    return { version: PRINT_HISTORY_ARCHIVE_VERSION, documents };
+}
+
+
+/* =========================================================
    Manifest
    ========================================================= */
 
@@ -191,8 +266,9 @@ export type WorkbenchBackupManifest = {
     format:
     "workbench-backup";
 
+    // v1はPDF履歴を含まない旧バックアップ。
     version:
-    typeof WORKBENCH_BACKUP_VERSION;
+    1 | typeof WORKBENCH_BACKUP_VERSION;
 
     createdAt: string;
 
@@ -221,6 +297,12 @@ export type WorkbenchBackupManifest = {
             previewImageCount:
             number;
         };
+
+        // v2から必須。旧形式(v1)では未定義。
+        printHistory?: {
+            documentCount: number;
+            pdfCount: number;
+        };
     };
 };
 
@@ -246,6 +328,14 @@ export type WorkbenchBackupSnapshot = {
 
     presetDocuments:
     PresetDocument[];
+
+    printHistory:
+    PrintHistoryRecord[];
+};
+
+/** Backups v1 did not contain PDF print history. */
+export type ImportedWorkbenchBackupSnapshot = WorkbenchBackupSnapshot & {
+    sourceBackupVersion: 1 | typeof WORKBENCH_BACKUP_VERSION;
 };
 
 
@@ -276,8 +366,8 @@ export function parseWorkbenchBackupManifest(
 
 
     if (
-        record.version !==
-        WORKBENCH_BACKUP_VERSION
+        record.version !== 1 &&
+        record.version !== WORKBENCH_BACKUP_VERSION
     ) {
 
         throw new Error(
@@ -355,6 +445,20 @@ export function parseWorkbenchBackupManifest(
         "manifest.contents.presetDocuments.previewImageCount"
     );
 
+    if (record.version === WORKBENCH_BACKUP_VERSION) {
+        const history = requireRecord(
+            contents.printHistory,
+            "manifest.contents.printHistory"
+        );
+        requireNonNegativeInteger(
+            history.documentCount,
+            "manifest.contents.printHistory.documentCount"
+        );
+        requireNonNegativeInteger(
+            history.pdfCount,
+            "manifest.contents.printHistory.pdfCount"
+        );
+    }
 
     return value as
         WorkbenchBackupManifest;

@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- GitHub Pages: CSP must be declared before any resource loads. -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'self' blob:; worker-src 'none'; form-action 'self'; base-uri 'none'; media-src 'none'; manifest-src 'self'">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -388,7 +391,7 @@
                         </h3>
 
                         <p class="workbench-backup__summary-description">
-                            文書テンプレート、割引不可商品リスト、定型印刷物を1つのバックアップファイルにまとめます。
+                            文書テンプレート、ビジネス文書のPDF出力履歴、割引不可商品リスト、定型印刷物を1つのバックアップファイルにまとめます。
                         </p>
 
 
@@ -396,6 +399,10 @@
 
                             <span class="workbench-backup__target">
                                 DOCUMENT BUILDER
+                            </span>
+
+                            <span class="workbench-backup__target">
+                                PDF OUTPUT HISTORY
                             </span>
 
                             <span class="workbench-backup__target">
@@ -458,7 +465,7 @@
 
 
                         <p class="workbench-backup-action__description">
-                            現在保存されているデータをまとめてZIPファイルとして保存します。
+                            現在のデータをまとめ、パスワードで暗号化したバックアップ（.wbenc）として保存します。
                         </p>
 
 
@@ -512,11 +519,11 @@
 
 
                         <p class="workbench-backup-action__description">
-                            バックアップZIPを読み込み、現在保存されているデータをバックアップ内容で置き換えます。
+                            暗号化バックアップ（.wbenc）または従来のZIPを読み込み、保存データを復元します。
                         </p>
 
 
-                        <input id="workbench-backup-import-input" type="file" accept=".zip,application/zip"
+                        <input id="workbench-backup-import-input" type="file" accept=".wbenc,.zip,application/zip,application/octet-stream"
                             class="workbench-backup__file-input" hidden>
 
 
@@ -569,6 +576,8 @@
                      ステータス
                      ========================================= -->
 
+                <button id="workbench-backup-recovery-button" class="glass-button workbench-backup-action__button workbench-backup-recovery-button"
+                    type="button" hidden>元のデータを復旧</button>
                 <p id="workbench-backup-status" class="workbench-backup__status" aria-live="polite" hidden></p>
 
             </div>
@@ -577,6 +586,25 @@
 
     </main>
 
+
+    <!-- 暗号化バックアップ用パスワード。ブラウザにパスワードは保存しない。 -->
+    <dialog id="backup-password-dialog" class="backup-password-dialog" aria-labelledby="backup-password-title">
+        <form id="backup-password-form" class="backup-password-dialog__form" autocomplete="off">
+            <h2 id="backup-password-title">バックアップのパスワード</h2>
+            <p id="backup-password-description"></p>
+            <label for="backup-password-input">パスワード</label>
+            <input id="backup-password-input" type="password" required maxlength="1024" autocomplete="new-password">
+            <div id="backup-password-confirm-row" class="backup-password-dialog__confirm">
+                <label for="backup-password-confirm">パスワード（確認用）</label>
+                <input id="backup-password-confirm" type="password" maxlength="1024" autocomplete="new-password">
+            </div>
+            <p id="backup-password-error" class="backup-password-dialog__error" role="alert"></p>
+            <div class="backup-password-dialog__actions">
+                <button type="button" id="backup-password-cancel">キャンセル</button>
+                <button type="submit" id="backup-password-submit">暗号化して保存</button>
+            </div>
+        </form>
+    </dialog>
 
     <!-- =====================================================
          定型印刷物 管理モーダル

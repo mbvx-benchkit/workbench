@@ -26,13 +26,13 @@
  *    export.tsのexportToJson()を使用して
  *    現在の作業内容をファイルとして保存する。
  *
- * 3. localStorageの既存データを削除する。
+ * 3. 保存できなかった場合でも以前の自動保存データは削除しない。
+ *    localStorage.setItemの失敗時、以前の値は維持される。
  *
- * 4. 現在の内容を1回だけ再保存する。
- *
- * 5. 再保存にも失敗した場合、
- *    それ以降は確認ダイアログを表示しない。
+ * 4. このページを開いている間は重複した案内を表示しない。
+ *    作業内容は画面上に残り、JSONで退避できる。
  */
+import { persistAutosave } from "./autosave-write.js";
 import { createExportData, exportToJson, } from "./export.js";
 import { restoreImportData, } from "./import.js";
 /* =========================================================
@@ -61,9 +61,10 @@ const SUPPORTED_VERSION = 1;
 const SAVE_FAILURE_MESSAGE = "自動保存に失敗しました。\n\n"
     + "現在の作業内容をJSON形式で保存しますか？\n\n"
     + "時間を空けてから再度編集したい場合は「OK」を、\n"
-    + "保存が不要な場合は「キャンセル」を選択してください。\n\n"
-    + "現在画面に表示されているデータが、"
-    + "すぐに消えることはありません。";
+    + "JSONファイルは後で「読み込み」できます。\n\n"
+    + "以前の自動保存データは消さずに保持します。\n"
+    + "現在の作業内容は画面に残りますが、ページを閉じる前に"
+    + "JSONへ退避することをおすすめします。";
 /* =========================================================
    汎用型判定
    ========================================================= */
@@ -180,13 +181,6 @@ export function initializeStorage(elements) {
      */
     let isRestoring = false;
     /*
-     * 保存失敗後の再試行中かどうか。
-     *
-     * 再試行にも失敗した場合、
-     * 失敗処理を再帰的に呼ばないために使用する。
-     */
-    let isRetryingAfterFailure = false;
-    /*
      * このページを開いている間に、
      * 一度でも保存失敗の案内を行ったか。
      *
@@ -222,51 +216,13 @@ export function initializeStorage(elements) {
          *
          * 保存履歴が増殖することはない。
          */
-        localStorage.setItem(STORAGE_KEY, json);
-    }
-    /* =====================================================
-       保存失敗時の再試行
-       ===================================================== */
-    function retrySaveAfterFailure() {
-        isRetryingAfterFailure =
-            true;
-        try {
-            /*
-             * 既存の自動保存データを削除する。
-             */
-            localStorage.removeItem(STORAGE_KEY);
-            /*
-             * 現在の内容を1回だけ再保存する。
-             */
-            writeCurrentState();
-            console.info("自動保存の再試行に成功しました。");
-        }
-        catch (error) {
-            /*
-             * 再試行にも失敗した場合は、
-             * もうダイアログを表示しない。
-             *
-             * 現在画面上の入力内容には触れない。
-             */
-            console.warn("自動保存の再試行にも失敗しました。", error);
-        }
-        finally {
-            isRetryingAfterFailure =
-                false;
-        }
+        persistAutosave(localStorage, STORAGE_KEY, json);
     }
     /* =====================================================
        保存失敗処理
        ===================================================== */
     function handleSaveFailure(error) {
         console.warn("GOSPLAN13の自動保存に失敗しました。", error);
-        /*
-         * 再試行中の失敗では、
-         * 追加の処理を行わない。
-         */
-        if (isRetryingAfterFailure) {
-            return;
-        }
         /*
          * 一度案内済みなら、
          * 同じページではもうダイアログを表示しない。
@@ -298,13 +254,8 @@ export function initializeStorage(elements) {
                     + "そのまま残っています。");
             }
         }
-        /*
-         * OK / キャンセルのどちらを選択した場合でも、
-         *
-         * 既存のlocalStorageを削除し、
-         * 現在状態の保存を1回だけ再試行する。
-         */
-        retrySaveAfterFailure();
+        // 以前の自動保存データには触れない。
+        // 現在のデータはこの画面に残し、JSONへの退避を促す。
     }
     /* =====================================================
        即時保存

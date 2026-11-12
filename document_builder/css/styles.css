@@ -2244,3 +2244,181 @@ body {
             minmax(0, 1fr) minmax(0, 1fr);
     }
 }
+
+/* =========================================================
+   Print History
+   ========================================================= */
+
+.print-history-dialog {
+    width: min(37rem, calc(100% - 2rem));
+    max-height: min(80vh, 44rem);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.print-history-dialog::backdrop {
+    background: rgba(20, 24, 31, 0.38);
+    backdrop-filter: blur(0.18rem);
+}
+
+.print-history-dialog__surface {
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.22);
+}
+
+.print-history-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.35rem;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.print-history-dialog__eyebrow {
+    margin: 0 0 0.3rem;
+    color: #828994;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+}
+
+.print-history-dialog__title {
+    margin: 0;
+    color: #252930;
+    font-size: 1.15rem;
+    font-weight: 750;
+}
+
+.print-history-dialog__close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #676d76;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.print-history-dialog__close:hover { background: #f0f2f4; }
+
+.print-history-dialog__description {
+    padding: 0.9rem 1.35rem 0.35rem;
+    color: #686e78;
+    font-size: 0.81rem;
+    line-height: 1.6;
+}
+
+.print-history-dialog__list {
+    max-height: min(55vh, 30rem);
+    overflow-y: auto;
+    padding: 0.7rem 1.35rem 1.3rem;
+}
+
+.print-history-dialog__empty {
+    padding: 1.4rem 0;
+    color: #707783;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.print-history-dialog__items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.print-history-dialog__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 0.2rem;
+    border-bottom: 1px solid #eceef1;
+}
+
+.print-history-dialog__item:last-child { border-bottom: 0; }
+
+.print-history-dialog__item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.print-history-dialog__item-name {
+    overflow-wrap: anywhere;
+    color: #252930;
+    font-size: 0.87rem;
+    font-weight: 700;
+}
+
+.print-history-dialog__item-date {
+    color: #828994;
+    font-size: 0.72rem;
+}
+
+.print-history-dialog__download {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid #dce3ed;
+    border-radius: 0.65rem;
+    background: #f4f7fc;
+    color: #2b5a91;
+    cursor: pointer;
+}
+
+.print-history-dialog__download:hover:not(:disabled) {
+    border-color: #99b7db;
+    background: #e7f0ff;
+}
+
+.print-history-dialog__download:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+/* PDF履歴：容量と50件ずつの読み込み、個別削除 */
+.print-history-dialog__stats {
+    margin: 0;
+    padding: 0.25rem 1.35rem 0.6rem;
+    color: #52677f;
+    font-size: 0.79rem;
+    font-weight: 650;
+}
+.print-history-dialog__item-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 0.4rem; }
+.print-history-dialog__delete {
+    border: 1px solid #ecd1d1;
+    border-radius: 0.6rem;
+    padding: 0.58rem 0.62rem;
+    background: #fff8f8;
+    color: #9b3030;
+    cursor: pointer;
+    font-size: 0.76rem;
+}
+.print-history-dialog__delete:hover:not(:disabled) { background: #ffeaea; }
+.print-history-dialog__delete:disabled { opacity: 0.5; }
+.print-history-dialog__more {
+    display: block;
+    width: calc(100% - 2.7rem);
+    margin: 0 auto 1rem;
+    padding: 0.7rem;
+    border: 1px solid #cbd6e5;
+    border-radius: 0.65rem;
+    background: #f4f7fc;
+    color: #2b5a91;
+    cursor: pointer;
+}
+.print-history-dialog__more[hidden] { display: none; }
+.print-history-dialog__more:disabled { opacity: 0.5; cursor: wait; }

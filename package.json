@@ -11,6 +11,7 @@
     "build:inventory": "tsc -p inventory_batch/tsconfig.json",
     "build:red-index": "tsc -p red_index/tsconfig.json",
     "build:document": "tsc -p document_builder/tsconfig.json && esbuild document_builder/dist/main.js --bundle --format=esm --platform=browser --target=es2020 --outfile=document_builder/dist/main.bundle.js",
+    "test:workbench": "node scripts/test-backup-archive.mjs && node scripts/test-encrypted-backup.mjs && node scripts/test-backup-limits.mjs && node scripts/test-restore-engine.mjs && node scripts/test-recovery-storage.mjs && node scripts/test-backup-ui-recovery.mjs && node scripts/test-preset-transaction.mjs && node scripts/test-print-history-db.mjs && node scripts/test-autosave-write.mjs && node scripts/test-source-secrets.mjs",
     "check": "npm run check:root && npm run check:gosplan13 && npm run check:inventory && npm run check:red-index && npm run check:document",
     "check:root": "tsc -p tsconfig.json --noEmit",
     "check:gosplan13": "tsc -p gosplan13/tsconfig.json --noEmit",
@@ -26,7 +27,7 @@
   "dependencies": {
     "html2canvas": "1.4.1",
     "jspdf": "4.2.1",
-    "jszip": "^3.10.1"
+    "jszip": "3.10.1"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

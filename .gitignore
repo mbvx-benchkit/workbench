@@ -1,28 +1,147 @@
-# macOS
+# WORKBENCH: private data must never be included in source control.
+# Rules apply throughout this repository. Override only after reviewing a file.
+
+# OS / editor / transient files
 .DS_Store
+.AppleDouble
 __MACOSX/
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# dependencies
+# Dependencies, build caches and logs (keep built dist/*.js for GitHub Pages)
 node_modules/
-
-# TypeScript cache
 *.tsbuildinfo
-
-# development source maps
 *.js.map
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# local source documents
-source-pdf/
-
-# user / work data
-*.csv
-*.xlsx
-*.xls
-gosplan13_*.json
-
-# environment / secrets
+# Secrets, authentication and local configurations
 .env
 .env.*
 !.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+*.asc
+*.gpg
+*.pgp
+id_rsa*
+id_ed25519*
 
+# Business documents, screenshots, scans, images and other binary/media files
+*.pdf
+*.PDF
+*.png
+*.PNG
+*.jpg
+*.JPG
+*.jpeg
+*.JPEG
+*.webp
+*.gif
+*.heic
+*.heif
+*.bmp
+*.tif
+*.tiff
+*.avif
+*.svg
+*.ico
+*.psd
+*.ai
+*.eps
+*.mp3
+*.m4a
+*.wav
+*.mp4
+*.mov
+
+# Backups and exports
+*.zip
+*.wbenc
+*.ZIP
+*.7z
+*.rar
+*.tar
+*.tgz
+*.gz
+*.bz2
+*.bak
+*.backup
+*.old
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+*.sql
+
+# Customer / business datasets and generated documents
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.ods
+*.doc
+*.docx
+*.odt
+*.rtf
+*.ppt
+*.pptx
+*.pages
+*.numbers
+*.keynote
+
+# Ignore JSON data by default. Keep only required Node/TypeScript configs.
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.*.json
+!**/tsconfig.json
+!**/tsconfig.*.json
+
+# Private working directories; no production runtime assets should live here.
+source-pdf/
+backups/
+/backup/
+exports/
+output/
+downloads/
+private/
+secrets/
+local-data/
+temp/
+tmp/
+
+# Editable document samples are local-only, not public repository content.
 document_builder/json/
+
+# Other files frequently used for personal notes and raw data exports.
+# Tracked source documentation is retained. Only these reviewed root docs may be added.
+*.txt
+*.md
+*.markdown
+*.xml
+*.yaml
+*.yml
+*.dat
+*.jsonl
+*.ndjson
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+!/README.md
+!/COPYRIGHT.md
+!/SECURITY_GUIDE.md
+!/CSP_GUIDE.md
+!/SECURITY_FIXES.md
+!/document_builder/PRINT_HISTORY.md

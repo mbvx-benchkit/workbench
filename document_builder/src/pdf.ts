@@ -97,6 +97,8 @@ export type PdfSaveResult = {
 
     method:
     PdfSaveMethod;
+
+    pdfBlob: Blob;
 };
 
 
@@ -128,7 +130,7 @@ export class PdfSaveCancelledError
  * PDF保存用のファイル名を生成する。
  *
  * 例:
- * 2026.9.13_山田太郎様.pdf
+ * 2026.09.13_山田太郎様.pdf
  */
 export function createDocumentPdfFileName(
     recipientName: string,
@@ -140,12 +142,11 @@ export function createDocumentPdfFileName(
 
 
     const month =
-        date.getMonth() +
-        1;
+        String(date.getMonth() + 1).padStart(2, "0");
 
 
     const day =
-        date.getDate();
+        String(date.getDate()).padStart(2, "0");
 
 
     const sanitizedName =
@@ -215,10 +216,15 @@ export async function saveDocumentPdf(
         );
 
 
-    return savePdfBlob(
+    const result = await savePdfBlob(
         pdfBlob,
         fileName
     );
+
+    return {
+        ...result,
+        pdfBlob
+    };
 }
 
 
@@ -335,7 +341,7 @@ export async function createDocumentPdfBlob(
 async function savePdfBlob(
     blob: Blob,
     fileName: string
-): Promise<PdfSaveResult> {
+): Promise<Omit<PdfSaveResult, "pdfBlob">> {
 
     const browserWindow =
         window as

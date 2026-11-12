@@ -2400,6 +2400,40 @@ var require_jszip_min = __commonJS({
   }
 });
 
+// dist/backup/backup-limits.js
+var MIB = 1024 * 1024;
+var MAX_ARCHIVE_ENTRIES = 12e3;
+var MAX_ARCHIVE_EXPANDED_BYTES = 512 * MIB;
+var MAX_ARCHIVE_ENTRY_BYTES = 64 * MIB;
+var MAX_ARCHIVE_IMAGE_BYTES = 32 * MIB;
+var MAX_JSON_TEXT_LENGTH = 2e7;
+function assertBackupEntrySize(path, size) {
+  if (!Number.isSafeInteger(size) || size < 0) {
+    throw new Error(`\u30D5\u30A1\u30A4\u30EB\u5BB9\u91CF\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
+  }
+  const max = path.endsWith(".json") ? MAX_JSON_TEXT_LENGTH : /\.(?:png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES : MAX_ARCHIVE_ENTRY_BYTES;
+  if (size > max) {
+    throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306E\u30D5\u30A1\u30A4\u30EB\u304C\u5927\u304D\u3059\u304E\u307E\u3059: ${path}`);
+  }
+}
+var BackupSizeBudget = class {
+  constructor() {
+    this.entries = 0;
+    this.bytes = 0;
+  }
+  add(path, bytes) {
+    assertBackupEntrySize(path, bytes);
+    this.entries++;
+    this.bytes += bytes;
+    if (this.entries > MAX_ARCHIVE_ENTRIES) {
+      throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30D5\u30A1\u30A4\u30EB\u4EF6\u6570\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    }
+    if (this.bytes > MAX_ARCHIVE_EXPANDED_BYTES) {
+      throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5408\u8A08\u5BB9\u91CF\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    }
+  }
+};
+
 // dist/preset/preset.js
 var PRESET_PDF_MIME_TYPE = "application/pdf";
 var PRESET_PREVIEW_MIME_TYPES = [
@@ -2480,6 +2514,61 @@ async function deletePresetDocument(id) {
   const request = store.delete(id);
   await requestToPromise(request);
   await completion;
+}
+async function replaceAllPresetDocuments(documents) {
+  const database = await openPresetDatabase();
+  const transaction = database.transaction(STORE_NAME, "readwrite");
+  const completion = waitForTransaction(transaction);
+  const store = transaction.objectStore(STORE_NAME);
+  try {
+    store.clear();
+    for (const document2 of documents) {
+      store.put(document2);
+    }
+  } catch (error) {
+    transaction.abort();
+    void completion.catch(() => {
+    });
+    throw error;
+  }
+  await completion;
+}
+async function getPresetBackupFootprint() {
+  const database = await openPresetDatabase();
+  const tx = database.transaction(STORE_NAME, "readonly");
+  const done2 = waitForTransaction(tx);
+  const result = await new Promise((resolve, reject) => {
+    let count = 0;
+    let previewCount = 0;
+    let totalBytes = 0;
+    const request = tx.objectStore(STORE_NAME).openCursor();
+    request.onerror = () => reject(request.error ?? new Error("\u5370\u5237\u7269\u306E\u5BB9\u91CF\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve({ count, previewCount, totalBytes });
+        return;
+      }
+      const doc = cursor.value;
+      count++;
+      if (doc.pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+        reject(new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5BFE\u8C61\u306E\u5B9A\u578B\u5370\u5237\u7269PDF\u304C64MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002"));
+        return;
+      }
+      totalBytes += doc.pdfBlob.size;
+      if (doc.previewBlob) {
+        if (doc.previewBlob.size > MAX_ARCHIVE_IMAGE_BYTES) {
+          reject(new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5BFE\u8C61\u306E\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u304C32MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002"));
+          return;
+        }
+        previewCount++;
+        totalBytes += doc.previewBlob.size;
+      }
+      cursor.continue();
+    };
+  });
+  await done2;
+  return result;
 }
 async function getNextPresetSortOrder() {
   const documents = await getPresetDocuments();
@@ -3103,16 +3192,56 @@ function formatBytes(bytes) {
 var import_jszip = __toESM(require_jszip_min());
 
 // dist/backup/backup-types.js
-var WORKBENCH_BACKUP_VERSION = 1;
+var WORKBENCH_BACKUP_VERSION = 2;
 var DOCUMENT_TEMPLATES_VERSION = 1;
+var PRINT_HISTORY_ARCHIVE_VERSION = 1;
+var MAX_PRINT_HISTORY_RECORDS = 5e3;
 var PRESET_DOCUMENTS_VERSION = 1;
 var RED_INDEX_VERSION = 1;
+function parsePrintHistoryArchive(value) {
+  const record = requireRecord(value, "document_builder/print-history/history.json");
+  if (record.version !== PRINT_HISTORY_ARCHIVE_VERSION || !Array.isArray(record.documents)) {
+    throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  if (record.documents.length > MAX_PRINT_HISTORY_RECORDS) {
+    throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306E\u4EF6\u6570\u304C\u591A\u3059\u304E\u307E\u3059\u3002");
+  }
+  const documents = record.documents.map((value2, index) => {
+    const path = `printHistory.documents[${index}]`;
+    const item = requireRecord(value2, path);
+    requireString(item.id, `${path}.id`, 256, true);
+    requireString(item.recipientName, `${path}.recipientName`, 512);
+    requireString(item.fileName, `${path}.fileName`, 1024, true);
+    if (!item.fileName.toLowerCase().endsWith(".pdf")) {
+      throw new Error(`${path}.fileName \u306FPDF\u30D5\u30A1\u30A4\u30EB\u540D\u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002`);
+    }
+    requireNonNegativeInteger(item.createdAt, `${path}.createdAt`);
+    if (item.pdfMimeType !== "application/pdf") {
+      throw new Error(`${path}.pdfMimeType \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+    }
+    const pdfPath = requireString(item.pdfPath, `${path}.pdfPath`, 2048, true);
+    requireSafeArchivePath(pdfPath, "document_builder/print-history/pdf/");
+    return {
+      id: item.id,
+      recipientName: item.recipientName,
+      fileName: item.fileName,
+      createdAt: item.createdAt,
+      pdfMimeType: "application/pdf",
+      pdfPath
+    };
+  });
+  requireUniqueIds(documents, "PDF\u51FA\u529B\u5C65\u6B74");
+  if (new Set(documents.map((document2) => document2.pdfPath)).size !== documents.length) {
+    throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306B\u91CD\u8907\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u30D1\u30B9\u304C\u3042\u308A\u307E\u3059\u3002");
+  }
+  return { version: PRINT_HISTORY_ARCHIVE_VERSION, documents };
+}
 function parseWorkbenchBackupManifest(value) {
   const record = requireRecord(value, "manifest.json");
   if (record.format !== "workbench-backup") {
     throw new Error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002");
   }
-  if (record.version !== WORKBENCH_BACKUP_VERSION) {
+  if (record.version !== 1 && record.version !== WORKBENCH_BACKUP_VERSION) {
     throw new Error("\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30D0\u30FC\u30B8\u30E7\u30F3\u3067\u3059\u3002");
   }
   requireString(record.createdAt, "manifest.createdAt", 128);
@@ -3127,6 +3256,11 @@ function parseWorkbenchBackupManifest(value) {
   requireNonNegativeInteger(presetDocuments.documentCount, "manifest.contents.presetDocuments.documentCount");
   requireNonNegativeInteger(presetDocuments.pdfCount, "manifest.contents.presetDocuments.pdfCount");
   requireNonNegativeInteger(presetDocuments.previewImageCount, "manifest.contents.presetDocuments.previewImageCount");
+  if (record.version === WORKBENCH_BACKUP_VERSION) {
+    const history = requireRecord(contents.printHistory, "manifest.contents.printHistory");
+    requireNonNegativeInteger(history.documentCount, "manifest.contents.printHistory.documentCount");
+    requireNonNegativeInteger(history.pdfCount, "manifest.contents.printHistory.pdfCount");
+  }
   return value;
 }
 function parseDocumentTemplatesArchive(value) {
@@ -3338,14 +3472,27 @@ var MANIFEST_PATH = "manifest.json";
 var DOCUMENT_TEMPLATES_PATH = "document_builder/templates.json";
 var RED_INDEX_PATH = "red_index/data.json";
 var PRESET_DOCUMENTS_PATH = "preset_documents/documents.json";
-var MAX_JSON_TEXT_LENGTH = 2e7;
+var PRINT_HISTORY_PATH = "document_builder/print-history/history.json";
 async function createBackupArchive(snapshot) {
+  if (snapshot.printHistory.length > MAX_PRINT_HISTORY_RECORDS) {
+    throw new Error(`PDF\u51FA\u529B\u5C65\u6B74\u306F\u6700\u5927${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}\u4EF6\u307E\u3067\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u3059\u3002`);
+  }
   const zip = new import_jszip.default();
-  zip.file(DOCUMENT_TEMPLATES_PATH, stringifyJson({
+  const budget = new BackupSizeBudget();
+  const addJson = (path, content) => {
+    const json = stringifyJson(content);
+    budget.add(path, new TextEncoder().encode(json).byteLength);
+    zip.file(path, json);
+  };
+  const addBinary = (path, blob) => {
+    budget.add(path, blob.size);
+    zip.file(path, blob);
+  };
+  addJson(DOCUMENT_TEMPLATES_PATH, {
     version: DOCUMENT_TEMPLATES_VERSION,
     templates: snapshot.documentTemplates
-  }));
-  zip.file(RED_INDEX_PATH, stringifyJson(snapshot.redIndex));
+  });
+  addJson(RED_INDEX_PATH, snapshot.redIndex);
   const presetMetadata = [];
   let previewImageCount = 0;
   for (let index = 0; index < snapshot.presetDocuments.length; index += 1) {
@@ -3359,7 +3506,7 @@ async function createBackupArchive(snapshot) {
       safeTitle,
       ".pdf"
     ].join("");
-    zip.file(pdfPath, document2.pdfBlob);
+    addBinary(pdfPath, document2.pdfBlob);
     let previewPath = null;
     if (document2.previewBlob && document2.previewFileName && document2.previewMimeType) {
       const extension = getImageExtension(document2.previewMimeType);
@@ -3371,7 +3518,7 @@ async function createBackupArchive(snapshot) {
         ".",
         extension
       ].join("");
-      zip.file(previewPath, document2.previewBlob);
+      addBinary(previewPath, document2.previewBlob);
       previewImageCount += 1;
     }
     presetMetadata.push({
@@ -3394,7 +3541,26 @@ async function createBackupArchive(snapshot) {
     version: PRESET_DOCUMENTS_VERSION,
     documents: presetMetadata
   };
-  zip.file(PRESET_DOCUMENTS_PATH, stringifyJson(presetArchive));
+  addJson(PRESET_DOCUMENTS_PATH, presetArchive);
+  const historyMetadata = [];
+  for (let index = 0; index < snapshot.printHistory.length; index += 1) {
+    const entry = snapshot.printHistory[index];
+    const pdfPath = `document_builder/print-history/pdf/${String(index + 1).padStart(5, "0")}.pdf`;
+    addBinary(pdfPath, entry.pdfBlob);
+    historyMetadata.push({
+      id: entry.id,
+      recipientName: entry.recipientName,
+      fileName: entry.fileName,
+      createdAt: entry.createdAt,
+      pdfMimeType: "application/pdf",
+      pdfPath
+    });
+  }
+  const historyArchive = {
+    version: PRINT_HISTORY_ARCHIVE_VERSION,
+    documents: historyMetadata
+  };
+  addJson(PRINT_HISTORY_PATH, historyArchive);
   const manifest = {
     format: "workbench-backup",
     version: WORKBENCH_BACKUP_VERSION,
@@ -3410,10 +3576,14 @@ async function createBackupArchive(snapshot) {
         documentCount: snapshot.presetDocuments.length,
         pdfCount: snapshot.presetDocuments.length,
         previewImageCount
+      },
+      printHistory: {
+        documentCount: snapshot.printHistory.length,
+        pdfCount: snapshot.printHistory.length
       }
     }
   };
-  zip.file(MANIFEST_PATH, stringifyJson(manifest));
+  addJson(MANIFEST_PATH, manifest);
   return zip.generateAsync({
     type: "blob",
     compression: "STORE",
@@ -3427,11 +3597,19 @@ async function readBackupArchive(file) {
   } catch {
     throw new Error("ZIP\u30D5\u30A1\u30A4\u30EB\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
   }
-  const manifest = parseWorkbenchBackupManifest(await readJsonFile(zip, MANIFEST_PATH));
-  const documentArchive = parseDocumentTemplatesArchive(await readJsonFile(zip, DOCUMENT_TEMPLATES_PATH));
-  const redIndexRaw = await readJsonFile(zip, RED_INDEX_PATH);
+  assertArchiveLimits(zip);
+  const readBudget = { used: 0 };
+  const manifest = parseWorkbenchBackupManifest(await readJsonFile(zip, MANIFEST_PATH, readBudget));
+  const documentArchive = parseDocumentTemplatesArchive(await readJsonFile(zip, DOCUMENT_TEMPLATES_PATH, readBudget));
+  const redIndexRaw = await readJsonFile(zip, RED_INDEX_PATH, readBudget);
   const redIndex = redIndexRaw === null ? null : parseRedIndexData(redIndexRaw);
-  const presetArchive = parsePresetDocumentsArchive(await readJsonFile(zip, PRESET_DOCUMENTS_PATH));
+  const presetArchive = parsePresetDocumentsArchive(await readJsonFile(zip, PRESET_DOCUMENTS_PATH, readBudget));
+  const historyArchive = manifest.version === WORKBENCH_BACKUP_VERSION ? parsePrintHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget)) : null;
+  if (historyArchive) {
+    if (manifest.contents.printHistory?.documentCount !== historyArchive.documents.length || manifest.contents.printHistory?.pdfCount !== historyArchive.documents.length) {
+      throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306E\u4EF6\u6570\u304Cmanifest\u3068\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002");
+    }
+  }
   if (manifest.contents.documentBuilder.templateCount !== documentArchive.templates.length) {
     throw new Error("\u6587\u66F8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u4EF6\u6570\u304Cmanifest\u3068\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002");
   }
@@ -3450,12 +3628,12 @@ async function readBackupArchive(file) {
   }
   const presetDocuments = [];
   for (const metadata of presetArchive.documents) {
-    const pdfBytes = await readBinaryFile(zip, metadata.pdfPath);
+    const pdfBytes = await readBinaryFile(zip, metadata.pdfPath, readBudget);
     validatePdfBytes(pdfBytes, metadata.pdfPath);
     const pdfBlob = createBlob(pdfBytes, "application/pdf");
     let previewBlob = null;
     if (metadata.previewPath && metadata.previewMimeType) {
-      const previewBytes = await readBinaryFile(zip, metadata.previewPath);
+      const previewBytes = await readBinaryFile(zip, metadata.previewPath, readBudget);
       validatePreviewBytes(previewBytes, metadata.previewMimeType, metadata.previewPath);
       previewBlob = createBlob(previewBytes, metadata.previewMimeType);
     }
@@ -3475,41 +3653,126 @@ async function readBackupArchive(file) {
       updatedAt: metadata.updatedAt
     });
   }
+  const printHistory = [];
+  if (historyArchive) {
+    for (const metadata of historyArchive.documents) {
+      const pdfBytes = await readBinaryFile(zip, metadata.pdfPath, readBudget);
+      validatePdfBytes(pdfBytes, metadata.pdfPath);
+      printHistory.push({
+        id: metadata.id,
+        recipientName: metadata.recipientName,
+        fileName: metadata.fileName,
+        createdAt: metadata.createdAt,
+        pdfBlob: createBlob(pdfBytes, "application/pdf")
+      });
+    }
+  }
   return {
     documentTemplates: documentArchive.templates,
     redIndex,
-    presetDocuments
+    presetDocuments,
+    printHistory,
+    sourceBackupVersion: manifest.version
   };
 }
-async function readJsonFile(zip, path) {
+function assertArchiveLimits(zip) {
+  const entries = Object.values(zip.files);
+  if (entries.length > MAX_ARCHIVE_ENTRIES) {
+    throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306E\u30D5\u30A1\u30A4\u30EB\u6570\u304C\u591A\u3059\u304E\u307E\u3059\u3002");
+  }
+  let totalBytes = 0;
+  for (const entry of entries) {
+    if (entry.dir)
+      continue;
+    const compressedObject = entry._data;
+    const size = compressedObject?.uncompressedSize;
+    const compressedSize = compressedObject?.compressedSize;
+    if (typeof size !== "number" || !Number.isSafeInteger(size) || size < 0 || typeof compressedSize !== "number" || !Number.isSafeInteger(compressedSize) || compressedSize < 0) {
+      throw new Error(`ZIP\u5185\u306E\u30B5\u30A4\u30BA\u60C5\u5831\u304C\u4E0D\u6B63\u3067\u3059: ${entry.name}`);
+    }
+    assertBackupEntrySize(entry.name, size);
+    totalBytes += size;
+    if (totalBytes > MAX_ARCHIVE_EXPANDED_BYTES) {
+      throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5C55\u958B\u5F8C\u5BB9\u91CF\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    }
+  }
+}
+function readEntryWithLimit(zip, path, maxSize, budget) {
   const entry = zip.file(path);
   if (!entry) {
     throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306B\u5FC5\u8981\u306A\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308A\u307E\u305B\u3093: ${path}`);
   }
-  const text = await entry.async("string");
-  if (text.length > MAX_JSON_TEXT_LENGTH) {
-    throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306EJSON\u304C\u5927\u304D\u3059\u304E\u307E\u3059: ${path}`);
-  }
+  return new Promise((resolve, reject) => {
+    const buffers = [];
+    let size = 0;
+    let settled = false;
+    const source = entry;
+    const stream = source.internalStream("uint8array");
+    stream.on("data", (chunk) => {
+      if (settled)
+        return;
+      size += chunk.byteLength;
+      budget.used += chunk.byteLength;
+      if (size > maxSize || budget.used > MAX_ARCHIVE_EXPANDED_BYTES) {
+        settled = true;
+        stream.pause();
+        reject(new Error(`ZIP\u306E\u5C55\u958B\u5F8C\u5BB9\u91CF\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059: ${path}`));
+        return;
+      }
+      buffers.push(chunk);
+    });
+    stream.on("error", (error) => {
+      if (!settled) {
+        settled = true;
+        reject(error);
+      }
+    });
+    stream.on("end", () => {
+      if (settled)
+        return;
+      settled = true;
+      const result = new Uint8Array(size);
+      let offset = 0;
+      for (const chunk of buffers) {
+        result.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+      resolve(result);
+    });
+    stream.resume();
+  });
+}
+async function readJsonFile(zip, path, budget) {
+  const bytes = await readEntryWithLimit(zip, path, MAX_JSON_TEXT_LENGTH, budget);
+  let text;
   try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     return JSON.parse(text);
   } catch {
     throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306EJSON\u3092\u89E3\u6790\u3067\u304D\u307E\u305B\u3093: ${path}`);
   }
 }
-async function readBinaryFile(zip, path) {
-  const entry = zip.file(path);
-  if (!entry) {
-    throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306B\u5FC5\u8981\u306A\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308A\u307E\u305B\u3093: ${path}`);
-  }
-  return entry.async("uint8array");
+async function readBinaryFile(zip, path, budget) {
+  const maxSize = /\.(png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES : MAX_ARCHIVE_ENTRY_BYTES;
+  return readEntryWithLimit(zip, path, maxSize, budget);
 }
 function validatePdfBytes(bytes, path) {
-  if (bytes.length < 5) {
-    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
+  if (bytes.length < 128 || bytes.length > MAX_ARCHIVE_ENTRY_BYTES) {
+    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u30B5\u30A4\u30BA\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
-  const signature = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
-  if (signature !== "%PDF-") {
-    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
+  const header = String.fromCharCode(...bytes.subarray(0, 8));
+  if (!/^%PDF-(?:1\.[0-7]|2\.0)/.test(header)) {
+    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u30D8\u30C3\u30C0\u30FC\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
+  }
+  const tail = new TextDecoder("latin1").decode(bytes.subarray(Math.max(0, bytes.length - 8192)));
+  const matches = [...tail.matchAll(/startxref\s+(\d+)\s+%%EOF/g)];
+  const last = matches[matches.length - 1];
+  if (!last) {
+    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u7D42\u7AEF\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093: ${path}`);
+  }
+  const xrefOffset = Number(last[1]);
+  if (!Number.isSafeInteger(xrefOffset) || xrefOffset <= 0 || xrefOffset >= bytes.length) {
+    throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u53C2\u7167\u4F4D\u7F6E\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
 }
 function validatePreviewBytes(bytes, mimeType, path) {
@@ -3593,22 +3856,95 @@ function getImageExtension(mimeType) {
 var DOCUMENT_DATABASE_NAME = "workbench-document-builder";
 var DOCUMENT_DATABASE_VERSION = 1;
 var DOCUMENT_STORE_NAME = "templates";
+var PRINT_HISTORY_DATABASE_NAME = "workbench-document-print-history";
+var PRINT_HISTORY_DATABASE_VERSION = 3;
+var PRINT_HISTORY_STATS_STORE_NAME = "history-stats";
+var PRINT_HISTORY_STATS_KEY = "total";
+var PRINT_HISTORY_METADATA_STORE_NAME = "history-meta";
+var PRINT_HISTORY_METADATA_INDEX_NAME = "createdAtId";
+var PRINT_HISTORY_STORE_NAME = "history";
 var RED_INDEX_STORAGE_KEY = "workbench.red-index.v1";
 async function readWorkbenchSnapshot() {
-  const [documentTemplates, presetDocuments] = await Promise.all([
+  const [documentTemplates, presetDocuments, printHistory] = await Promise.all([
     readDocumentTemplates(),
-    getPresetDocuments()
+    getPresetDocuments(),
+    readPrintHistory()
   ]);
   const redIndex = readRedIndexData();
   return {
     documentTemplates,
     redIndex,
-    presetDocuments
+    presetDocuments,
+    printHistory
   };
+}
+async function estimateWorkbenchBackupFootprint() {
+  const [presets, history] = await Promise.all([
+    getPresetBackupFootprint(),
+    readPrintHistoryFootprint()
+  ]);
+  if (history.count > MAX_PRINT_HISTORY_RECORDS) {
+    throw new Error(`PDF\u51FA\u529B\u5C65\u6B74\u306F\u6700\u5927${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}\u4EF6\u307E\u3067\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u3059\u3002`);
+  }
+  const budget = new BackupSizeBudget();
+  for (const name of [
+    "manifest.json",
+    "document_builder/templates.json",
+    "red_index/data.json",
+    "preset_documents/documents.json",
+    "document_builder/print-history/history.json"
+  ]) {
+    budget.add(name, 0);
+  }
+  const pdfCount = presets.count + history.count;
+  const imageCount = presets.previewCount;
+  if (pdfCount + imageCount > 0) {
+    const totalCount = budget.entries + pdfCount + imageCount;
+    const totalBytes = presets.totalBytes + history.totalBytes;
+    if (totalCount > MAX_ARCHIVE_ENTRIES) {
+      throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30D5\u30A1\u30A4\u30EB\u4EF6\u6570\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    }
+    if (totalBytes > MAX_ARCHIVE_EXPANDED_BYTES) {
+      throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5408\u8A08\u5BB9\u91CF\u304C512MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    }
+  }
+}
+async function readPrintHistoryFootprint() {
+  const db = await openPrintHistoryDatabase();
+  try {
+    const tx = db.transaction(PRINT_HISTORY_METADATA_STORE_NAME, "readonly");
+    const completion = waitForTransaction2(tx);
+    const result = await new Promise((resolve, reject) => {
+      let count = 0;
+      let totalBytes = 0;
+      const req = tx.objectStore(PRINT_HISTORY_METADATA_STORE_NAME).openCursor();
+      req.onerror = () => reject(req.error ?? new Error("\u5C65\u6B74\u5BB9\u91CF\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3002"));
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) {
+          resolve({ count, totalBytes });
+          return;
+        }
+        const record = cursor.value;
+        if (record.pdfBytes > MAX_ARCHIVE_ENTRY_BYTES) {
+          reject(new Error("\u51FA\u529B\u5C65\u6B74\u306EPDF\u304C64MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002"));
+          return;
+        }
+        count++;
+        totalBytes += record.pdfBytes;
+        cursor.continue();
+      };
+    });
+    await completion;
+    return result;
+  } finally {
+    db.close();
+  }
 }
 async function replaceWorkbenchSnapshot(snapshot) {
   await replaceDocumentTemplates(snapshot.documentTemplates);
   await replacePresetDocuments(snapshot.presetDocuments);
+  await replacePrintHistory(snapshot.printHistory);
   replaceRedIndexData(snapshot.redIndex);
   void requestPersistentStorage();
 }
@@ -3633,9 +3969,16 @@ async function replaceDocumentTemplates(templates) {
     const transaction = database.transaction(DOCUMENT_STORE_NAME, "readwrite");
     const completion = waitForTransaction2(transaction);
     const store = transaction.objectStore(DOCUMENT_STORE_NAME);
-    store.clear();
-    for (const template of validatedTemplates) {
-      store.put(template);
+    try {
+      store.clear();
+      for (const template of validatedTemplates) {
+        store.put(template);
+      }
+    } catch (error) {
+      transaction.abort();
+      void completion.catch(() => {
+      });
+      throw error;
     }
     await completion;
   } finally {
@@ -3664,12 +4007,116 @@ function replaceRedIndexData(data) {
   localStorage.setItem(RED_INDEX_STORAGE_KEY, JSON.stringify(validated));
 }
 async function replacePresetDocuments(documents) {
-  const currentDocuments = await getPresetDocuments();
-  for (const document2 of currentDocuments) {
-    await deletePresetDocument(document2.id);
+  await replaceAllPresetDocuments(documents);
+}
+function openPrintHistoryDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(PRINT_HISTORY_DATABASE_NAME, PRINT_HISTORY_DATABASE_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      const upgrade = request.transaction;
+      if (!upgrade)
+        throw new Error("PDF\u5C65\u6B74DB\u306E\u66F4\u65B0\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+      if (!db.objectStoreNames.contains(PRINT_HISTORY_STORE_NAME)) {
+        db.createObjectStore(PRINT_HISTORY_STORE_NAME, { keyPath: "id" });
+      }
+      const metaMissing = !db.objectStoreNames.contains(PRINT_HISTORY_METADATA_STORE_NAME);
+      let meta;
+      if (metaMissing) {
+        meta = db.createObjectStore(PRINT_HISTORY_METADATA_STORE_NAME, { keyPath: "id" });
+        meta.createIndex(PRINT_HISTORY_METADATA_INDEX_NAME, ["createdAt", "id"], { unique: true });
+      } else {
+        meta = upgrade.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains(PRINT_HISTORY_STATS_STORE_NAME)) {
+        db.createObjectStore(PRINT_HISTORY_STATS_STORE_NAME, { keyPath: "id" });
+      }
+      const stats = upgrade.objectStore(PRINT_HISTORY_STATS_STORE_NAME);
+      let count = 0;
+      let totalBytes = 0;
+      const cursor = metaMissing ? upgrade.objectStore(PRINT_HISTORY_STORE_NAME).openCursor() : meta.openCursor();
+      cursor.onsuccess = () => {
+        const row = cursor.result;
+        if (!row) {
+          stats.put({ id: PRINT_HISTORY_STATS_KEY, count, totalBytes });
+          return;
+        }
+        const record = row.value;
+        const info = metaMissing ? {
+          id: record.id,
+          recipientName: record.recipientName,
+          fileName: record.fileName,
+          createdAt: record.createdAt,
+          pdfBytes: record.pdfBlob.size
+        } : row.value;
+        if (metaMissing)
+          meta.put(info);
+        count++;
+        totalBytes += info.pdfBytes;
+        row.continue();
+      };
+    };
+    let blocked = false;
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      if (blocked)
+        request.result.close();
+      else
+        resolve(request.result);
+    };
+    request.onerror = () => reject(request.error ?? new Error("PDF\u5C65\u6B74\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+    request.onblocked = () => {
+      blocked = true;
+      reject(new Error("\u53E4\u3044WORKBENCH\u304C\u5225\u30BF\u30D6\u3067\u958B\u3044\u3066\u3044\u307E\u3059\u3002\u5225\u30BF\u30D6\u3092\u9589\u3058\u3066\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+    };
+  });
+}
+async function readPrintHistory() {
+  const db = await openPrintHistoryDatabase();
+  try {
+    const transaction = db.transaction(PRINT_HISTORY_STORE_NAME, "readonly");
+    const completion = waitForTransaction2(transaction);
+    const entries = await requestToPromise2(transaction.objectStore(PRINT_HISTORY_STORE_NAME).getAll());
+    await completion;
+    return entries;
+  } finally {
+    db.close();
   }
-  for (const document2 of documents) {
-    await putPresetDocument(document2);
+}
+async function replacePrintHistory(entries) {
+  const db = await openPrintHistoryDatabase();
+  try {
+    const transaction = db.transaction([PRINT_HISTORY_STORE_NAME, PRINT_HISTORY_METADATA_STORE_NAME, PRINT_HISTORY_STATS_STORE_NAME], "readwrite");
+    const completion = waitForTransaction2(transaction);
+    const store = transaction.objectStore(PRINT_HISTORY_STORE_NAME);
+    const metadataStore = transaction.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
+    try {
+      store.clear();
+      metadataStore.clear();
+      for (const entry of entries) {
+        store.put(entry);
+        metadataStore.put({
+          id: entry.id,
+          recipientName: entry.recipientName,
+          fileName: entry.fileName,
+          createdAt: entry.createdAt,
+          pdfBytes: entry.pdfBlob.size
+        });
+      }
+      transaction.objectStore(PRINT_HISTORY_STATS_STORE_NAME).put({
+        id: PRINT_HISTORY_STATS_KEY,
+        count: entries.length,
+        totalBytes: entries.reduce((sum, entry) => sum + entry.pdfBlob.size, 0)
+      });
+    } catch (error) {
+      transaction.abort();
+      void completion.catch(() => {
+      });
+      throw error;
+    }
+    await completion;
+  } finally {
+    db.close();
   }
 }
 function openDocumentDatabase() {
@@ -3719,20 +4166,269 @@ function waitForTransaction2(transaction) {
   });
 }
 
+// dist/backup/restore-policy.js
+function createRestoredSnapshot(imported, current) {
+  return {
+    documentTemplates: imported.documentTemplates,
+    redIndex: imported.redIndex,
+    presetDocuments: imported.presetDocuments,
+    printHistory: imported.sourceBackupVersion === 1 ? current.printHistory : imported.printHistory
+  };
+}
+
+// dist/backup/restore-recovery.js
+var DATABASE_NAME2 = "workbench-restore-recovery";
+var STORE_NAME2 = "snapshots";
+var KEY = "pending";
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME2, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE_NAME2)) {
+        request.result.createObjectStore(STORE_NAME2, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+    request.onerror = () => reject(request.error ?? new Error("\u5FA9\u65E7\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3002"));
+    request.onblocked = () => reject(new Error("\u5225\u30BF\u30D6\u304C\u5FA9\u65E7\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002"));
+  });
+}
+function done(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error("\u5FA9\u65E7\u30C7\u30FC\u30BF\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    tx.onabort = () => reject(tx.error ?? new Error("\u5FA9\u65E7\u30C7\u30FC\u30BF\u306E\u4FDD\u5B58\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+  });
+}
+async function readPendingRecovery() {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(STORE_NAME2, "readonly");
+    const completion = done(tx);
+    const request = tx.objectStore(STORE_NAME2).get(KEY);
+    const result = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error("\u5FA9\u65E7\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3002"));
+    });
+    await completion;
+    return result ?? null;
+  } finally {
+    db.close();
+  }
+}
+async function savePendingRecovery(snapshot) {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(STORE_NAME2, "readwrite");
+    const completion = done(tx);
+    tx.objectStore(STORE_NAME2).add({ id: KEY, createdAt: Date.now(), snapshot });
+    await completion;
+  } finally {
+    db.close();
+  }
+}
+async function clearPendingRecovery() {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(STORE_NAME2, "readwrite");
+    const completion = done(tx);
+    tx.objectStore(STORE_NAME2).delete(KEY);
+    await completion;
+  } finally {
+    db.close();
+  }
+}
+
+// dist/backup/restore-engine.js
+var defaultRestoreDependencies = {
+  read: readWorkbenchSnapshot,
+  replace: replaceWorkbenchSnapshot,
+  getRecovery: readPendingRecovery,
+  saveRecovery: savePendingRecovery,
+  clearRecovery: clearPendingRecovery
+};
+async function restoreWithRecovery(imported, deps = defaultRestoreDependencies) {
+  if (await deps.getRecovery()) {
+    throw new Error("\u524D\u56DE\u306E\u5FA9\u65E7\u30C7\u30FC\u30BF\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5148\u306B\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u3092\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  const original = await deps.read();
+  const target = createRestoredSnapshot(imported, original);
+  await deps.saveRecovery(original);
+  try {
+    await deps.replace(target);
+  } catch (restoreError) {
+    try {
+      await deps.replace(original);
+      await deps.clearRecovery();
+    } catch (rollbackError) {
+      console.error("\u5143\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002", rollbackError);
+      throw new Error("\u5FA9\u5143\u3068\u81EA\u52D5\u5FA9\u65E7\u306E\u4E21\u65B9\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u753B\u9762\u306E\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u30DC\u30BF\u30F3\u304B\u3089\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    throw restoreError;
+  }
+  try {
+    await deps.clearRecovery();
+  } catch {
+    throw new Error("\u5FA9\u5143\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5FA9\u65E7\u64CD\u4F5C\u3067\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return target;
+}
+async function recoverPreviousState(deps = defaultRestoreDependencies) {
+  const record = await deps.getRecovery();
+  if (!record)
+    return false;
+  await deps.replace(record.snapshot);
+  await deps.clearRecovery();
+  return true;
+}
+
+// dist/backup/encrypted-backup.js
+var MAGIC = new TextEncoder().encode("WBENC001");
+var HEADER_BYTES = 40;
+var SALT_BYTES = 16;
+var IV_BYTES = 12;
+var TAG_BYTES = 16;
+var PBKDF2_ITERATIONS = 6e5;
+var MAX_ITERATIONS = 12e5;
+var MAX_ZIP_BYTES = 512 * 1024 * 1024;
+var MAX_PASSWORD_LENGTH = 1024;
+function cryptoProvider() {
+  if (!globalThis.crypto?.subtle || !globalThis.crypto?.getRandomValues) {
+    throw new Error("\u6697\u53F7\u5316\u306B\u5BFE\u5FDC\u3057\u305F\u5B89\u5168\u306A\u30D6\u30E9\u30A6\u30B6\u74B0\u5883\uFF08HTTPS\uFF09\u304C\u5FC5\u8981\u3067\u3059\u3002");
+  }
+  return globalThis.crypto.subtle;
+}
+function assertPassword(password, create) {
+  if (!password || password.length > MAX_PASSWORD_LENGTH || create && password.length < 12) {
+    throw new Error(create ? "\u30D1\u30B9\u30EF\u30FC\u30C9\u306F12\u6587\u5B57\u4EE5\u4E0A\u30011024\u6587\u5B57\u4EE5\u5185\u3067\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+}
+async function deriveKey(password, salt, iterations, usage) {
+  const subtle = cryptoProvider();
+  const secret = await subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return subtle.deriveKey({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, secret, { name: "AES-GCM", length: 256 }, false, [usage]);
+}
+function hasMagic(bytes) {
+  return bytes.length >= MAGIC.length && MAGIC.every((value, index) => bytes[index] === value);
+}
+async function isEncryptedBackup(file) {
+  return hasMagic(new Uint8Array(await file.slice(0, MAGIC.length).arrayBuffer()));
+}
+async function encryptBackupZip(zip, password) {
+  assertPassword(password, true);
+  const subtle = cryptoProvider();
+  if (zip.size === 0 || zip.size > MAX_ZIP_BYTES) {
+    throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306EZIP\u304C\u6697\u53F7\u5316\u53EF\u80FD\u306A\u5BB9\u91CF\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+  }
+  const header = new Uint8Array(HEADER_BYTES);
+  header.set(MAGIC, 0);
+  new DataView(header.buffer).setUint32(8, PBKDF2_ITERATIONS, false);
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  header.set(salt, 12);
+  header.set(iv, 28);
+  const key = await deriveKey(password, salt, PBKDF2_ITERATIONS, "encrypt");
+  const ciphertext = await subtle.encrypt({ name: "AES-GCM", iv, additionalData: header, tagLength: 128 }, key, await zip.arrayBuffer());
+  return new Blob([header, ciphertext], { type: "application/octet-stream" });
+}
+async function decryptBackupFile(file, password) {
+  assertPassword(password, false);
+  const subtle = cryptoProvider();
+  if (file.size < HEADER_BYTES + TAG_BYTES || file.size > MAX_ZIP_BYTES + HEADER_BYTES + TAG_BYTES) {
+    throw new Error("\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30B5\u30A4\u30BA\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  const header = new Uint8Array(await file.slice(0, HEADER_BYTES).arrayBuffer());
+  if (!hasMagic(header))
+    throw new Error("\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const iterations = new DataView(header.buffer).getUint32(8, false);
+  if (iterations < PBKDF2_ITERATIONS || iterations > MAX_ITERATIONS) {
+    throw new Error("\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5F62\u5F0F\u3067\u3059\u3002");
+  }
+  const salt = header.slice(12, 12 + SALT_BYTES);
+  const iv = header.slice(28, 28 + IV_BYTES);
+  const key = await deriveKey(password, salt, iterations, "decrypt");
+  try {
+    const plaintext = await subtle.decrypt({ name: "AES-GCM", iv, additionalData: header, tagLength: 128 }, key, await file.slice(HEADER_BYTES).arrayBuffer());
+    return new Uint8Array(plaintext);
+  } catch {
+    throw new Error("\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3046\u304B\u3001\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304C\u7834\u640D\u3057\u3066\u3044\u307E\u3059\u3002");
+  }
+}
+
 // dist/backup/backup.js
-var MAX_IMPORT_FILE_SIZE = 512 * 1024 * 1024;
+var MAX_IMPORT_FILE_SIZE = 512 * 1024 * 1024 + 56;
 function setupWorkbenchBackup(options) {
-  const { exportButton, importButton, importInput, status, onRestored } = options;
+  const { exportButton, importButton, importInput, status, recoveryButton, passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel, onRestored } = options;
+  let isBusy = true;
+  let recoveryState = "checking";
+  setBusy(true);
+  recoveryButton.hidden = true;
+  recoveryButton.addEventListener("click", () => {
+    void attemptRecovery();
+  });
+  void initializeRecoveryState();
+  async function refreshRecoveryState(announcePending = false) {
+    try {
+      const pending = await readPendingRecovery();
+      recoveryState = pending ? "pending" : "clear";
+      recoveryButton.hidden = !pending;
+      if (pending && announcePending) {
+        showStatus("\u4E2D\u65AD\u3055\u308C\u305F\u5FA9\u5143\u306E\u5143\u30C7\u30FC\u30BF\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5FA9\u65E7\u30DC\u30BF\u30F3\u304B\u3089\u5143\u306E\u72B6\u614B\u3078\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
+    } catch (error) {
+      recoveryState = "unknown";
+      recoveryButton.hidden = true;
+      showStatus("\u5FA9\u65E7\u30C7\u30FC\u30BF\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002" + formatErrorMessage(error));
+    }
+    updateRecoveryControls();
+  }
+  async function initializeRecoveryState() {
+    try {
+      await refreshRecoveryState(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function attemptRecovery() {
+    if (isBusy || recoveryState !== "pending")
+      return;
+    if (!window.confirm("\u524D\u56DE\u306E\u5FA9\u5143\u524D\u306B\u4FDD\u5B58\u3057\u305F\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3059\u3002\u73FE\u5728\u306E\u30C7\u30FC\u30BF\u306F\u7F6E\u304D\u63DB\u308F\u308A\u307E\u3059\u3002\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F"))
+      return;
+    setBusy(true);
+    try {
+      await recoverPreviousState();
+      showStatus("\u4E2D\u65AD\u3057\u305F\u5FA9\u5143\u306E\u524D\u306E\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3057\u305F\u3002");
+      if (onRestored)
+        await onRestored();
+    } catch (error) {
+      showStatus("\u5143\u306E\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002" + formatErrorMessage(error));
+    } finally {
+      await refreshRecoveryState();
+      setBusy(false);
+    }
+  }
   exportButton.addEventListener("click", () => {
     void handleExport();
   });
   async function handleExport() {
+    const password = await requestBackupPassword("export");
+    if (password === null)
+      return;
     setBusy(true);
     showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u3066\u3044\u307E\u3059...");
     try {
+      await estimateWorkbenchBackupFootprint();
       const snapshot = await readWorkbenchSnapshot();
       const archive = await createBackupArchive(snapshot);
-      downloadBlob(archive, createBackupFileName());
+      if (archive.size > MAX_IMPORT_FILE_SIZE - 56) {
+        throw new Error("\u4F5C\u6210\u3055\u308C\u305F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304C\u5BB9\u91CF\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+      }
+      const encrypted = await encryptBackupZip(archive, password);
+      downloadBlob(encrypted, createBackupFileName());
       showStatus(createExportSuccessMessage(snapshot));
     } catch (error) {
       console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
@@ -3756,6 +4452,10 @@ function setupWorkbenchBackup(options) {
     void handleImport(file);
   });
   async function handleImport(file) {
+    if (isBusy || recoveryState !== "clear") {
+      showStatus("\u5FA9\u5143\u524D\u306E\u72B6\u614B\u3092\u78BA\u8A8D\u4E2D\u3001\u307E\u305F\u306F\u5FA9\u65E7\u30B3\u30D4\u30FC\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5148\u306B\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      return;
+    }
     if (file.size === 0) {
       showStatus("\u7A7A\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30D5\u30A1\u30A4\u30EB\u306F\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3002");
       return;
@@ -3767,18 +4467,32 @@ function setupWorkbenchBackup(options) {
     setBusy(true);
     showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30D5\u30A1\u30A4\u30EB\u3092\u691C\u8A3C\u3057\u3066\u3044\u307E\u3059...");
     try {
-      const importedSnapshot = await readBackupArchive(file);
+      const encrypted = await isEncryptedBackup(file);
+      if (!encrypted && file.name.toLowerCase().endsWith(".wbenc")) {
+        throw new Error("\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30D5\u30A1\u30A4\u30EB\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+      }
+      let archive = file;
+      if (encrypted) {
+        const password = await requestBackupPassword("import");
+        if (password === null) {
+          showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5FA9\u5143\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
+          return;
+        }
+        showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u53F7\u30FB\u691C\u8A3C\u3057\u3066\u3044\u307E\u3059...");
+        archive = await decryptBackupFile(file, password);
+      }
+      const importedSnapshot = await readBackupArchive(archive);
       const confirmed = confirmRestore(importedSnapshot);
       if (!confirmed) {
         showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u5FA9\u5143\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
         return;
       }
       showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3057\u3066\u3044\u307E\u3059...");
-      await restoreWithRollback(importedSnapshot);
+      const restoredSnapshot = await restoreWithRecovery(importedSnapshot);
       if (onRestored) {
         await onRestored();
       }
-      showStatus(createImportSuccessMessage(importedSnapshot));
+      showStatus(createImportSuccessMessage(restoredSnapshot));
     } catch (error) {
       console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
       showStatus([
@@ -3787,33 +4501,75 @@ function setupWorkbenchBackup(options) {
       ].join(" "));
     } finally {
       importInput.value = "";
+      await refreshRecoveryState();
       setBusy(false);
     }
   }
+  function requestBackupPassword(mode) {
+    return new Promise((resolve) => {
+      passwordForm.reset();
+      passwordError.textContent = "";
+      passwordConfirmRow.hidden = mode !== "export";
+      passwordConfirmInput.required = mode === "export";
+      passwordInput.minLength = mode === "export" ? 12 : 1;
+      passwordDescription.textContent = mode === "export" ? "12\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5168\u4F53\u3092\u6697\u53F7\u5316\u3057\u307E\u3059\u3002\u5FD8\u308C\u308B\u3068\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3002\u5B89\u5168\u306A\u5834\u6240\u3067\u7BA1\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3059\u308B\u305F\u3081\u3001\u8A2D\u5B9A\u3057\u305F\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+      passwordSubmit.textContent = mode === "export" ? "\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58" : "\u5FA9\u53F7\u3057\u3066\u5FA9\u5143";
+      let settled = false;
+      const settle = (value) => {
+        if (settled)
+          return;
+        settled = true;
+        passwordForm.removeEventListener("submit", submit);
+        passwordCancel.removeEventListener("click", cancel);
+        passwordDialog.removeEventListener("cancel", escape);
+        passwordDialog.removeEventListener("close", closed);
+        passwordForm.reset();
+        if (passwordDialog.open)
+          passwordDialog.close();
+        resolve(value);
+      };
+      const submit = (event) => {
+        event.preventDefault();
+        const password = passwordInput.value;
+        if (mode === "export" && password !== passwordConfirmInput.value) {
+          passwordError.textContent = "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+          return;
+        }
+        if (!password || mode === "export" && password.length < 12) {
+          passwordError.textContent = "\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u9577\u3055\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+          return;
+        }
+        settle(password);
+      };
+      const cancel = () => settle(null);
+      const escape = (event) => {
+        event.preventDefault();
+        settle(null);
+      };
+      const closed = () => settle(null);
+      passwordForm.addEventListener("submit", submit);
+      passwordCancel.addEventListener("click", cancel);
+      passwordDialog.addEventListener("cancel", escape);
+      passwordDialog.addEventListener("close", closed);
+      passwordDialog.showModal();
+      passwordInput.focus();
+    });
+  }
+  function updateRecoveryControls() {
+    importButton.disabled = isBusy || recoveryState !== "clear";
+    recoveryButton.hidden = recoveryState !== "pending";
+    recoveryButton.disabled = isBusy;
+  }
   function setBusy(busy) {
+    isBusy = busy;
     exportButton.disabled = busy;
-    importButton.disabled = busy;
+    updateRecoveryControls();
     exportButton.setAttribute("aria-busy", String(busy));
     importButton.setAttribute("aria-busy", String(busy));
   }
   function showStatus(message) {
     status.textContent = message;
     status.hidden = false;
-  }
-}
-async function restoreWithRollback(importedSnapshot) {
-  const originalSnapshot = await readWorkbenchSnapshot();
-  try {
-    await replaceWorkbenchSnapshot(importedSnapshot);
-  } catch (restoreError) {
-    console.error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5FA9\u5143\u4E2D\u306B\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002\u5143\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3059\u3002", restoreError);
-    try {
-      await replaceWorkbenchSnapshot(originalSnapshot);
-    } catch (rollbackError) {
-      console.error("\u5143\u30C7\u30FC\u30BF\u3078\u306E\u30ED\u30FC\u30EB\u30D0\u30C3\u30AF\u306B\u3082\u5931\u6557\u3057\u307E\u3057\u305F\u3002", rollbackError);
-      throw new Error("\u5FA9\u5143\u306B\u5931\u6557\u3057\u3001\u5143\u306E\u4FDD\u5B58\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u3082\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
-    }
-    throw restoreError;
   }
 }
 function confirmRestore(snapshot) {
@@ -3827,6 +4583,7 @@ function confirmRestore(snapshot) {
     `RED INDEX: ${snapshot.redIndex ? "\u3042\u308A" : "\u306A\u3057"}`,
     `\u5B9A\u578B\u5370\u5237\u7269: ${snapshot.presetDocuments.length}\u4EF6`,
     `\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF: ${previewCount}\u4EF6`,
+    snapshot.sourceBackupVersion === 1 ? "\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306EPDF\u5C65\u6B74: \u65E7\u5F62\u5F0F\u306B\u542B\u307E\u308C\u306A\u3044\u305F\u3081\u3001\u73FE\u5728\u306E\u5C65\u6B74\u3092\u4FDD\u6301\u3057\u307E\u3059\u3002" : `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306EPDF\u5C65\u6B74: ${snapshot.printHistory.length}\u4EF6\uFF08\u7F6E\u304D\u63DB\u3048\uFF09`,
     "",
     "\u3053\u306E\u64CD\u4F5C\u3092\u5B9F\u884C\u3057\u307E\u3059\u304B\uFF1F"
   ].join("\n"));
@@ -3859,21 +4616,23 @@ function createBackupFileName() {
     "_",
     hours,
     minutes,
-    ".zip"
+    ".wbenc"
   ].join("");
 }
 function createExportSuccessMessage(snapshot) {
   return [
-    "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002",
+    "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002",
     `\u6587\u66F8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8 ${snapshot.documentTemplates.length}\u4EF6\u3001`,
-    `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`
+    `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3001`,
+    `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8PDF\u5C65\u6B74 ${snapshot.printHistory.length}\u4EF6\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`
   ].join(" ");
 }
 function createImportSuccessMessage(snapshot) {
   return [
     "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u3002",
     `\u6587\u66F8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8 ${snapshot.documentTemplates.length}\u4EF6\u3001`,
-    `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u3002`
+    `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3001`,
+    `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8PDF\u5C65\u6B74 ${snapshot.printHistory.length}\u4EF6\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u3002`
   ].join(" ");
 }
 function formatErrorMessage(error) {
@@ -3901,6 +4660,16 @@ setupWorkbenchBackup({
   importButton: backupImportButton,
   importInput: backupImportInput,
   status: backupStatus,
+  recoveryButton: requireElement2("#workbench-backup-recovery-button"),
+  passwordDialog: requireElement2("#backup-password-dialog"),
+  passwordForm: requireElement2("#backup-password-form"),
+  passwordInput: requireElement2("#backup-password-input"),
+  passwordConfirmInput: requireElement2("#backup-password-confirm"),
+  passwordConfirmRow: requireElement2("#backup-password-confirm-row"),
+  passwordError: requireElement2("#backup-password-error"),
+  passwordDescription: requireElement2("#backup-password-description"),
+  passwordSubmit: requireElement2("#backup-password-submit"),
+  passwordCancel: requireElement2("#backup-password-cancel"),
   /**
    * バックアップ復元後、
    * ホーム画面の定型印刷物カードを再描画する。

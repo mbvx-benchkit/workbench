@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- GitHub Pages: CSP must be declared before any resource loads. -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'self' blob:; worker-src 'none'; form-action 'self'; base-uri 'none'; media-src 'none'; manifest-src 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GOSPLAN13 | JANコード変換・ラベル作成ツール</title>
     <meta name="description" content="商品名、商品画像、JANコードから、印刷可能なJANラベルを作成するシンプルなWebツールです。">

@@ -46,6 +46,15 @@ import {
     saveDocumentPdf
 } from "./pdf.js";
 
+import {
+    addPrintHistory,
+    getPrintHistory,
+    getPrintHistoryPage,
+    getPrintHistoryStats,
+    deletePrintHistory,
+    type PrintHistoryCursor
+} from "./print-history-db.js";
+
 
 /* =========================================================
    Constants
@@ -90,6 +99,12 @@ const templateSelect =
 const templateSettingsButton =
     requireElement<HTMLButtonElement>(
         "#template-settings-button"
+    );
+
+
+const printHistoryButton =
+    requireElement<HTMLButtonElement>(
+        "#print-history-button"
     );
 
 
@@ -234,6 +249,28 @@ const printFileName =
     requireElement<HTMLElement>(
         "#print-file-name"
     );
+
+
+/* =========================================================
+   Print History
+   ========================================================= */
+
+const printHistoryDialog =
+    requireElement<HTMLDialogElement>("#print-history-dialog");
+
+const printHistoryCloseButton =
+    requireElement<HTMLButtonElement>("#print-history-close-button");
+
+const printHistoryList =
+    requireElement<HTMLElement>("#print-history-list");
+
+const printHistoryStats =
+    requireElement<HTMLElement>("#print-history-stats");
+const printHistoryMoreButton =
+    requireElement<HTMLButtonElement>("#print-history-more-button");
+let printHistoryNextCursor: PrintHistoryCursor | null = null;
+let printHistoryGeneration = 0;
+let printHistoryLoading = false;
 
 
 /* =========================================================
@@ -516,6 +553,28 @@ function wireEvents():
             openPrintFlow();
         }
     );
+
+
+    printHistoryButton.addEventListener("click", () => {
+        void openPrintHistory();
+    });
+
+    printHistoryCloseButton.addEventListener("click", () => {
+        printHistoryDialog.close();
+    });
+
+    printHistoryDialog.addEventListener("close", () => {
+        printHistoryGeneration++;
+    });
+    printHistoryMoreButton.addEventListener("click", () => {
+        void loadMorePrintHistory();
+    });
+
+    printHistoryDialog.addEventListener("click", (event) => {
+        if (event.target === printHistoryDialog) {
+            printHistoryDialog.close();
+        }
+    });
 
 
     printFlowCloseButton.addEventListener(
@@ -1056,6 +1115,22 @@ async function runPdfSaveStep():
             );
 
 
+        // ダウンロードしたものと同一のBlobをIndexedDBへ保存する。
+        // ブラウザの容量不足などで保存できなくても、PDFの手動保存と
+        // 印刷への移行自体は妨げず、利用者に失敗を知らせる。
+        let historySaved = false;
+        try {
+            await addPrintHistory(
+                recipientName,
+                result.fileName,
+                result.pdfBlob
+            );
+            historySaved = true;
+        } catch (historyError) {
+            console.error("PDFの履歴保存に失敗しました。", historyError);
+        }
+
+
         printStepOne.classList.add(
             "print-flow-step--complete"
         );
@@ -1089,9 +1164,13 @@ async function runPdfSaveStep():
         }
 
 
-        showToast(
-            `${result.fileName} を作成しました。`
-        );
+        if (historySaved) {
+            showToast(`${result.fileName} を作成し、履歴にも保存しました。`);
+        } else {
+            printStepOneStatus.textContent +=
+                " ブラウザ内の履歴保存には失敗しました。空き容量や保存設定をご確認ください。";
+            showToast("PDFは保存されましたが、履歴の保存に失敗しました。");
+        }
 
     } catch (
     error
@@ -1131,6 +1210,171 @@ async function runPdfSaveStep():
 
         printSavePdfButton.textContent =
             "PDFを保存";
+    }
+}
+
+
+/* =========================================================
+   Print History Dialog
+   ========================================================= */
+
+/** 一覧にはメタデータのみを取得し、PDF本体の読み込みはダウンロード時だけ。 */
+async function openPrintHistory(): Promise<void> {
+    const generation = ++printHistoryGeneration;
+    printHistoryNextCursor = null;
+    printHistoryMoreButton.hidden = true;
+    printHistoryList.replaceChildren();
+    printHistoryStats.textContent = "履歴を集計しています...";
+    const loading = document.createElement("p");
+    loading.className = "print-history-dialog__empty";
+    loading.textContent = "履歴を読み込んでいます...";
+    printHistoryList.appendChild(loading);
+    if (!printHistoryDialog.open) printHistoryDialog.showModal();
+    try {
+        const [stats, page] = await Promise.all([
+            getPrintHistoryStats(), getPrintHistoryPage(null, 50)
+        ]);
+        if (generation !== printHistoryGeneration || !printHistoryDialog.open) return;
+        printHistoryStats.textContent =
+            `${stats.count.toLocaleString("ja-JP")}件 / PDF合計 ${formatPrintHistoryBytes(stats.totalBytes)}`;
+        printHistoryList.replaceChildren();
+        if (page.entries.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "print-history-dialog__empty";
+            empty.textContent = "まだPDFの出力履歴がありません。";
+            printHistoryList.appendChild(empty);
+            return;
+        }
+        const list = document.createElement("ul");
+        list.className = "print-history-dialog__items";
+        list.id = "print-history-items";
+        printHistoryList.appendChild(list);
+        appendPrintHistoryEntries(list, page.entries);
+        printHistoryNextCursor = page.nextCursor;
+        printHistoryMoreButton.hidden = !page.nextCursor;
+    } catch (error) {
+        if (generation !== printHistoryGeneration || !printHistoryDialog.open) return;
+        printHistoryStats.textContent = "";
+        printHistoryList.textContent = `履歴を読み込めませんでした。${getErrorMessage(error)}`;
+    }
+}
+
+async function loadMorePrintHistory(): Promise<void> {
+    if (printHistoryLoading || !printHistoryNextCursor || !printHistoryDialog.open) return;
+    const generation = printHistoryGeneration;
+    const cursor = printHistoryNextCursor;
+    printHistoryLoading = true;
+    printHistoryMoreButton.disabled = true;
+    try {
+        const page = await getPrintHistoryPage(cursor, 50);
+        if (generation !== printHistoryGeneration || !printHistoryDialog.open) return;
+        const list = printHistoryList.querySelector<HTMLUListElement>("#print-history-items");
+        if (!list) return;
+        appendPrintHistoryEntries(list, page.entries);
+        printHistoryNextCursor = page.nextCursor;
+        printHistoryMoreButton.hidden = !page.nextCursor;
+    } catch (error) {
+        if (generation === printHistoryGeneration) {
+            showToast(`追加の履歴を取得できませんでした。${getErrorMessage(error)}`);
+        }
+    } finally {
+        printHistoryLoading = false;
+        printHistoryMoreButton.disabled = false;
+    }
+}
+
+function appendPrintHistoryEntries(
+    list: HTMLUListElement,
+    entries: { id: string; fileName: string; createdAt: number; pdfBytes: number }[]
+): void {
+    for (const entry of entries) {
+        const item = document.createElement("li");
+        item.className = "print-history-dialog__item";
+        const info = document.createElement("div");
+        info.className = "print-history-dialog__item-info";
+        const title = document.createElement("strong");
+        title.className = "print-history-dialog__item-name";
+        title.textContent = entry.fileName.replace(/\.pdf$/i, "");
+        const date = document.createElement("small");
+        date.className = "print-history-dialog__item-date";
+        date.textContent = `保存日時: ${formatPrintHistoryDate(entry.createdAt)} / ${formatPrintHistoryBytes(entry.pdfBytes)}`;
+        info.append(title, date);
+
+        const actions = document.createElement("div");
+        actions.className = "print-history-dialog__item-actions";
+        const downloadButton = document.createElement("button");
+        downloadButton.type = "button";
+        downloadButton.className = "print-history-dialog__download";
+        downloadButton.title = `${entry.fileName} をダウンロード`;
+        downloadButton.setAttribute("aria-label", downloadButton.title);
+        downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg>`;
+        downloadButton.addEventListener("click", () => {
+            void downloadHistoryPdf(entry.id, downloadButton);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "print-history-dialog__delete";
+        deleteButton.title = `${entry.fileName} を履歴から削除`;
+        deleteButton.setAttribute("aria-label", deleteButton.title);
+        deleteButton.textContent = "削除";
+        deleteButton.addEventListener("click", () => {
+            if (!window.confirm(`${entry.fileName} を履歴から削除しますか？\n保存済みPDFも削除され、元に戻せません。`)) return;
+            deleteButton.disabled = true;
+            void (async () => {
+                try {
+                    await deletePrintHistory(entry.id);
+                    showToast("履歴を削除しました。");
+                    if (printHistoryDialog.open) await openPrintHistory();
+                } catch (error) {
+                    showToast(`履歴を削除できませんでした。${getErrorMessage(error)}`);
+                } finally {
+                    deleteButton.disabled = false;
+                }
+            })();
+        });
+        actions.append(downloadButton, deleteButton);
+        item.append(info, actions);
+        list.appendChild(item);
+    }
+}
+
+function formatPrintHistoryBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+}
+
+function formatPrintHistoryDate(timestamp: number): string {
+    const date = new Date(timestamp);
+    const pad = (number: number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+async function downloadHistoryPdf(id: string, button: HTMLButtonElement): Promise<void> {
+    button.disabled = true;
+    try {
+        const entry = await getPrintHistory(id);
+        if (!entry) {
+            throw new Error("この履歴は見つかりませんでした。");
+        }
+        const url = URL.createObjectURL(entry.pdfBlob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = entry.fileName;
+        anchor.hidden = true;
+        document.body.appendChild(anchor);
+        try {
+            anchor.click();
+        } finally {
+            anchor.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        }
+        showToast(`${entry.fileName} のダウンロードを開始しました。`);
+    } catch (error) {
+        showToast(`PDFをダウンロードできませんでした。${getErrorMessage(error)}`);
+    } finally {
+        button.disabled = false;
     }
 }
 

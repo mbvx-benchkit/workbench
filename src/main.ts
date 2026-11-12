@@ -20,6 +20,7 @@
  * DOCUMENT BUILDER
  * RED INDEX
  * PRESET DOCUMENTS
+ * PDF HISTORY
  *     ↓
  * ZIP出力 / 完全復元
  */
@@ -112,6 +113,17 @@ setupWorkbenchBackup({
 
     status:
         backupStatus,
+    recoveryButton: requireElement<HTMLButtonElement>("#workbench-backup-recovery-button"),
+
+    passwordDialog: requireElement<HTMLDialogElement>("#backup-password-dialog"),
+    passwordForm: requireElement<HTMLFormElement>("#backup-password-form"),
+    passwordInput: requireElement<HTMLInputElement>("#backup-password-input"),
+    passwordConfirmInput: requireElement<HTMLInputElement>("#backup-password-confirm"),
+    passwordConfirmRow: requireElement<HTMLElement>("#backup-password-confirm-row"),
+    passwordError: requireElement<HTMLElement>("#backup-password-error"),
+    passwordDescription: requireElement<HTMLElement>("#backup-password-description"),
+    passwordSubmit: requireElement<HTMLButtonElement>("#backup-password-submit"),
+    passwordCancel: requireElement<HTMLButtonElement>("#backup-password-cancel"),
 
     /**
      * バックアップ復元後、

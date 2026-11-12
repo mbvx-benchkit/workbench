@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { scanText } from './check-source-secrets.mjs';
+const githubToken = 'ghp_' + 'A'.repeat(36);
+const awsAccessKey = 'AKIA' + 'A'.repeat(16);
+const pem = '-----BEGIN ' + 'PRIVATE KEY-----';
+assert.equal(scanText(`const token="${githubToken}"`).some(x=>x.rule==='GitHub token'),true);
+assert.equal(scanText(`const key="${awsAccessKey}"`).some(x=>x.rule==='AWS access key ID'),true);
+assert.equal(scanText(pem).some(x=>x.rule==='PEM private key'),true);
+assert.equal(scanText('const normalPassword = passwordInput.value;').length,0);
+assert.equal(scanText('const myApi = "https://example.test/api";').length,0);
+assert.equal(scanText('const token = "example";').length,0);
+console.log('PASS: source scanner catches known credentials without printing values');

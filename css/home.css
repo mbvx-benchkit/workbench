@@ -2751,3 +2751,46 @@ fieldset.preset-editor__field {
     }
 
 }
+/* Encrypted backup password dialog */
+.backup-password-dialog {
+    width: min(26rem, calc(100vw - 2rem));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 1rem;
+    background: #fff;
+    color: #263448;
+    box-shadow: 0 1.5rem 5rem rgba(0,0,0,.25);
+}
+.backup-password-dialog::backdrop { background: rgba(20,24,31,.55); }
+.backup-password-dialog__form { display: flex; flex-direction: column; gap: .8rem; padding: 1.5rem; }
+.backup-password-dialog__form h2 { font-size: 1.15rem; margin: 0; }
+.backup-password-dialog__form p { margin: 0; font-size: .84rem; line-height: 1.6; }
+.backup-password-dialog__form label { font-size: .82rem; font-weight: 650; }
+.backup-password-dialog__form input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: .35rem;
+    padding: .7rem .8rem;
+    border: 1px solid #bac7d9;
+    border-radius: .55rem;
+    background: #fff;
+    color: #1e293b;
+    font-size: 1rem;
+}
+.backup-password-dialog__confirm[hidden] { display: none; }
+.backup-password-dialog__error { color: #ac2929; min-height: 1.2rem; }
+.backup-password-dialog__actions { display: flex; justify-content: end; gap: .6rem; }
+.backup-password-dialog__actions button {
+    border: 1px solid #c6d2e1;
+    border-radius: .55rem;
+    padding: .7rem 1rem;
+    background: #f5f7fa;
+    color: #23466d;
+    cursor: pointer;
+}
+#backup-password-submit { background: #285d96; color: #fff; }
+
+/* 中断した復元の復旧ボタンは、復旧コピーがある場合だけ表示する。 */
+.workbench-backup-recovery-button[hidden] { display: none !important; }

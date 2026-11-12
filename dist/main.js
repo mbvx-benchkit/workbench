@@ -20,6 +20,7 @@
  * DOCUMENT BUILDER
  * RED INDEX
  * PRESET DOCUMENTS
+ * PDF HISTORY
  *     ↓
  * ZIP出力 / 完全復元
  */
@@ -53,6 +54,16 @@ setupWorkbenchBackup({
     importButton: backupImportButton,
     importInput: backupImportInput,
     status: backupStatus,
+    recoveryButton: requireElement("#workbench-backup-recovery-button"),
+    passwordDialog: requireElement("#backup-password-dialog"),
+    passwordForm: requireElement("#backup-password-form"),
+    passwordInput: requireElement("#backup-password-input"),
+    passwordConfirmInput: requireElement("#backup-password-confirm"),
+    passwordConfirmRow: requireElement("#backup-password-confirm-row"),
+    passwordError: requireElement("#backup-password-error"),
+    passwordDescription: requireElement("#backup-password-description"),
+    passwordSubmit: requireElement("#backup-password-submit"),
+    passwordCancel: requireElement("#backup-password-cancel"),
     /**
      * バックアップ復元後、
      * ホーム画面の定型印刷物カードを再描画する。

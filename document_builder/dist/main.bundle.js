@@ -34175,8 +34175,8 @@ var PdfSaveCancelledError = class extends Error {
 };
 function createDocumentPdfFileName(recipientName, date = /* @__PURE__ */ new Date()) {
   const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   const sanitizedName = sanitizeFileNamePart(recipientName.trim());
   if (!sanitizedName) {
     return `${year}.${month}.${day}_\u6587\u66F8.pdf`;
@@ -34190,7 +34190,11 @@ function sanitizeFileNamePart(value) {
 async function saveDocumentPdf(pageElement, recipientName) {
   const pdfBlob = await createDocumentPdfBlob(pageElement);
   const fileName = createDocumentPdfFileName(recipientName);
-  return savePdfBlob(pdfBlob, fileName);
+  const result = await savePdfBlob(pdfBlob, fileName);
+  return {
+    ...result,
+    pdfBlob
+  };
 }
 async function createDocumentPdfBlob(pageElement) {
   if (document.fonts) {
@@ -34284,6 +34288,214 @@ function waitForNextFrame() {
   });
 }
 
+// document_builder/dist/print-history-db.js
+var DATABASE_NAME2 = "workbench-document-print-history";
+var HISTORY_STORE = "history";
+var METADATA_STORE = "history-meta";
+var DATE_INDEX = "createdAtId";
+var DATABASE_VERSION2 = 3;
+var STATS_STORE = "history-stats";
+var STATS_KEY = "total";
+var MAX_PAGE_SIZE = 100;
+function metadataOf(entry) {
+  return {
+    id: entry.id,
+    recipientName: entry.recipientName,
+    fileName: entry.fileName,
+    createdAt: entry.createdAt,
+    pdfBytes: entry.pdfBlob.size
+  };
+}
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME2, DATABASE_VERSION2);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      const tx = request.transaction;
+      if (!tx)
+        throw new Error("\u5C65\u6B74DB\u306E\u66F4\u65B0\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+      if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+        db.createObjectStore(HISTORY_STORE, { keyPath: "id" });
+      }
+      const metaMissing = !db.objectStoreNames.contains(METADATA_STORE);
+      let meta;
+      if (metaMissing) {
+        meta = db.createObjectStore(METADATA_STORE, { keyPath: "id" });
+        meta.createIndex(DATE_INDEX, ["createdAt", "id"], { unique: true });
+      } else {
+        meta = tx.objectStore(METADATA_STORE);
+      }
+      if (!db.objectStoreNames.contains(STATS_STORE)) {
+        db.createObjectStore(STATS_STORE, { keyPath: "id" });
+      }
+      const stats = tx.objectStore(STATS_STORE);
+      let count = 0;
+      let totalBytes = 0;
+      const cursor = metaMissing ? tx.objectStore(HISTORY_STORE).openCursor() : meta.openCursor();
+      cursor.onsuccess = () => {
+        const row = cursor.result;
+        if (!row) {
+          stats.put({ id: STATS_KEY, count, totalBytes });
+          return;
+        }
+        const info = metaMissing ? metadataOf(row.value) : row.value;
+        if (metaMissing)
+          meta.put(info);
+        count++;
+        totalBytes += info.pdfBytes;
+        row.continue();
+      };
+    };
+    let blocked = false;
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      if (blocked)
+        db.close();
+      else
+        resolve(db);
+    };
+    request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+    request.onblocked = () => {
+      blocked = true;
+      reject(new Error("\u53E4\u3044WORKBENCH\u304C\u5225\u30BF\u30D6\u3067\u958B\u3044\u3066\u3044\u307E\u3059\u3002\u5225\u30BF\u30D6\u3092\u9589\u3058\u3066\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+    };
+  });
+}
+function transactionDone(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error("\u5C65\u6B74\u306E\u8AAD\u307F\u66F8\u304D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    transaction.onabort = () => reject(transaction.error ?? new Error("\u5C65\u6B74\u306E\u4FDD\u5B58\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+  });
+}
+function requestResult(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u306E\u53D6\u5F97\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+  });
+}
+function updateStats(store, countDelta, bytesDelta) {
+  const request = store.get(STATS_KEY);
+  request.onsuccess = () => {
+    const old = request.result;
+    if (!old) {
+      store.transaction.abort();
+      return;
+    }
+    store.put({
+      id: STATS_KEY,
+      count: old.count + countDelta,
+      totalBytes: old.totalBytes + bytesDelta
+    });
+  };
+}
+async function addPrintHistory(recipientName, fileName, pdfBlob) {
+  const entry = {
+    id: crypto.randomUUID(),
+    recipientName,
+    fileName,
+    createdAt: Date.now(),
+    pdfBlob
+  };
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+    const done = transactionDone(tx);
+    tx.objectStore(HISTORY_STORE).add(entry);
+    tx.objectStore(METADATA_STORE).add(metadataOf(entry));
+    updateStats(tx.objectStore(STATS_STORE), 1, pdfBlob.size);
+    await done;
+  } finally {
+    db.close();
+  }
+}
+async function getPrintHistoryPage(before = null, pageSize = 50) {
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+    throw new Error("\u5C65\u6B74\u306E\u8868\u793A\u4EF6\u6570\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(METADATA_STORE, "readonly");
+    const done = transactionDone(tx);
+    const index2 = tx.objectStore(METADATA_STORE).index(DATE_INDEX);
+    const range = before ? IDBKeyRange.upperBound([before.createdAt, before.id], true) : null;
+    const entries2 = await new Promise((resolve, reject) => {
+      const result = [];
+      const request = index2.openCursor(range, "prev");
+      request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u4E00\u89A7\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor || result.length > pageSize) {
+          resolve(result);
+          return;
+        }
+        result.push(cursor.value);
+        if (result.length > pageSize) {
+          resolve(result);
+        } else {
+          cursor.continue();
+        }
+      };
+    });
+    await done;
+    const hasMore = entries2.length > pageSize;
+    const pageEntries = entries2.slice(0, pageSize);
+    const last = pageEntries[pageEntries.length - 1];
+    return {
+      entries: pageEntries,
+      nextCursor: hasMore && last ? { createdAt: last.createdAt, id: last.id } : null
+    };
+  } finally {
+    db.close();
+  }
+}
+async function getPrintHistoryStats() {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(STATS_STORE, "readonly");
+    const done = transactionDone(tx);
+    const stored = await requestResult(tx.objectStore(STATS_STORE).get(STATS_KEY));
+    await done;
+    if (!stored)
+      throw new Error("\u5C65\u6B74\u96C6\u8A08\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    return { count: stored.count, totalBytes: stored.totalBytes };
+  } finally {
+    db.close();
+  }
+}
+async function getPrintHistory(id) {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction(HISTORY_STORE, "readonly");
+    const done = transactionDone(tx);
+    const entry = await requestResult(tx.objectStore(HISTORY_STORE).get(id));
+    await done;
+    return entry ?? null;
+  } finally {
+    db.close();
+  }
+}
+async function deletePrintHistory(id) {
+  const db = await openDatabase();
+  try {
+    const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+    const done = transactionDone(tx);
+    const meta = tx.objectStore(METADATA_STORE);
+    const request = meta.get(id);
+    request.onsuccess = () => {
+      const found = request.result;
+      tx.objectStore(HISTORY_STORE).delete(id);
+      meta.delete(id);
+      if (found)
+        updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
+    };
+    await done;
+  } finally {
+    db.close();
+  }
+}
+
 // document_builder/dist/main.js
 var ACTIVE_TEMPLATE_STORAGE_KEY = "workbench-document-builder-active-template";
 var TOAST_DURATION_MS = 3200;
@@ -34292,6 +34504,7 @@ var jsonImportButton = requireElement2("#json-import-button");
 var jsonExportButton = requireElement2("#json-export-button");
 var templateSelect = requireElement2("#template-select");
 var templateSettingsButton = requireElement2("#template-settings-button");
+var printHistoryButton = requireElement2("#print-history-button");
 var printButton = requireElement2("#print-button");
 var documentFieldsEmpty = requireElement2("#document-fields-empty");
 var documentFieldsForm = requireElement2("#document-fields-form");
@@ -34316,6 +34529,14 @@ var printStepOne = requireElement2("#print-step-one");
 var printStepTwo = requireElement2("#print-step-two");
 var printStepOneStatus = requireElement2("#print-step-one-status");
 var printFileName = requireElement2("#print-file-name");
+var printHistoryDialog = requireElement2("#print-history-dialog");
+var printHistoryCloseButton = requireElement2("#print-history-close-button");
+var printHistoryList = requireElement2("#print-history-list");
+var printHistoryStats = requireElement2("#print-history-stats");
+var printHistoryMoreButton = requireElement2("#print-history-more-button");
+var printHistoryNextCursor = null;
+var printHistoryGeneration = 0;
+var printHistoryLoading = false;
 var templateSettingsDialog = requireElement2("#template-settings-dialog");
 var templateDialogCloseButton = requireElement2("#template-dialog-close-button");
 var templateDialogDoneButton = requireElement2("#template-dialog-done-button");
@@ -34376,6 +34597,23 @@ function wireEvents() {
   });
   printButton.addEventListener("click", () => {
     openPrintFlow();
+  });
+  printHistoryButton.addEventListener("click", () => {
+    void openPrintHistory();
+  });
+  printHistoryCloseButton.addEventListener("click", () => {
+    printHistoryDialog.close();
+  });
+  printHistoryDialog.addEventListener("close", () => {
+    printHistoryGeneration++;
+  });
+  printHistoryMoreButton.addEventListener("click", () => {
+    void loadMorePrintHistory();
+  });
+  printHistoryDialog.addEventListener("click", (event) => {
+    if (event.target === printHistoryDialog) {
+      printHistoryDialog.close();
+    }
   });
   printFlowCloseButton.addEventListener("click", () => {
     printFlowDialog.close();
@@ -34519,6 +34757,13 @@ async function runPdfSaveStep() {
   try {
     const recipientName = getRecipientName();
     const result = await saveDocumentPdf(documentPage, recipientName);
+    let historySaved = false;
+    try {
+      await addPrintHistory(recipientName, result.fileName, result.pdfBlob);
+      historySaved = true;
+    } catch (historyError) {
+      console.error("PDF\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", historyError);
+    }
     printStepOne.classList.add("print-flow-step--complete");
     printStepTwo.classList.remove("print-flow-step--disabled");
     printFinalButton.disabled = false;
@@ -34528,7 +34773,12 @@ async function runPdfSaveStep() {
     } else {
       printStepOneStatus.textContent = "PDF\u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002";
     }
-    showToast(`${result.fileName} \u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002`);
+    if (historySaved) {
+      showToast(`${result.fileName} \u3092\u4F5C\u6210\u3057\u3001\u5C65\u6B74\u306B\u3082\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`);
+    } else {
+      printStepOneStatus.textContent += " \u30D6\u30E9\u30A6\u30B6\u5185\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u306F\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u7A7A\u304D\u5BB9\u91CF\u3084\u4FDD\u5B58\u8A2D\u5B9A\u3092\u3054\u78BA\u8A8D\u304F\u3060\u3055\u3044\u3002";
+      showToast("PDF\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u5C65\u6B74\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
+    }
   } catch (error) {
     if (error instanceof PdfSaveCancelledError) {
       showToast("PDF\u4FDD\u5B58\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
@@ -34539,6 +34789,165 @@ async function runPdfSaveStep() {
   } finally {
     printSavePdfButton.disabled = false;
     printSavePdfButton.textContent = "PDF\u3092\u4FDD\u5B58";
+  }
+}
+async function openPrintHistory() {
+  const generation = ++printHistoryGeneration;
+  printHistoryNextCursor = null;
+  printHistoryMoreButton.hidden = true;
+  printHistoryList.replaceChildren();
+  printHistoryStats.textContent = "\u5C65\u6B74\u3092\u96C6\u8A08\u3057\u3066\u3044\u307E\u3059...";
+  const loading = document.createElement("p");
+  loading.className = "print-history-dialog__empty";
+  loading.textContent = "\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3093\u3067\u3044\u307E\u3059...";
+  printHistoryList.appendChild(loading);
+  if (!printHistoryDialog.open)
+    printHistoryDialog.showModal();
+  try {
+    const [stats, page] = await Promise.all([
+      getPrintHistoryStats(),
+      getPrintHistoryPage(null, 50)
+    ]);
+    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
+      return;
+    printHistoryStats.textContent = `${stats.count.toLocaleString("ja-JP")}\u4EF6 / PDF\u5408\u8A08 ${formatPrintHistoryBytes(stats.totalBytes)}`;
+    printHistoryList.replaceChildren();
+    if (page.entries.length === 0) {
+      const empty2 = document.createElement("p");
+      empty2.className = "print-history-dialog__empty";
+      empty2.textContent = "\u307E\u3060PDF\u306E\u51FA\u529B\u5C65\u6B74\u304C\u3042\u308A\u307E\u305B\u3093\u3002";
+      printHistoryList.appendChild(empty2);
+      return;
+    }
+    const list = document.createElement("ul");
+    list.className = "print-history-dialog__items";
+    list.id = "print-history-items";
+    printHistoryList.appendChild(list);
+    appendPrintHistoryEntries(list, page.entries);
+    printHistoryNextCursor = page.nextCursor;
+    printHistoryMoreButton.hidden = !page.nextCursor;
+  } catch (error) {
+    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
+      return;
+    printHistoryStats.textContent = "";
+    printHistoryList.textContent = `\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`;
+  }
+}
+async function loadMorePrintHistory() {
+  if (printHistoryLoading || !printHistoryNextCursor || !printHistoryDialog.open)
+    return;
+  const generation = printHistoryGeneration;
+  const cursor = printHistoryNextCursor;
+  printHistoryLoading = true;
+  printHistoryMoreButton.disabled = true;
+  try {
+    const page = await getPrintHistoryPage(cursor, 50);
+    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
+      return;
+    const list = printHistoryList.querySelector("#print-history-items");
+    if (!list)
+      return;
+    appendPrintHistoryEntries(list, page.entries);
+    printHistoryNextCursor = page.nextCursor;
+    printHistoryMoreButton.hidden = !page.nextCursor;
+  } catch (error) {
+    if (generation === printHistoryGeneration) {
+      showToast(`\u8FFD\u52A0\u306E\u5C65\u6B74\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
+    }
+  } finally {
+    printHistoryLoading = false;
+    printHistoryMoreButton.disabled = false;
+  }
+}
+function appendPrintHistoryEntries(list, entries2) {
+  for (const entry of entries2) {
+    const item = document.createElement("li");
+    item.className = "print-history-dialog__item";
+    const info = document.createElement("div");
+    info.className = "print-history-dialog__item-info";
+    const title = document.createElement("strong");
+    title.className = "print-history-dialog__item-name";
+    title.textContent = entry.fileName.replace(/\.pdf$/i, "");
+    const date = document.createElement("small");
+    date.className = "print-history-dialog__item-date";
+    date.textContent = `\u4FDD\u5B58\u65E5\u6642: ${formatPrintHistoryDate(entry.createdAt)} / ${formatPrintHistoryBytes(entry.pdfBytes)}`;
+    info.append(title, date);
+    const actions = document.createElement("div");
+    actions.className = "print-history-dialog__item-actions";
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "print-history-dialog__download";
+    downloadButton.title = `${entry.fileName} \u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9`;
+    downloadButton.setAttribute("aria-label", downloadButton.title);
+    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg>`;
+    downloadButton.addEventListener("click", () => {
+      void downloadHistoryPdf(entry.id, downloadButton);
+    });
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "print-history-dialog__delete";
+    deleteButton.title = `${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664`;
+    deleteButton.setAttribute("aria-label", deleteButton.title);
+    deleteButton.textContent = "\u524A\u9664";
+    deleteButton.addEventListener("click", () => {
+      if (!window.confirm(`${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F
+\u4FDD\u5B58\u6E08\u307FPDF\u3082\u524A\u9664\u3055\u308C\u3001\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002`))
+        return;
+      deleteButton.disabled = true;
+      void (async () => {
+        try {
+          await deletePrintHistory(entry.id);
+          showToast("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
+          if (printHistoryDialog.open)
+            await openPrintHistory();
+        } catch (error) {
+          showToast(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
+        } finally {
+          deleteButton.disabled = false;
+        }
+      })();
+    });
+    actions.append(downloadButton, deleteButton);
+    item.append(info, actions);
+    list.appendChild(item);
+  }
+}
+function formatPrintHistoryBytes(bytes) {
+  if (bytes < 1024)
+    return `${bytes} B`;
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+}
+function formatPrintHistoryDate(timestamp) {
+  const date = new Date(timestamp);
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+async function downloadHistoryPdf(id, button) {
+  button.disabled = true;
+  try {
+    const entry = await getPrintHistory(id);
+    if (!entry) {
+      throw new Error("\u3053\u306E\u5C65\u6B74\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+    }
+    const url = URL.createObjectURL(entry.pdfBlob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = entry.fileName;
+    anchor.hidden = true;
+    document.body.appendChild(anchor);
+    try {
+      anchor.click();
+    } finally {
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    }
+    showToast(`${entry.fileName} \u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002`);
+  } catch (error) {
+    showToast(`PDF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
+  } finally {
+    button.disabled = false;
   }
 }
 function runFinalPrint() {

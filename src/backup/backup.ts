@@ -23,11 +23,12 @@
  *     ↓
  * ユーザー確認
  *     ↓
- * 現在状態を退避
+ * 現在状態を別IndexedDBに永続退避
  *     ↓
- * 完全置換
+ * 各ストレージで一括置換
  *     ↓
  * 失敗時は元データへrollback
+ * 中断時は次回起動時に手動復旧
  */
 
 import {
@@ -38,12 +39,17 @@ import {
 
 import {
     readWorkbenchSnapshot,
-    replaceWorkbenchSnapshot
+    estimateWorkbenchBackupFootprint
 } from "./backup-storage.js";
+
+import { restoreWithRecovery, recoverPreviousState } from "./restore-engine.js";
+import { readPendingRecovery } from "./restore-recovery.js";
+import { encryptBackupZip, decryptBackupFile, isEncryptedBackup } from "./encrypted-backup.js";
 
 
 import type {
-    WorkbenchBackupSnapshot
+    WorkbenchBackupSnapshot,
+    ImportedWorkbenchBackupSnapshot
 } from "./backup-types.js";
 
 
@@ -58,10 +64,11 @@ import type {
  * 通常のWORKBENCHバックアップとしては
  * 十分大きな上限。
  */
+// 暗号化コンテナのヘッダー40バイトと認証タグ16バイトを許容する。
 const MAX_IMPORT_FILE_SIZE =
     512 *
     1024 *
-    1024;
+    1024 + 56;
 
 
 /* =========================================================
@@ -81,6 +88,17 @@ export type WorkbenchBackupOptions = {
 
     status:
         HTMLElement;
+    recoveryButton: HTMLButtonElement;
+
+    passwordDialog: HTMLDialogElement;
+    passwordForm: HTMLFormElement;
+    passwordInput: HTMLInputElement;
+    passwordConfirmInput: HTMLInputElement;
+    passwordConfirmRow: HTMLElement;
+    passwordError: HTMLElement;
+    passwordDescription: HTMLElement;
+    passwordSubmit: HTMLButtonElement;
+    passwordCancel: HTMLButtonElement;
 
     onRestored?:
         () =>
@@ -102,10 +120,70 @@ export function setupWorkbenchBackup(
         importButton,
         importInput,
         status,
+        recoveryButton,
+        passwordDialog,
+        passwordForm,
+        passwordInput,
+        passwordConfirmInput,
+        passwordConfirmRow,
+        passwordError,
+        passwordDescription,
+        passwordSubmit,
+        passwordCancel,
         onRestored
     } =
         options;
 
+
+    // 復旧用データが残る間、次の復元を開始させない。
+    // 読み取りに失敗した場合も、状態不明として復元操作を禁止する。
+    let isBusy = true;
+    let recoveryState: "checking" | "clear" | "pending" | "unknown" = "checking";
+    setBusy(true);
+    recoveryButton.hidden = true;
+    recoveryButton.addEventListener("click", () => { void attemptRecovery(); });
+    void initializeRecoveryState();
+
+    async function refreshRecoveryState(announcePending = false): Promise<void> {
+        try {
+            const pending = await readPendingRecovery();
+            recoveryState = pending ? "pending" : "clear";
+            recoveryButton.hidden = !pending;
+            if (pending && announcePending) {
+                showStatus("中断された復元の元データが残っています。復旧ボタンから元の状態へ戻してください。");
+            }
+        } catch (error) {
+            recoveryState = "unknown";
+            recoveryButton.hidden = true;
+            showStatus("復旧データを確認できませんでした。再読み込みして確認してください。" + formatErrorMessage(error));
+        }
+        updateRecoveryControls();
+    }
+
+    async function initializeRecoveryState(): Promise<void> {
+        try {
+            await refreshRecoveryState(true);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function attemptRecovery(): Promise<void> {
+        if (isBusy || recoveryState !== "pending") return;
+        if (!window.confirm("前回の復元前に保存したデータへ戻します。現在のデータは置き換わります。よろしいですか？")) return;
+        setBusy(true);
+        try {
+            await recoverPreviousState();
+            showStatus("中断した復元の前のデータへ戻しました。");
+            if (onRestored) await onRestored();
+        } catch (error) {
+            showStatus("元のデータへの復旧に失敗しました。復旧コピーは保持しています。" + formatErrorMessage(error));
+        } finally {
+            // 成功・失敗ともDBの実際の状態を再確認する。
+            await refreshRecoveryState();
+            setBusy(false);
+        }
+    }
 
     /* =====================================================
        Export
@@ -123,6 +201,10 @@ export function setupWorkbenchBackup(
     async function handleExport():
         Promise<void> {
 
+        // 先にパスワードを受け取り、キャンセル時は何も生成しない。
+        const password = await requestBackupPassword("export");
+        if (password === null) return;
+
         setBusy(
             true
         );
@@ -135,8 +217,9 @@ export function setupWorkbenchBackup(
 
         try {
 
-            const snapshot =
-                await readWorkbenchSnapshot();
+            // 実体のPDFを全件取得する前に容量・件数を検査する。
+            await estimateWorkbenchBackupFootprint();
+            const snapshot = await readWorkbenchSnapshot();
 
 
             const archive =
@@ -145,10 +228,12 @@ export function setupWorkbenchBackup(
                 );
 
 
-            downloadBlob(
-                archive,
-                createBackupFileName()
-            );
+            // ファイルヘッダー・ZIP管理情報も含む実サイズを最終確認する。
+            if (archive.size > MAX_IMPORT_FILE_SIZE - 56) {
+                throw new Error("作成されたバックアップが容量上限を超えています。");
+            }
+            const encrypted = await encryptBackupZip(archive, password);
+            downloadBlob(encrypted, createBackupFileName());
 
 
             showStatus(
@@ -236,6 +321,11 @@ export function setupWorkbenchBackup(
         file: File
     ): Promise<void> {
 
+        if (isBusy || recoveryState !== "clear") {
+            showStatus("復元前の状態を確認中、または復旧コピーが残っています。先に元のデータを復旧してください。");
+            return;
+        }
+
         if (
             file.size ===
             0
@@ -282,10 +372,21 @@ export function setupWorkbenchBackup(
              * ZIP内JSON、PDF、プレビュー画像まで
              * すべて読み込み・検証する。
              */
-            const importedSnapshot =
-                await readBackupArchive(
-                    file
-                );
+            const encrypted = await isEncryptedBackup(file);
+            if (!encrypted && file.name.toLowerCase().endsWith(".wbenc")) {
+                throw new Error("暗号化バックアップのファイル形式が不正です。");
+            }
+            let archive: Blob | Uint8Array = file;
+            if (encrypted) {
+                const password = await requestBackupPassword("import");
+                if (password === null) {
+                    showStatus("バックアップの復元をキャンセルしました。");
+                    return;
+                }
+                showStatus("バックアップを復号・検証しています...");
+                archive = await decryptBackupFile(file, password);
+            }
+            const importedSnapshot = await readBackupArchive(archive);
 
 
             const confirmed =
@@ -312,9 +413,7 @@ export function setupWorkbenchBackup(
             );
 
 
-            await restoreWithRollback(
-                importedSnapshot
-            );
+            const restoredSnapshot = await restoreWithRecovery(importedSnapshot);
 
 
             if (
@@ -327,7 +426,7 @@ export function setupWorkbenchBackup(
 
             showStatus(
                 createImportSuccessMessage(
-                    importedSnapshot
+                    restoredSnapshot
                 )
             );
 
@@ -353,29 +452,84 @@ export function setupWorkbenchBackup(
             importInput.value =
                 "";
 
-
-            setBusy(
-                false
-            );
+            // 失敗時に復旧コピーが残ったら、その場で復旧ボタンを出し、
+            // 次のインポートを禁止する。次回起動まで待つ必要はない。
+            await refreshRecoveryState();
+            setBusy(false);
         }
     }
 
 
     /* =====================================================
+       Password dialog (never persisted or logged)
+       ===================================================== */
+    function requestBackupPassword(mode: "export" | "import"): Promise<string | null> {
+        return new Promise((resolve) => {
+            passwordForm.reset();
+            passwordError.textContent = "";
+            passwordConfirmRow.hidden = mode !== "export";
+            passwordConfirmInput.required = mode === "export";
+            passwordInput.minLength = mode === "export" ? 12 : 1;
+            passwordDescription.textContent = mode === "export"
+                ? "12文字以上のパスワードでバックアップ全体を暗号化します。忘れると復元できません。安全な場所で管理してください。"
+                : "暗号化バックアップを復元するため、設定したパスワードを入力してください。";
+            passwordSubmit.textContent = mode === "export" ? "暗号化して保存" : "復号して復元";
+            let settled = false;
+            const settle = (value: string | null) => {
+                if (settled) return;
+                settled = true;
+                passwordForm.removeEventListener("submit", submit);
+                passwordCancel.removeEventListener("click", cancel);
+                passwordDialog.removeEventListener("cancel", escape);
+                passwordDialog.removeEventListener("close", closed);
+                passwordForm.reset();
+                if (passwordDialog.open) passwordDialog.close();
+                resolve(value);
+            };
+            const submit = (event: Event) => {
+                event.preventDefault();
+                const password = passwordInput.value;
+                if (mode === "export" && password !== passwordConfirmInput.value) {
+                    passwordError.textContent = "確認用パスワードが一致しません。";
+                    return;
+                }
+                if (!password || (mode === "export" && password.length < 12)) {
+                    passwordError.textContent = "パスワードの長さを確認してください。";
+                    return;
+                }
+                settle(password);
+            };
+            const cancel = () => settle(null);
+            const escape = (event: Event) => { event.preventDefault(); settle(null); };
+            const closed = () => settle(null);
+            passwordForm.addEventListener("submit", submit);
+            passwordCancel.addEventListener("click", cancel);
+            passwordDialog.addEventListener("cancel", escape);
+            passwordDialog.addEventListener("close", closed);
+            passwordDialog.showModal();
+            passwordInput.focus();
+        });
+    }
+
+    /* =====================================================
        Busy
        ===================================================== */
+
+    function updateRecoveryControls(): void {
+        importButton.disabled = isBusy || recoveryState !== "clear";
+        recoveryButton.hidden = recoveryState !== "pending";
+        recoveryButton.disabled = isBusy;
+    }
 
     function setBusy(
         busy: boolean
     ): void {
+        isBusy = busy;
 
         exportButton.disabled =
             busy;
 
-
-        importButton.disabled =
-            busy;
-
+        updateRecoveryControls();
 
         exportButton.setAttribute(
             "aria-busy",
@@ -413,69 +567,11 @@ export function setupWorkbenchBackup(
 
 
 /* =========================================================
-   Restore
-   ========================================================= */
-
-/**
- * 完全置換前に現在状態をメモリへ退避する。
- *
- * 復元処理途中で失敗した場合、
- * 元のsnapshotへ戻すことを試みる。
- */
-async function restoreWithRollback(
-    importedSnapshot:
-        WorkbenchBackupSnapshot
-): Promise<void> {
-
-    const originalSnapshot =
-        await readWorkbenchSnapshot();
-
-
-    try {
-
-        await replaceWorkbenchSnapshot(
-            importedSnapshot
-        );
-
-    } catch (restoreError) {
-
-        console.error(
-            "バックアップ復元中にエラーが発生しました。元データへ戻します。",
-            restoreError
-        );
-
-
-        try {
-
-            await replaceWorkbenchSnapshot(
-                originalSnapshot
-            );
-
-        } catch (rollbackError) {
-
-            console.error(
-                "元データへのロールバックにも失敗しました。",
-                rollbackError
-            );
-
-
-            throw new Error(
-                "復元に失敗し、元の保存データへの復旧にも失敗しました。"
-            );
-        }
-
-
-        throw restoreError;
-    }
-}
-
-
-/* =========================================================
    Confirm
    ========================================================= */
 
 function confirmRestore(
-    snapshot: WorkbenchBackupSnapshot
+    snapshot: ImportedWorkbenchBackupSnapshot
 ): boolean {
 
     const previewCount =
@@ -501,6 +597,9 @@ function confirmRestore(
             `RED INDEX: ${snapshot.redIndex ? "あり" : "なし"}`,
             `定型印刷物: ${snapshot.presetDocuments.length}件`,
             `プレビュー画像: ${previewCount}件`,
+            snapshot.sourceBackupVersion === 1
+                ? "ビジネス文書のPDF履歴: 旧形式に含まれないため、現在の履歴を保持します。"
+                : `ビジネス文書のPDF履歴: ${snapshot.printHistory.length}件（置き換え）`,
             "",
             "この操作を実行しますか？"
         ].join(
@@ -632,7 +731,7 @@ function createBackupFileName():
         "_",
         hours,
         minutes,
-        ".zip"
+        ".wbenc"
     ].join("");
 }
 
@@ -646,9 +745,10 @@ function createExportSuccessMessage(
 ): string {
 
     return [
-        "バックアップを出力しました。",
+        "暗号化バックアップを出力しました。",
         `文書テンプレート ${snapshot.documentTemplates.length}件、`,
-        `定型印刷物 ${snapshot.presetDocuments.length}件を保存しました。`
+        `定型印刷物 ${snapshot.presetDocuments.length}件、`,
+        `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を保存しました。`
     ].join(" ");
 }
 
@@ -660,7 +760,8 @@ function createImportSuccessMessage(
     return [
         "バックアップを復元しました。",
         `文書テンプレート ${snapshot.documentTemplates.length}件、`,
-        `定型印刷物 ${snapshot.presetDocuments.length}件を復元しました。`
+        `定型印刷物 ${snapshot.presetDocuments.length}件、`,
+        `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を復元しました。`
     ].join(" ");
 }
 

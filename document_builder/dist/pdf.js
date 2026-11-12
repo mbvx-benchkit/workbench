@@ -24,13 +24,12 @@ export class PdfSaveCancelledError extends Error {
  * PDF保存用のファイル名を生成する。
  *
  * 例:
- * 2026.9.13_山田太郎様.pdf
+ * 2026.09.13_山田太郎様.pdf
  */
 export function createDocumentPdfFileName(recipientName, date = new Date()) {
     const year = date.getFullYear();
-    const month = date.getMonth() +
-        1;
-    const day = date.getDate();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     const sanitizedName = sanitizeFileNamePart(recipientName.trim());
     if (!sanitizedName) {
         return `${year}.${month}.${day}_文書.pdf`;
@@ -55,7 +54,11 @@ function sanitizeFileNamePart(value) {
 export async function saveDocumentPdf(pageElement, recipientName) {
     const pdfBlob = await createDocumentPdfBlob(pageElement);
     const fileName = createDocumentPdfFileName(recipientName);
-    return savePdfBlob(pdfBlob, fileName);
+    const result = await savePdfBlob(pdfBlob, fileName);
+    return {
+        ...result,
+        pdfBlob
+    };
 }
 /**
  * A4プレビューからPDF Blobを生成する。

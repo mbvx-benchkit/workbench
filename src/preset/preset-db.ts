@@ -7,6 +7,8 @@
  * Base64化せずBlobのまま保存する。
  */
 
+import { MAX_ARCHIVE_ENTRY_BYTES, MAX_ARCHIVE_IMAGE_BYTES } from "../backup/backup-limits.js";
+
 import {
     PresetDocument,
     sortPresetDocuments
@@ -222,6 +224,78 @@ export async function deletePresetDocument(
     await completion;
 }
 
+
+/**
+ * バックアップ復元用：全件置換を一つのIndexedDBトランザクションで行う。
+ * 個別delete/putをawaitする方式では途中まで確定してしまうため、
+ * clearとputを同一トランザクションへ登録する。
+ */
+export async function replaceAllPresetDocuments(
+    documents: PresetDocument[]
+): Promise<void> {
+    const database = await openPresetDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    try {
+        store.clear();
+        for (const document of documents) {
+            store.put(document);
+        }
+    } catch (error) {
+        // リクエスト登録中の同期エラーでもclearだけがcommitされないよう中断。
+        transaction.abort();
+        void completion.catch(() => {});
+        throw error;
+    }
+    await completion;
+}
+
+/**
+ * バックアップ作成前の容量見積もり。
+ * カーソルで一件ずつBlob.sizeを調べ、getAllで全PDFをメモリへ載せない。
+ */
+export async function getPresetBackupFootprint(): Promise<{
+    count: number;
+    previewCount: number;
+    totalBytes: number;
+}> {
+    const database = await openPresetDatabase();
+    const tx = database.transaction(STORE_NAME, "readonly");
+    const done = waitForTransaction(tx);
+    const result = await new Promise<{count: number; previewCount: number; totalBytes: number}>((resolve, reject) => {
+        let count = 0;
+        let previewCount = 0;
+        let totalBytes = 0;
+        const request = tx.objectStore(STORE_NAME).openCursor();
+        request.onerror = () => reject(request.error ?? new Error("印刷物の容量を確認できませんでした。"));
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (!cursor) {
+                resolve({ count, previewCount, totalBytes });
+                return;
+            }
+            const doc = cursor.value as PresetDocument;
+            count++;
+            if (doc.pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+                reject(new Error("バックアップ対象の定型印刷物PDFが64MiBを超えています。"));
+                return;
+            }
+            totalBytes += doc.pdfBlob.size;
+            if (doc.previewBlob) {
+                if (doc.previewBlob.size > MAX_ARCHIVE_IMAGE_BYTES) {
+                    reject(new Error("バックアップ対象のプレビュー画像が32MiBを超えています。"));
+                    return;
+                }
+                previewCount++;
+                totalBytes += doc.previewBlob.size;
+            }
+            cursor.continue();
+        };
+    });
+    await done;
+    return result;
+}
 
 /**
  * 新規追加時のsortOrderを生成する。

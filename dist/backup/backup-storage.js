@@ -17,14 +17,25 @@
  * GOSPLAN13 / INVENTORY BATCHは
  * バックアップ対象外。
  */
-import { deletePresetDocument, getPresetDocuments, putPresetDocument, requestPersistentStorage } from "../preset/preset-db.js";
-import { parseDocumentTemplates, parseRedIndexData } from "./backup-types.js";
+import { getPresetDocuments, getPresetBackupFootprint, replaceAllPresetDocuments, requestPersistentStorage } from "../preset/preset-db.js";
+import { BackupSizeBudget, MAX_ARCHIVE_ENTRY_BYTES, MAX_ARCHIVE_ENTRIES, MAX_ARCHIVE_EXPANDED_BYTES } from "./backup-limits.js";
+import { parseDocumentTemplates, parseRedIndexData, MAX_PRINT_HISTORY_RECORDS } from "./backup-types.js";
 /* =========================================================
    DOCUMENT BUILDER Database
    ========================================================= */
 const DOCUMENT_DATABASE_NAME = "workbench-document-builder";
 const DOCUMENT_DATABASE_VERSION = 1;
 const DOCUMENT_STORE_NAME = "templates";
+/* =========================================================
+   PDF HISTORY Database (separate from the template database)
+   ========================================================= */
+const PRINT_HISTORY_DATABASE_NAME = "workbench-document-print-history";
+const PRINT_HISTORY_DATABASE_VERSION = 3;
+const PRINT_HISTORY_STATS_STORE_NAME = "history-stats";
+const PRINT_HISTORY_STATS_KEY = "total";
+const PRINT_HISTORY_METADATA_STORE_NAME = "history-meta";
+const PRINT_HISTORY_METADATA_INDEX_NAME = "createdAtId";
+const PRINT_HISTORY_STORE_NAME = "history";
 /* =========================================================
    RED INDEX
    ========================================================= */
@@ -36,16 +47,86 @@ const RED_INDEX_STORAGE_KEY = "workbench.red-index.v1";
  * 現在のWORKBENCH保存状態を取得する。
  */
 export async function readWorkbenchSnapshot() {
-    const [documentTemplates, presetDocuments] = await Promise.all([
+    const [documentTemplates, presetDocuments, printHistory] = await Promise.all([
         readDocumentTemplates(),
-        getPresetDocuments()
+        getPresetDocuments(),
+        readPrintHistory()
     ]);
     const redIndex = readRedIndexData();
     return {
         documentTemplates,
         redIndex,
-        presetDocuments
+        presetDocuments,
+        printHistory
     };
+}
+/**
+ * バックアップ用の全PDFを読み出す前に容量・件数の超過を検出する。
+ * PDF履歴は軽量メタデータのみ、定型印刷物は1件ずつcursorで確認する。
+ * JSONやファイル名の正確な容量はcreateBackupArchiveで最終検査する。
+ */
+export async function estimateWorkbenchBackupFootprint() {
+    const [presets, history] = await Promise.all([
+        getPresetBackupFootprint(),
+        readPrintHistoryFootprint()
+    ]);
+    if (history.count > MAX_PRINT_HISTORY_RECORDS) {
+        throw new Error(`PDF出力履歴は最大${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}件までバックアップできます。`);
+    }
+    const budget = new BackupSizeBudget();
+    // 固定のJSONエントリー5件。正確なUTF-8サイズはZIP生成前に検査する。
+    for (const name of ["manifest.json", "document_builder/templates.json",
+        "red_index/data.json", "preset_documents/documents.json",
+        "document_builder/print-history/history.json"]) {
+        budget.add(name, 0);
+    }
+    // 合計容量・ファイル数の予備検査（個別容量はcursor上で検証済み）。
+    const pdfCount = presets.count + history.count;
+    const imageCount = presets.previewCount;
+    if (pdfCount + imageCount > 0) {
+        // 計算をまとめて行い、PDFの実体を全件ロードしない。
+        const totalCount = budget.entries + pdfCount + imageCount;
+        const totalBytes = presets.totalBytes + history.totalBytes;
+        if (totalCount > MAX_ARCHIVE_ENTRIES) {
+            throw new Error("バックアップのファイル件数が上限を超えています。");
+        }
+        if (totalBytes > MAX_ARCHIVE_EXPANDED_BYTES) {
+            throw new Error("バックアップの合計容量が512MiBを超えています。");
+        }
+    }
+}
+async function readPrintHistoryFootprint() {
+    const db = await openPrintHistoryDatabase();
+    try {
+        const tx = db.transaction(PRINT_HISTORY_METADATA_STORE_NAME, "readonly");
+        const completion = waitForTransaction(tx);
+        const result = await new Promise((resolve, reject) => {
+            let count = 0;
+            let totalBytes = 0;
+            const req = tx.objectStore(PRINT_HISTORY_METADATA_STORE_NAME).openCursor();
+            req.onerror = () => reject(req.error ?? new Error("履歴容量を読み取れません。"));
+            req.onsuccess = () => {
+                const cursor = req.result;
+                if (!cursor) {
+                    resolve({ count, totalBytes });
+                    return;
+                }
+                const record = cursor.value;
+                if (record.pdfBytes > MAX_ARCHIVE_ENTRY_BYTES) {
+                    reject(new Error("出力履歴のPDFが64MiBを超えています。"));
+                    return;
+                }
+                count++;
+                totalBytes += record.pdfBytes;
+                cursor.continue();
+            };
+        });
+        await completion;
+        return result;
+    }
+    finally {
+        db.close();
+    }
 }
 /**
  * 現在の保存内容を
@@ -57,6 +138,7 @@ export async function readWorkbenchSnapshot() {
 export async function replaceWorkbenchSnapshot(snapshot) {
     await replaceDocumentTemplates(snapshot.documentTemplates);
     await replacePresetDocuments(snapshot.presetDocuments);
+    await replacePrintHistory(snapshot.printHistory);
     replaceRedIndexData(snapshot.redIndex);
     /**
      * origin全体のストレージ永続化を
@@ -102,9 +184,16 @@ async function replaceDocumentTemplates(templates) {
          * 途中で失敗すれば、
          * IndexedDB transaction全体がabortされる。
          */
-        store.clear();
-        for (const template of validatedTemplates) {
-            store.put(template);
+        try {
+            store.clear();
+            for (const template of validatedTemplates) {
+                store.put(template);
+            }
+        }
+        catch (error) {
+            transaction.abort();
+            void completion.catch(() => { });
+            throw error;
         }
         await completion;
     }
@@ -144,21 +233,117 @@ function replaceRedIndexData(data) {
    PRESET DOCUMENTS
    ========================================================= */
 async function replacePresetDocuments(documents) {
-    const currentDocuments = await getPresetDocuments();
-    /**
-     * 現在の定型印刷物を全件削除。
-     */
-    for (const document of currentDocuments) {
-        await deletePresetDocument(document.id);
+    await replaceAllPresetDocuments(documents);
+}
+/* =========================================================
+   DOCUMENT BUILDER PDF History
+   ========================================================= */
+function openPrintHistoryDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(PRINT_HISTORY_DATABASE_NAME, PRINT_HISTORY_DATABASE_VERSION);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            const upgrade = request.transaction;
+            if (!upgrade)
+                throw new Error("PDF履歴DBの更新を開始できませんでした。");
+            if (!db.objectStoreNames.contains(PRINT_HISTORY_STORE_NAME)) {
+                db.createObjectStore(PRINT_HISTORY_STORE_NAME, { keyPath: "id" });
+            }
+            const metaMissing = !db.objectStoreNames.contains(PRINT_HISTORY_METADATA_STORE_NAME);
+            let meta;
+            if (metaMissing) {
+                meta = db.createObjectStore(PRINT_HISTORY_METADATA_STORE_NAME, { keyPath: "id" });
+                meta.createIndex(PRINT_HISTORY_METADATA_INDEX_NAME, ["createdAt", "id"], { unique: true });
+            }
+            else {
+                meta = upgrade.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
+            }
+            if (!db.objectStoreNames.contains(PRINT_HISTORY_STATS_STORE_NAME)) {
+                db.createObjectStore(PRINT_HISTORY_STATS_STORE_NAME, { keyPath: "id" });
+            }
+            const stats = upgrade.objectStore(PRINT_HISTORY_STATS_STORE_NAME);
+            let count = 0;
+            let totalBytes = 0;
+            const cursor = metaMissing ? upgrade.objectStore(PRINT_HISTORY_STORE_NAME).openCursor()
+                : meta.openCursor();
+            cursor.onsuccess = () => {
+                const row = cursor.result;
+                if (!row) {
+                    stats.put({ id: PRINT_HISTORY_STATS_KEY, count, totalBytes });
+                    return;
+                }
+                const record = row.value;
+                const info = metaMissing
+                    ? { id: record.id, recipientName: record.recipientName, fileName: record.fileName,
+                        createdAt: record.createdAt, pdfBytes: record.pdfBlob.size }
+                    : row.value;
+                if (metaMissing)
+                    meta.put(info);
+                count++;
+                totalBytes += info.pdfBytes;
+                row.continue();
+            };
+        };
+        let blocked = false;
+        request.onsuccess = () => {
+            request.result.onversionchange = () => request.result.close();
+            if (blocked)
+                request.result.close();
+            else
+                resolve(request.result);
+        };
+        request.onerror = () => reject(request.error ?? new Error("PDF履歴データベースを開けませんでした。"));
+        request.onblocked = () => {
+            blocked = true;
+            reject(new Error("古いWORKBENCHが別タブで開いています。別タブを閉じて再読み込みしてください。"));
+        };
+    });
+}
+async function readPrintHistory() {
+    const db = await openPrintHistoryDatabase();
+    try {
+        const transaction = db.transaction(PRINT_HISTORY_STORE_NAME, "readonly");
+        const completion = waitForTransaction(transaction);
+        const entries = await requestToPromise(transaction.objectStore(PRINT_HISTORY_STORE_NAME).getAll());
+        await completion;
+        return entries;
     }
-    /**
-     * バックアップ内容をそのまま復元。
-     *
-     * id / sortOrder / createdAt / updatedAtも
-     * 元の値を保持する。
-     */
-    for (const document of documents) {
-        await putPresetDocument(document);
+    finally {
+        db.close();
+    }
+}
+async function replacePrintHistory(entries) {
+    const db = await openPrintHistoryDatabase();
+    try {
+        // 履歴の全件置換は単一トランザクション。途中失敗時は自動abort。
+        const transaction = db.transaction([PRINT_HISTORY_STORE_NAME, PRINT_HISTORY_METADATA_STORE_NAME, PRINT_HISTORY_STATS_STORE_NAME], "readwrite");
+        const completion = waitForTransaction(transaction);
+        const store = transaction.objectStore(PRINT_HISTORY_STORE_NAME);
+        const metadataStore = transaction.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
+        try {
+            store.clear();
+            metadataStore.clear();
+            for (const entry of entries) {
+                store.put(entry);
+                metadataStore.put({ id: entry.id, recipientName: entry.recipientName,
+                    fileName: entry.fileName, createdAt: entry.createdAt,
+                    pdfBytes: entry.pdfBlob.size });
+            }
+            transaction.objectStore(PRINT_HISTORY_STATS_STORE_NAME).put({
+                id: PRINT_HISTORY_STATS_KEY,
+                count: entries.length,
+                totalBytes: entries.reduce((sum, entry) => sum + entry.pdfBlob.size, 0)
+            });
+        }
+        catch (error) {
+            transaction.abort();
+            void completion.catch(() => { });
+            throw error;
+        }
+        await completion;
+    }
+    finally {
+        db.close();
     }
 }
 /* =========================================================
