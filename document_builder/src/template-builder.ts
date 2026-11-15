@@ -1,3 +1,8 @@
+import type { TemplateBuilderMode } from "./templates/template-editor-utils.js";
+export type { TemplateBuilderMode } from "./templates/template-editor-utils.js";
+import { createTemplateId, focusLater, requireElement, requireChild } from "./templates/template-editor-utils.js";
+import { getErrorMessage } from "./templates/template-editor-utils.js";
+
 import {
     DOCUMENT_PACKAGE_VERSION,
     DocumentTemplate,
@@ -10,15 +15,6 @@ import {
 import {
     downloadTemplateJson
 } from "./template-import.js";
-
-
-/* =========================================================
-   Types
-   ========================================================= */
-
-export type TemplateBuilderMode =
-    | "create"
-    | "edit";
 
 
 export type TemplateBuilderOptions = {
@@ -1129,37 +1125,6 @@ export function setupTemplateBuilder(
 
 
 /* =========================================================
-   Template ID
-   ========================================================= */
-
-function createTemplateId():
-    string {
-
-    const timestamp =
-        Date.now()
-            .toString(
-                36
-            );
-
-
-    const random =
-        Math.random()
-            .toString(
-                36
-            )
-            .slice(
-                2,
-                8
-            );
-
-
-    return (
-        `template-${timestamp}-${random}`
-    );
-}
-
-
-/* =========================================================
    Field Type
    ========================================================= */
 
@@ -1179,108 +1144,5 @@ function parseFieldType(
 
     throw new Error(
         "入力項目の種類が正しくありません。"
-    );
-}
-
-
-/* =========================================================
-   Error
-   ========================================================= */
-
-function getErrorMessage(
-    error: unknown
-): string {
-
-    if (
-        error instanceof
-        Error &&
-        error.message
-    ) {
-
-        return error.message;
-    }
-
-
-    return (
-        "処理に失敗しました。"
-    );
-}
-
-
-/* =========================================================
-   Focus
-   ========================================================= */
-
-function focusLater(
-    element: HTMLElement
-): void {
-
-    window.setTimeout(
-        () => {
-
-            element.focus();
-        },
-        0
-    );
-}
-
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-function requireElement<
-    T extends Element
->(
-    selector: string
-): T {
-
-    const element =
-        document.querySelector(
-            selector
-        );
-
-
-    if (
-        !element
-    ) {
-
-        throw new Error(
-            `${selector} が見つかりません。`
-        );
-    }
-
-
-    return (
-        element as T
-    );
-}
-
-
-function requireChild<
-    T extends Element
->(
-    parent: Element,
-    selector: string
-): T {
-
-    const element =
-        parent.querySelector(
-            selector
-        );
-
-
-    if (
-        !element
-    ) {
-
-        throw new Error(
-            `${selector} が見つかりません。`
-        );
-    }
-
-
-    return (
-        element as T
     );
 }

@@ -1,0 +1,195 @@
+
+
+
+/* =========================================================
+   Preview
+   ========================================================= */
+
+.document-preview-area {
+    min-width:
+        0;
+}
+
+
+.document-preview-header {
+    min-height:
+        3.4rem;
+
+    margin-bottom:
+        0.75rem;
+
+    display:
+        flex;
+
+    align-items:
+        flex-end;
+
+    justify-content:
+        space-between;
+}
+
+
+.document-preview-header__title {
+    margin:
+        0;
+
+    color:
+        #30343a;
+
+    font-size:
+        1rem;
+
+    font-weight:
+        750;
+}
+
+
+.document-preview-header__badge {
+    padding:
+        0.25rem 0.55rem;
+
+    border:
+        1px solid #dfe2e6;
+
+    border-radius:
+        9999px;
+
+    background:
+        rgba(255, 255, 255, 0.82);
+
+    color:
+        #737983;
+
+    font-size:
+        0.7rem;
+
+    font-weight:
+        700;
+}
+
+
+.document-preview-stage {
+    min-height:
+        calc(297mm + 4rem);
+
+    padding:
+        2rem clamp(1rem, 3vw, 3rem);
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    justify-content:
+        center;
+
+    overflow:
+        auto;
+
+    border:
+        1px solid #dfe2e6;
+
+    border-radius:
+        1rem;
+
+    background:
+        linear-gradient(135deg,
+            #eceef1 0%,
+            #e5e8ec 100%);
+}
+
+
+/* =========================================================
+   A4
+   ========================================================= */
+
+.document-page {
+    flex:
+        0 0 auto;
+
+    width:
+        210mm;
+
+    min-height:
+        297mm;
+
+    position:
+        relative;
+
+    overflow:
+        hidden;
+
+    background:
+        #ffffff;
+
+    color:
+        #111111;
+
+    box-shadow:
+        0 0.2rem 0.5rem rgba(0, 0, 0, 0.08),
+        0 1.25rem 3.5rem rgba(28, 39, 62, 0.14);
+}
+
+
+/*
+ * PDF化時だけA4寸法へ完全固定する。
+ *
+ * html2canvasへ影や余分な高さを
+ * 含ませないためのモード。
+ */
+.document-page--pdf-capture {
+    width:
+        210mm !important;
+
+    height:
+        297mm !important;
+
+    min-height:
+        297mm !important;
+
+    max-height:
+        297mm !important;
+
+    overflow:
+        hidden !important;
+
+    border:
+        0 !important;
+
+    box-shadow:
+        none !important;
+
+    background:
+        #ffffff !important;
+}
+
+
+.document-content {
+    width:
+        100%;
+
+    min-height:
+        297mm;
+
+    box-sizing:
+        border-box;
+
+    padding:
+        22mm 20mm 22mm;
+
+    font-family:
+        "Yu Mincho",
+        "YuMincho",
+        "Hiragino Mincho ProN",
+        serif;
+
+    font-size:
+        10.5pt;
+
+    line-height:
+        1.9;
+
+    overflow-wrap:
+        anywhere;
+}

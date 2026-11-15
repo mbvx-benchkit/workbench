@@ -1,0 +1,155 @@
+
+
+
+/* =========================================================
+   Builder Fields
+   ========================================================= */
+
+.template-builder-fields {
+    display:
+        grid;
+
+    gap:
+        0.65rem;
+}
+
+
+.template-builder-field {
+    padding:
+        0.8rem;
+
+    border:
+        1px solid #e2e5e9;
+
+    border-radius:
+        0.7rem;
+
+    background:
+        #fafbfc;
+}
+
+
+.template-builder-field__header {
+    margin-bottom:
+        0.7rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        0.5rem;
+}
+
+
+.template-builder-field__id-label {
+    margin-right:
+        0.4rem;
+
+    color:
+        #8b919a;
+
+    font-size:
+        0.65rem;
+}
+
+
+.template-builder-field__id {
+    margin-right:
+        0.5rem;
+
+    color:
+        #4d545e;
+
+    font-size:
+        0.7rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-builder-field__token {
+    padding:
+        0.15rem 0.4rem;
+
+    border-radius:
+        0.35rem;
+
+    background:
+        #eceff3;
+
+    color:
+        #545c67;
+
+    font-size:
+        0.68rem;
+}
+
+
+.template-builder-field__remove {
+    padding:
+        0;
+
+    border:
+        0;
+
+    background:
+        transparent;
+
+    color:
+        #a34848;
+
+    font-size:
+        0.7rem;
+
+    cursor:
+        pointer;
+}
+
+
+.template-builder-field__grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap:
+        0.7rem;
+}
+
+
+.template-builder-field__grid .template-builder-control+.template-builder-control {
+    margin-top:
+        0;
+}
+
+
+.template-builder-required {
+    margin-top:
+        0.65rem;
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.4rem;
+
+    color:
+        #606771;
+
+    font-size:
+        0.72rem;
+
+    cursor:
+        pointer;
+}

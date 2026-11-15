@@ -1,0 +1,64 @@
+
+
+
+/* =========================================================
+   ON状態
+   ========================================================= */
+
+.ribbon__option-input:checked+.ribbon__option-label::before {
+    background-color: #34c759;
+
+    box-shadow:
+        inset 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1),
+        0 0 0.45rem rgba(52, 199, 89, 0.2);
+}
+
+.ribbon__option-input:checked+.ribbon__option-label::after {
+    transform:
+        translateY(-50%) translateX(1rem);
+}
+
+/*
+ * ON状態で押している間は、
+ * 横長になった分だけ位置を少し調整する。
+ */
+.ribbon__option-input:checked+.ribbon__option-label:active::after {
+    transform:
+        translateY(-50%) translateX(0.85rem);
+}
+
+
+/* =========================================================
+   キーボードフォーカス
+   ========================================================= */
+
+.ribbon__option-input:focus-visible+.ribbon__option-label {
+    outline: 0.1875rem solid rgba(0, 122, 255, 0.35);
+    outline-offset: 0.125rem;
+}
+
+
+/* =========================================================
+   無効状態
+   ========================================================= */
+
+.ribbon__option-input:disabled+.ribbon__option-label {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+
+/* =========================================================
+   動きを減らす設定への対応
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ribbon__option-label,
+    .ribbon__option-label::before,
+    .ribbon__option-label::after {
+        transition: none;
+    }
+}

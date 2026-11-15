@@ -1,3 +1,6 @@
+import { getProductLabels, getLabelJan, getLabelImage } from "./export-utils.js";
+import { getLabelName } from "./export-utils.js";
+import { downloadJson } from "./export-utils.js";
 /**
  * export.ts
  *
@@ -22,76 +25,6 @@
    ========================================================= */
 const EXPORT_VERSION = 1;
 const EXPORT_FILE_PREFIX = "gosplan13";
-/* =========================================================
-   ラベルDOM取得
-   ========================================================= */
-/**
- * A4プレビュー内に存在する全ラベルを取得する。
- *
- * 画像ありモードで25〜48面が非表示になっていても、
- * DOM上には存在するため全件取得する。
- */
-function getProductLabels(preview) {
-    return Array.from(preview.querySelectorAll(".product-label"));
-}
-/* =========================================================
-   商品名取得
-   ========================================================= */
-function getLabelName(label) {
-    const input = label.querySelector(".product-label__name-input");
-    if (!input) {
-        throw new Error("商品名入力欄が見つかりません。");
-    }
-    return input.value;
-}
-/* =========================================================
-   JAN取得
-   ========================================================= */
-function getLabelJan(label) {
-    const input = label.querySelector(".product-label__jan-input");
-    if (!input) {
-        throw new Error("JAN入力欄が見つかりません。");
-    }
-    /*
-     * 入力内容をそのまま保存する。
-     *
-     * Export時にはJANの再検証や正規化を行わない。
-     * ユーザーが画面に入力している状態を
-     * そのまま復元できることを優先する。
-     */
-    return input.value;
-}
-/* =========================================================
-   商品画像取得
-   ========================================================= */
-/**
- * 画像プレビューへ設定されている
- * Base64 Data URLを取得する。
- *
- * 画像がない場合はnullを返す。
- */
-function getLabelImage(label) {
-    const image = label.querySelector(".product-label__image-preview");
-    if (!image) {
-        throw new Error("商品画像プレビューが見つかりません。");
-    }
-    const source = image.getAttribute("src");
-    if (!source
-        || source.trim() === "") {
-        return null;
-    }
-    /*
-     * 現在のGOSPLAN13では画像処理後の画像を
-     * Data URLとして保持する前提。
-     *
-     * ImportやlocalStorageでもそのまま
-     * img.srcへ戻せる形式となる。
-     */
-    if (!source.startsWith("data:image/")) {
-        console.warn("Base64 Data URLではない画像が検出されました。", source);
-    }
-    return source;
-}
 /* =========================================================
    1面分のデータ生成
    ========================================================= */
@@ -164,36 +97,6 @@ function createExportFileName(date = new Date()) {
  */
 export function stringifyExportData(data) {
     return JSON.stringify(data, null, 2);
-}
-/* =========================================================
-   JSONダウンロード
-   ========================================================= */
-function downloadJson(json, fileName) {
-    const blob = new Blob([json], {
-        type: "application/json;charset=utf-8",
-    });
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href =
-        objectUrl;
-    anchor.download =
-        fileName;
-    /*
-     * Firefoxなどを含め、
-     * DOMへ追加してからクリックする方が安定する。
-     */
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    /*
-     * click直後にrevokeすると、
-     * ブラウザによってはダウンロード開始前に
-     * URLが破棄される可能性があるため、
-     * 次のタスクで解放する。
-     */
-    window.setTimeout(() => {
-        URL.revokeObjectURL(objectUrl);
-    }, 0);
 }
 /* =========================================================
    Export実行

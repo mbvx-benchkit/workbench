@@ -1,3 +1,5 @@
+import { formatLocalDate } from "./templates/template-domain.js";
+import { requireRecord, requireString } from "./templates/template-domain.js";
 export const DOCUMENT_PACKAGE_VERSION = 1;
 /* =========================================================
    Validation patterns
@@ -274,16 +276,6 @@ function resolveDefaultValue(field) {
         "");
 }
 /* =========================================================
-   Local date
-   ========================================================= */
-function formatLocalDate(date) {
-    const year = String(date.getFullYear());
-    const month = String(date.getMonth() +
-        1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return (`${year}-${month}-${day}`);
-}
-/* =========================================================
    Clone
    ========================================================= */
 function cloneTemplate(template) {
@@ -297,26 +289,6 @@ function cloneTemplate(template) {
             ...template.document
         }
     };
-}
-/* =========================================================
-   Generic validation
-   ========================================================= */
-function requireRecord(value, message) {
-    if (typeof value !==
-        "object" ||
-        value ===
-            null ||
-        Array.isArray(value)) {
-        throw new Error(message);
-    }
-    return value;
-}
-function requireString(value, path) {
-    if (typeof value !==
-        "string") {
-        throw new Error(`${path} は文字列である必要があります。`);
-    }
-    return value;
 }
 function requireNonEmptyString(value, path) {
     const text = requireString(value, path).trim();

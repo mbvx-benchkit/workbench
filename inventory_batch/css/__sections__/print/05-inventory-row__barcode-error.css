@@ -1,0 +1,44 @@
+
+
+
+/* =========================================================
+   バーコードエラー
+   ========================================================= */
+
+.inventory-row__barcode-error {
+    width:
+        100% !important;
+
+    max-width:
+        100% !important;
+
+    overflow:
+        hidden !important;
+
+    color:
+        #000000 !important;
+
+    font-size:
+        0.36rem !important;
+
+    font-weight:
+        600 !important;
+
+    line-height:
+        1.1 !important;
+
+    text-align:
+        center !important;
+
+    white-space:
+        nowrap !important;
+
+    text-overflow:
+        ellipsis !important;
+}
+
+
+.inventory-row__barcode-error[hidden] {
+    display:
+        none !important;
+}

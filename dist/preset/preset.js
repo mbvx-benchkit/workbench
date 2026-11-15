@@ -1,9 +1,4 @@
-/**
- * preset.ts
- *
- * 定型印刷物機能の
- * 型定義・定数・純粋関数を管理する。
- */
+export { createPresetDocumentId } from "./preset-model-utils.js";
 /* =========================================================
    定数
    ========================================================= */
@@ -67,27 +62,5 @@ export function isPreviewImageFile(file) {
      * MIME Typeが空の場合への保険。
      */
     return /\.(png|jpe?g|webp)$/i.test(file.name);
-}
-/* =========================================================
-   ID
-   ========================================================= */
-export function createPresetDocumentId() {
-    if (typeof crypto !== "undefined" &&
-        typeof crypto.randomUUID === "function") {
-        return crypto.randomUUID();
-    }
-    /**
-     * randomUUID非対応環境用。
-     *
-     * 現行ブラウザでは基本的に
-     * randomUUID側が使用される。
-     */
-    return [
-        "preset",
-        Date.now(),
-        Math.random()
-            .toString(16)
-            .slice(2)
-    ].join("-");
 }
 //# sourceMappingURL=preset.js.map

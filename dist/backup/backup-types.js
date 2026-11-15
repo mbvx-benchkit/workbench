@@ -1,13 +1,4 @@
-/**
- * backup-types.ts
- *
- * WORKBENCHバックアップ形式の型定義と
- * インポートデータ検証を担当する。
- *
- * ZIP内部のJSONはすべて外部入力として扱い、
- * IndexedDB / localStorageへ書き込む前に
- * このファイルで構造を検証する。
- */
+import { requireRecord, requireString, requireNonNegativeInteger, requireFiniteNumber, requireUniqueIds, requireSafeArchivePath } from "./archive-validation.js";
 /* =========================================================
    Constants
    ========================================================= */
@@ -288,75 +279,11 @@ function parsePresetDocumentMetadata(value, index) {
     requireNonNegativeInteger(record.updatedAt, `${path}.updatedAt`);
     return value;
 }
-/* =========================================================
-   Generic Validation
-   ========================================================= */
-function requireRecord(value, path) {
-    if (typeof value !==
-        "object" ||
-        value ===
-            null ||
-        Array.isArray(value)) {
-        throw new Error(`${path} が不正です。`);
-    }
-    return value;
-}
-function requireString(value, path, maxLength, required = false) {
-    if (typeof value !==
-        "string") {
-        throw new Error(`${path} が文字列ではありません。`);
-    }
-    if (required &&
-        value.length ===
-            0) {
-        throw new Error(`${path} が空です。`);
-    }
-    if (value.length >
-        maxLength) {
-        throw new Error(`${path} が長すぎます。`);
-    }
-    return value;
-}
 function requireNullableString(value, path, maxLength) {
     if (value ===
         null) {
         return null;
     }
     return requireString(value, path, maxLength, true);
-}
-function requireNonNegativeInteger(value, path) {
-    if (typeof value !==
-        "number" ||
-        !Number.isSafeInteger(value) ||
-        value <
-            0) {
-        throw new Error(`${path} が不正です。`);
-    }
-    return value;
-}
-function requireFiniteNumber(value, path) {
-    if (typeof value !==
-        "number" ||
-        !Number.isFinite(value)) {
-        throw new Error(`${path} が不正です。`);
-    }
-    return value;
-}
-function requireUniqueIds(values, label) {
-    const ids = new Set();
-    for (const value of values) {
-        if (ids.has(value.id)) {
-            throw new Error(`${label}に重複したIDがあります: ${value.id}`);
-        }
-        ids.add(value.id);
-    }
-}
-function requireSafeArchivePath(path, requiredPrefix) {
-    if (!path.startsWith(requiredPrefix) ||
-        path.includes("..") ||
-        path.includes("\\") ||
-        path.startsWith("/")) {
-        throw new Error(`ZIP内のファイルパスが不正です: ${path}`);
-    }
 }
 //# sourceMappingURL=backup-types.js.map

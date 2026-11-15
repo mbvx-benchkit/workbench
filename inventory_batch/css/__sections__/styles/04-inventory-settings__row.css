@@ -1,0 +1,313 @@
+
+
+
+/* =========================================================
+   設定行
+   ========================================================= */
+
+.inventory-settings__row {
+    min-width:
+        0;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        5.75rem minmax(0, 1fr);
+
+    align-items:
+        center;
+
+    gap:
+        1.1rem;
+
+    min-height:
+        2.875rem;
+}
+
+
+.inventory-settings__group-title {
+    margin:
+        0;
+
+    padding:
+        0;
+
+    color:
+        #737a84;
+
+    font-size:
+        0.75rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.4;
+}
+
+
+/* =========================================================
+   Visually hidden
+   ========================================================= */
+
+.inventory-visually-hidden {
+    position:
+        absolute !important;
+
+    width:
+        1px !important;
+
+    height:
+        1px !important;
+
+    margin:
+        -1px !important;
+
+    padding:
+        0 !important;
+
+    overflow:
+        hidden !important;
+
+    clip:
+        rect(0 0 0 0) !important;
+
+    clip-path:
+        inset(50%) !important;
+
+    border:
+        0 !important;
+
+    white-space:
+        nowrap !important;
+}
+
+
+/* =========================================================
+   除外条件
+   ========================================================= */
+
+.inventory-settings__options {
+    min-width:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        0.5rem;
+}
+
+
+.inventory-filter-chip {
+    position:
+        relative;
+
+    display:
+        inline-block;
+
+    cursor:
+        pointer;
+}
+
+
+.inventory-filter-chip__input {
+    position:
+        absolute;
+
+    width:
+        1px;
+
+    height:
+        1px;
+
+    margin:
+        -1px;
+
+    overflow:
+        hidden;
+
+    clip:
+        rect(0 0 0 0);
+
+    clip-path:
+        inset(50%);
+
+    white-space:
+        nowrap;
+}
+
+
+.inventory-filter-chip__label {
+    position:
+        relative;
+
+    top:
+        0;
+
+    min-height:
+        2.125rem;
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.5rem;
+
+    padding:
+        0.35rem 0.8rem;
+
+    color:
+        #535a64;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #dde1e6;
+
+    border-radius:
+        0.55rem;
+
+    font-size:
+        0.75rem;
+
+    font-weight:
+        600;
+
+    line-height:
+        1.2;
+
+    white-space:
+        nowrap;
+
+    user-select:
+        none;
+
+    transform:
+        none !important;
+
+    translate:
+        none !important;
+
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
+}
+
+
+.inventory-filter-chip__label::before {
+    content:
+        "";
+
+    width:
+        0.85rem;
+
+    height:
+        0.85rem;
+
+    flex:
+        0 0 auto;
+
+    box-sizing:
+        border-box;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1.5px solid #b8bec6;
+
+    border-radius:
+        0.25rem;
+
+    color:
+        #ffffff;
+
+    font-size:
+        0.58rem;
+
+    font-weight:
+        900;
+
+    line-height:
+        1;
+}
+
+
+.inventory-filter-chip__input:checked+.inventory-filter-chip__label {
+    top:
+        0;
+
+    color:
+        #303741;
+
+    background-color:
+        #f6f8fa;
+
+    border-color:
+        #c9d0d9;
+
+    transform:
+        none !important;
+
+    translate:
+        none !important;
+}
+
+
+.inventory-filter-chip__input:checked+.inventory-filter-chip__label::before {
+    content:
+        "✓";
+
+    background-color:
+        #68717d;
+
+    border-color:
+        #68717d;
+}
+
+
+.inventory-filter-chip:hover .inventory-filter-chip__label,
+.inventory-filter-chip:active .inventory-filter-chip__label {
+    top:
+        0;
+
+    transform:
+        none !important;
+
+    translate:
+        none !important;
+}
+
+
+.inventory-filter-chip__input:focus-visible+.inventory-filter-chip__label {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.125rem;
+
+    transform:
+        none !important;
+
+    translate:
+        none !important;
+}

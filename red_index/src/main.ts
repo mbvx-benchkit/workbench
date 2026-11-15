@@ -1,3 +1,6 @@
+import type { ElementConstructor } from "./ui-utils.js";
+import { getErrorMessage } from "./ui-utils.js";
+
 import {
     createEmptyCategory
 } from "./model.js";
@@ -339,37 +342,6 @@ function renderAll(): void {
         data
     );
 }
-
-
-/* =========================================================
-   Error
-   ========================================================= */
-
-function getErrorMessage(
-    error: unknown
-): string {
-
-    if (
-        error instanceof Error
-    ) {
-
-        return error.message;
-    }
-
-
-    return (
-        "処理中に不明なエラーが発生しました。"
-    );
-}
-
-
-/* =========================================================
-   DOM Helper
-   ========================================================= */
-
-type ElementConstructor<T extends Element> = {
-    new(): T;
-};
 
 
 function requireElement<T extends Element>(

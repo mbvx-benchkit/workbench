@@ -45,10 +45,12 @@
          Scripts
          ===================================================== -->
 
+    <link rel="stylesheet" href="../css/footer.css">
     <script src="../dist/site-header.js" type="module"></script>
 
     <script src="./dist/main.bundle.js" type="module"></script>
 
+    <script src="../dist/workbench-build-info.js" type="module"></script>
 </head>
 
 
@@ -69,9 +71,9 @@
                  Ribbon
                  ================================================= -->
 
-            <section class="document-ribbon" aria-label="文書操作">
+            <section class="document-ribbon workbench-ribbon" aria-label="文書操作">
 
-                <div class="document-ribbon__left">
+                <div class="document-ribbon__left workbench-ribbon__group">
 
                     <input id="json-import-input" type="file" accept=".json,application/json" hidden>
 
@@ -121,7 +123,7 @@
                 </div>
 
 
-                <div class="document-ribbon__right">
+                <div class="document-ribbon__right workbench-ribbon__group">
 
                     <button id="print-history-button" type="button" class="glass-button"
                         aria-haspopup="dialog" aria-controls="print-history-dialog">
@@ -1043,11 +1045,10 @@
          ===================================================== -->
 
     <footer class="footer">
-
-        <small>
-            Copyright © 2026 Morbee. All Rights Reserved.
-        </small>
-
+        <div class="footer__inner">
+            <small class="footer__copyright">Copyright © 2026 Morbee. All Rights Reserved.</small>
+            <small class="footer__build-info" data-workbench-build-info>WORKBENCH v1.1.0</small>
+        </div>
     </footer>
 
 </body>

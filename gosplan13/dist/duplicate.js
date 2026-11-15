@@ -1,3 +1,6 @@
+import { getProductLabels, getJanInput, getImageInput, getImagePreview, getImagePlaceholder } from "./label-input-utils.js";
+import { getNameInput } from "./label-input-utils.js";
+import { notifyInputChanged } from "./label-input-utils.js";
 /**
  * duplicate.ts
  *
@@ -46,12 +49,6 @@ const IMAGE_MODE_LABEL_COUNT = 24;
  * 画像なしモードでは48面。
  */
 const NO_IMAGE_MODE_LABEL_COUNT = 48;
-/* =========================================================
-   ラベル取得
-   ========================================================= */
-function getProductLabels(preview) {
-    return Array.from(preview.querySelectorAll(".product-label"));
-}
 /**
  * 現在のモードで操作対象となるラベルだけ取得する。
  *
@@ -67,63 +64,6 @@ function getActiveLabels(preview, imageMode) {
         ? IMAGE_MODE_LABEL_COUNT
         : NO_IMAGE_MODE_LABEL_COUNT;
     return labels.slice(0, count);
-}
-/* =========================================================
-   DOM取得
-   ========================================================= */
-function getNameInput(label) {
-    const input = label.querySelector(".product-label__name-input");
-    if (!input) {
-        throw new Error("商品名入力欄が見つかりません。");
-    }
-    return input;
-}
-function getJanInput(label) {
-    const input = label.querySelector(".product-label__jan-input");
-    if (!input) {
-        throw new Error("JAN入力欄が見つかりません。");
-    }
-    return input;
-}
-function getImageInput(label) {
-    const input = label.querySelector(".product-label__image-input");
-    if (!input) {
-        throw new Error("商品画像入力欄が見つかりません。");
-    }
-    return input;
-}
-function getImagePreview(label) {
-    const image = label.querySelector(".product-label__image-preview");
-    if (!image) {
-        throw new Error("商品画像プレビューが見つかりません。");
-    }
-    return image;
-}
-function getImagePlaceholder(label) {
-    const placeholder = label.querySelector(".product-label__image-placeholder");
-    if (!placeholder) {
-        throw new Error("商品画像プレースホルダーが見つかりません。");
-    }
-    return placeholder;
-}
-/* =========================================================
-   入力変更通知
-   ========================================================= */
-/**
- * プログラムからvalueを書き換えても、
- * 通常のユーザー入力と同じように
- * JAN描画やstorage.tsへ変更を通知する。
- */
-function notifyInputChanged(input) {
-    input.dispatchEvent(new Event("input", {
-        bubbles: true,
-    }));
-    input.dispatchEvent(new Event("change", {
-        bubbles: true,
-    }));
-    input.dispatchEvent(new FocusEvent("focusout", {
-        bubbles: true,
-    }));
 }
 /* =========================================================
    ラベル内容取得

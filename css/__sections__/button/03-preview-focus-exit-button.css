@@ -1,0 +1,171 @@
+
+
+
+/* =========================================================
+   集中表示解除ボタン
+   ========================================================= */
+
+.preview-focus-exit-button {
+    position: fixed;
+    z-index: 3000;
+
+    left: 1rem;
+    bottom: 3.7rem;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transform:
+        translateY(0.75rem) scale(0.9);
+
+    transition:
+        opacity 200ms ease,
+        visibility 200ms ease,
+        transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.is-preview-only .preview-focus-exit-button {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+
+    transform:
+        translateY(0) scale(1);
+}
+
+
+/* =========================================================
+   アイコンボタン用ツールチップ
+   ========================================================= */
+
+/*
+ * ツールチップをボタン外へ描画するため、
+ * 対象ボタンだけoverflowをvisibleへ変更する。
+ */
+.glass-button--with-tooltip {
+    position: relative;
+
+    overflow: visible;
+}
+
+/*
+ * overflow:visibleでは光沢帯が外へ飛び出すため、
+ * ツールチップ付きアイコンボタンでは光沢を無効化する。
+ */
+.glass-button--with-tooltip::before {
+    display: none;
+}
+
+.glass-button__tooltip {
+    position: absolute;
+    z-index: 4000;
+
+    top: calc(100% + 0.5rem);
+    left: 50%;
+
+    width: max-content;
+    max-width: 12rem;
+    padding: 0.375rem 0.625rem;
+
+    box-sizing: border-box;
+
+    color: #ffffff;
+
+    background-color:
+        rgb(31 41 55 / 96%);
+
+    border-radius: 0.375rem;
+
+    box-shadow:
+        0 0.25rem 0.75rem rgb(0 0 0 / 22%);
+
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transform:
+        translateX(-50%) translateY(-0.25rem);
+
+    transition:
+        opacity 140ms ease,
+        visibility 140ms ease,
+        transform 140ms ease;
+}
+
+.glass-button--with-tooltip:hover .glass-button__tooltip,
+.glass-button--with-tooltip:focus-visible .glass-button__tooltip {
+    opacity: 1;
+    visibility: visible;
+
+    transform:
+        translateX(-50%) translateY(0);
+}
+
+
+/* =========================================================
+   左下固定ボタン用ツールチップ
+   ========================================================= */
+
+.glass-button__tooltip--right {
+    top: 50%;
+    left: calc(100% + 0.625rem);
+
+    transform:
+        translateX(-0.25rem) translateY(-50%);
+}
+
+.glass-button--with-tooltip:hover .glass-button__tooltip--right,
+.glass-button--with-tooltip:focus-visible .glass-button__tooltip--right {
+    transform:
+        translateX(0) translateY(-50%);
+}
+
+
+/* =========================================================
+   動きを減らす設定
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .glass-button,
+    .glass-button::before,
+    .glass-button__tooltip,
+    .preview-focus-exit-button,
+    .ribbon__menu button {
+        transition: none;
+    }
+}
+
+.preview-focus-print-button {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 3000;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transform:
+        translateY(0.75rem) scale(0.95);
+
+    transition:
+        opacity 200ms ease,
+        visibility 200ms ease,
+        transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.is-preview-only .preview-focus-print-button {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+
+    transform:
+        translateY(0) scale(1);
+}

@@ -1,0 +1,269 @@
+
+
+
+/* =========================================================
+   Editor
+   ========================================================= */
+
+.preset-editor {
+    display:
+        grid;
+
+    gap:
+        1rem;
+}
+
+
+/* =========================================================
+   Editor Field
+   ========================================================= */
+
+.preset-editor__field {
+    min-width:
+        0;
+
+    display:
+        grid;
+
+    gap:
+        0.4rem;
+}
+
+
+fieldset.preset-editor__field {
+    margin:
+        0;
+
+    padding:
+        0;
+
+    border:
+        0;
+
+    min-inline-size:
+        0;
+}
+
+
+.preset-editor__label {
+    padding:
+        0;
+
+    color:
+        #374151;
+
+    font-size:
+        0.78rem;
+
+    font-weight:
+        700;
+}
+
+
+.preset-editor__required {
+    color:
+        #9f1239;
+}
+
+
+.preset-editor__optional {
+    margin-left:
+        0.35rem;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        0.68rem;
+
+    font-weight:
+        500;
+}
+
+
+/* =========================================================
+   Editor Inputs
+   ========================================================= */
+
+.preset-editor__input,
+.preset-editor__textarea {
+    width:
+        100%;
+
+    margin:
+        0;
+
+    padding:
+        0.7rem 0.75rem;
+
+    color:
+        #1f2937;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #d9dde3;
+
+    border-radius:
+        0.6rem;
+
+    font:
+        inherit;
+
+    font-size:
+        0.82rem;
+
+    outline:
+        none;
+
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+
+.preset-editor__textarea {
+    min-height:
+        5.5rem;
+
+    resize:
+        vertical;
+
+    line-height:
+        1.55;
+}
+
+
+.preset-editor__input:focus,
+.preset-editor__textarea:focus {
+    border-color:
+        #9ca3af;
+
+    box-shadow:
+        0 0 0 0.1875rem rgb(156 163 175 / 15%);
+}
+
+
+/* =========================================================
+   Editor 用紙方向
+   ========================================================= */
+
+.preset-editor__orientation {
+    gap:
+        0.55rem;
+}
+
+
+.preset-editor__radio-group {
+    display:
+        flex;
+
+    align-items:
+        stretch;
+
+    gap:
+        0.5rem;
+}
+
+
+.preset-editor__radio {
+    min-width:
+        7rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.5rem;
+
+    padding:
+        0.65rem 0.8rem;
+
+    color:
+        #4b5563;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #d9dde3;
+
+    border-radius:
+        0.6rem;
+
+    font-size:
+        0.8rem;
+
+    font-weight:
+        600;
+
+    cursor:
+        pointer;
+
+    user-select:
+        none;
+
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+
+.preset-editor__radio:hover {
+    border-color:
+        #bfc5cd;
+}
+
+
+.preset-editor__radio:has(.preset-editor__radio-input:checked) {
+    color:
+        #1f2937;
+
+    background-color:
+        #f4f5f7;
+
+    border-color:
+        #9ca3af;
+
+    box-shadow:
+        inset 0 0 0 1px rgb(156 163 175 / 15%);
+}
+
+
+.preset-editor__radio:has(.preset-editor__radio-input:focus-visible) {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.125rem;
+}
+
+
+.preset-editor__radio-input {
+    width:
+        0.95rem;
+
+    height:
+        0.95rem;
+
+    flex:
+        0 0 auto;
+
+    margin:
+        0;
+
+    accent-color:
+        #374151;
+}
+
+
+.preset-editor__radio-label {
+    line-height:
+        1.2;
+}

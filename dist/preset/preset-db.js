@@ -1,3 +1,5 @@
+import { requestToPromise, waitForTransaction } from "./preset-db-utils.js";
+export { requestPersistentStorage } from "./preset-db-utils.js";
 /**
  * preset-db.ts
  *
@@ -151,25 +153,6 @@ export async function getNextPresetSortOrder() {
     return (maximumSortOrder +
         1);
 }
-/**
- * ブラウザに対し、
- * ストレージを可能なら永続化するよう要求する。
- *
- * falseでも保存機能そのものは使用できる。
- */
-export async function requestPersistentStorage() {
-    if (!navigator.storage ||
-        typeof navigator.storage.persist !==
-            "function") {
-        return false;
-    }
-    try {
-        return await navigator.storage.persist();
-    }
-    catch {
-        return false;
-    }
-}
 /* =========================================================
    Open Database
    ========================================================= */
@@ -224,39 +207,5 @@ function openPresetDatabase() {
                 };
         });
     return databasePromise;
-}
-/* =========================================================
-   IndexedDB Utility
-   ========================================================= */
-function requestToPromise(request) {
-    return new Promise((resolve, reject) => {
-        request.onsuccess =
-            () => {
-                resolve(request.result);
-            };
-        request.onerror =
-            () => {
-                reject(request.error ??
-                    new Error("IndexedDBの処理に失敗しました。"));
-            };
-    });
-}
-function waitForTransaction(transaction) {
-    return new Promise((resolve, reject) => {
-        transaction.oncomplete =
-            () => {
-                resolve();
-            };
-        transaction.onerror =
-            () => {
-                reject(transaction.error ??
-                    new Error("IndexedDBトランザクションに失敗しました。"));
-            };
-        transaction.onabort =
-            () => {
-                reject(transaction.error ??
-                    new Error("IndexedDBトランザクションが中断されました。"));
-            };
-    });
 }
 //# sourceMappingURL=preset-db.js.map

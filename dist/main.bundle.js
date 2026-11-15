@@ -2400,6 +2400,41 @@ var require_jszip_min = __commonJS({
   }
 });
 
+// dist/preset/preset-db-utils.js
+async function requestPersistentStorage() {
+  if (!navigator.storage || typeof navigator.storage.persist !== "function") {
+    return false;
+  }
+  try {
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
+function requestToPromise(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
+  });
+}
+function waitForTransaction(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
+    transaction.onabort = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+    };
+  });
+}
+
 // dist/backup/backup-limits.js
 var MIB = 1024 * 1024;
 var MAX_ARCHIVE_ENTRIES = 12e3;
@@ -2433,6 +2468,18 @@ var BackupSizeBudget = class {
     }
   }
 };
+
+// dist/preset/preset-model-utils.js
+function createPresetDocumentId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return [
+    "preset",
+    Date.now(),
+    Math.random().toString(16).slice(2)
+  ].join("-");
+}
 
 // dist/preset/preset.js
 var PRESET_PDF_MIME_TYPE = "application/pdf";
@@ -2470,16 +2517,6 @@ function isPreviewImageFile(file) {
     return true;
   }
   return /\.(png|jpe?g|webp)$/i.test(file.name);
-}
-function createPresetDocumentId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return [
-    "preset",
-    Date.now(),
-    Math.random().toString(16).slice(2)
-  ].join("-");
 }
 
 // dist/preset/preset-db.js
@@ -2580,16 +2617,6 @@ async function getNextPresetSortOrder() {
   }, -1);
   return maximumSortOrder + 1;
 }
-async function requestPersistentStorage() {
-  if (!navigator.storage || typeof navigator.storage.persist !== "function") {
-    return false;
-  }
-  try {
-    return await navigator.storage.persist();
-  } catch {
-    return false;
-  }
-}
 function openPresetDatabase() {
   if (databasePromise) {
     return databasePromise;
@@ -2626,28 +2653,41 @@ function openPresetDatabase() {
   });
   return databasePromise;
 }
-function requestToPromise(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-    request.onerror = () => {
-      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-  });
-}
-function waitForTransaction(transaction) {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => {
-      resolve();
-    };
-    transaction.onerror = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-    transaction.onabort = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
-    };
-  });
+
+// dist/preset/preset-render-utils.js
+function createAddCard(onAddRequested) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "preset-card preset-card--add";
+  card.setAttribute("aria-label", "\u5B9A\u578B\u5370\u5237\u7269\u3092\u65B0\u898F\u8FFD\u52A0");
+  card.innerHTML = `
+        <div class="preset-card__add-content">
+
+            <div
+                class="preset-card__add-icon"
+                aria-hidden="true"
+            >
+                <svg
+                    viewBox="0 -960 960 960"
+                >
+                    <path
+                        d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                    />
+                </svg>
+            </div>
+
+            <p class="preset-card__add-title">
+                \u65B0\u898F\u8FFD\u52A0
+            </p>
+
+            <p class="preset-card__add-description">
+                \u3053\u306EPC\u306B\u5B9A\u578B\u5370\u5237\u7269\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002
+            </p>
+
+        </div>
+    `;
+  card.addEventListener("click", onAddRequested);
+  return card;
 }
 
 // dist/preset/preset-render.js
@@ -2732,40 +2772,6 @@ function createPresetContent(presetDocument) {
   content.append(titleRow, description);
   return content;
 }
-function createAddCard(onAddRequested) {
-  const card = document.createElement("button");
-  card.type = "button";
-  card.className = "preset-card preset-card--add";
-  card.setAttribute("aria-label", "\u5B9A\u578B\u5370\u5237\u7269\u3092\u65B0\u898F\u8FFD\u52A0");
-  card.innerHTML = `
-        <div class="preset-card__add-content">
-
-            <div
-                class="preset-card__add-icon"
-                aria-hidden="true"
-            >
-                <svg
-                    viewBox="0 -960 960 960"
-                >
-                    <path
-                        d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
-                    />
-                </svg>
-            </div>
-
-            <p class="preset-card__add-title">
-                \u65B0\u898F\u8FFD\u52A0
-            </p>
-
-            <p class="preset-card__add-description">
-                \u3053\u306EPC\u306B\u5B9A\u578B\u5370\u5237\u7269\u3092\u8FFD\u52A0\u3057\u307E\u3059\u3002
-            </p>
-
-        </div>
-    `;
-  card.addEventListener("click", onAddRequested);
-  return card;
-}
 function openPresetPdf(presetDocument) {
   const objectUrl = URL.createObjectURL(presetDocument.pdfBlob);
   const link = document.createElement("a");
@@ -2784,8 +2790,32 @@ function revokePreviewObjectUrls() {
   previewObjectUrls = [];
 }
 
-// dist/preset/preset-manager.js
-function setupPresetManager(options) {
+// dist/preset/preset-manager-utils.js
+function requireElement(selector) {
+  const element = document.querySelector(selector);
+  if (!element) {
+    throw new Error(`\u5FC5\u8981\u306A\u8981\u7D20\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093: ${selector}`);
+  }
+  return element;
+}
+function formatBytes(bytes) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const kilobytes = bytes / 1024;
+  if (kilobytes < 1024) {
+    return `${kilobytes.toFixed(1)} KB`;
+  }
+  const megabytes = kilobytes / 1024;
+  if (megabytes < 1024) {
+    return `${megabytes.toFixed(1)} MB`;
+  }
+  const gigabytes = megabytes / 1024;
+  return `${gigabytes.toFixed(2)} GB`;
+}
+
+// dist/preset/preset-manager-elements.js
+function resolvePresetManagerElements() {
   const settingsButton = requireElement("#preset-settings-button");
   const dialog = requireElement("#preset-manager-dialog");
   const listView = requireElement("#preset-manager-list-view");
@@ -2807,9 +2837,244 @@ function setupPresetManager(options) {
   const editorError = requireElement("#preset-editor-error");
   const cancelButton = requireElement("#preset-editor-cancel-button");
   const saveButton = requireElement("#preset-editor-save-button");
+  return { settingsButton, dialog, listView, addButton, managerList, editorView, editorBackButton, editorHeadingTitle, editorForm, editorIdInput, titleInput, descriptionInput, portraitInput, landscapeInput, pdfInput, currentPdf, previewInput, currentPreview, editorError, cancelButton, saveButton };
+}
+
+// dist/preset/preset-manager-events.js
+function bindPresetManagerEvents(elements, handlers) {
+  const { settingsButton, dialog, addButton, editorBackButton, editorForm, cancelButton } = elements;
+  settingsButton.addEventListener("click", () => {
+    void handlers.openManager();
+  });
+  addButton.addEventListener("click", () => {
+    handlers.openCreateEditorFromManager();
+  });
+  editorBackButton.addEventListener("click", () => {
+    handlers.leaveEditor();
+  });
+  cancelButton.addEventListener("click", () => {
+    handlers.leaveEditor();
+  });
+  editorForm.addEventListener("submit", (event) => {
+    void handlers.handleSubmit(event);
+  });
+  dialog.addEventListener("close", () => {
+    handlers.revokeManagerPreviewObjectUrls();
+    handlers.resetEditor();
+    handlers.resetEditorOrigin();
+    editorBackButton.hidden = true;
+    handlers.showListView();
+  });
+}
+
+// dist/preset/preset-manager-submit.js
+function createPresetEditorSubmit(deps) {
+  const { titleInput, descriptionInput, pdfInput, previewInput, saveButton, dialog, getSelectedOrientation, hideEditorError, showEditorError, notifyChanged, refreshManagerList, resetEditor, showListView } = deps;
+  async function handleSubmit(event) {
+    const editingDocument = deps.editingDocument;
+    event.preventDefault();
+    hideEditorError();
+    const title = titleInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const orientation = getSelectedOrientation();
+    if (title.length === 0) {
+      showEditorError("\u30BF\u30A4\u30C8\u30EB\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      titleInput.focus();
+      return;
+    }
+    const selectedPdf = pdfInput.files?.[0] ?? null;
+    const selectedPreview = previewInput.files?.[0] ?? null;
+    if (!editingDocument && !selectedPdf) {
+      showEditorError("PDF\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      pdfInput.focus();
+      return;
+    }
+    if (selectedPdf && !isPdfFile(selectedPdf)) {
+      showEditorError("PDF\u30D5\u30A1\u30A4\u30EB\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      pdfInput.focus();
+      return;
+    }
+    if (selectedPreview && !isPreviewImageFile(selectedPreview)) {
+      showEditorError("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306FPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u304B\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      previewInput.focus();
+      return;
+    }
+    saveButton.disabled = true;
+    const originalButtonText = saveButton.textContent;
+    saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
+    try {
+      const now = Date.now();
+      let presetDocument;
+      if (editingDocument) {
+        presetDocument = {
+          ...editingDocument,
+          title,
+          description,
+          orientation,
+          pdfFileName: selectedPdf ? selectedPdf.name : editingDocument.pdfFileName,
+          pdfMimeType: selectedPdf ? selectedPdf.type || "application/pdf" : editingDocument.pdfMimeType,
+          pdfBlob: selectedPdf ?? editingDocument.pdfBlob,
+          previewFileName: selectedPreview ? selectedPreview.name : editingDocument.previewFileName,
+          previewMimeType: selectedPreview ? selectedPreview.type || null : editingDocument.previewMimeType,
+          previewBlob: selectedPreview ?? editingDocument.previewBlob,
+          updatedAt: now
+        };
+      } else {
+        if (!selectedPdf) {
+          throw new Error("PDF\u304C\u9078\u629E\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+        }
+        const sortOrder = await getNextPresetSortOrder();
+        presetDocument = {
+          id: createPresetDocumentId(),
+          title,
+          description,
+          orientation,
+          pdfFileName: selectedPdf.name,
+          pdfMimeType: selectedPdf.type || "application/pdf",
+          pdfBlob: selectedPdf,
+          previewFileName: selectedPreview ? selectedPreview.name : null,
+          previewMimeType: selectedPreview ? selectedPreview.type || null : null,
+          previewBlob: selectedPreview,
+          sortOrder,
+          createdAt: now,
+          updatedAt: now
+        };
+      }
+      await putPresetDocument(presetDocument);
+      void requestPersistentStorage();
+      deps.editingDocument = null;
+      await notifyChanged();
+      if (deps.editorOrigin === "manager") {
+        await refreshManagerList();
+        resetEditor();
+        showListView();
+      } else {
+        dialog.close();
+      }
+    } catch (error) {
+      console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+      showEditorError("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = originalButtonText;
+    }
+  }
+  return { handleSubmit };
+}
+
+// dist/preset/preset-manager-list-view.js
+function createPresetManagerListView(deps) {
+  const { managerList, revokeManagerPreviewObjectUrls, openEditEditor, handleDelete, createActionButton, formatBytes: formatBytes2 } = deps;
+  const managerPreviewObjectUrls = { push: (url) => deps.rememberPreviewUrl(url) };
+  function renderManagerEmpty() {
+    const empty = document.createElement("div");
+    empty.className = "preset-manager-empty";
+    empty.textContent = "\u5B9A\u578B\u5370\u5237\u7269\u306F\u307E\u3060\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002";
+    managerList.appendChild(empty);
+  }
+  function renderManagerListError() {
+    revokeManagerPreviewObjectUrls();
+    managerList.replaceChildren();
+    const error = document.createElement("div");
+    error.className = "preset-manager-empty";
+    error.textContent = "\u4FDD\u5B58\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
+    managerList.appendChild(error);
+  }
+  function createManagerItem(presetDocument) {
+    const item = document.createElement("article");
+    item.className = "preset-manager-item";
+    item.appendChild(createManagerPreview(presetDocument));
+    item.appendChild(createManagerBody(presetDocument));
+    item.appendChild(createManagerActions(presetDocument));
+    return item;
+  }
+  function createManagerPreview(presetDocument) {
+    const preview = document.createElement("div");
+    preview.className = "preset-manager-item__preview";
+    if (presetDocument.previewBlob) {
+      const objectUrl = URL.createObjectURL(presetDocument.previewBlob);
+      managerPreviewObjectUrls.push(objectUrl);
+      const image = document.createElement("img");
+      image.src = objectUrl;
+      image.alt = `${presetDocument.title}\u306E\u30D7\u30EC\u30D3\u30E5\u30FC`;
+      preview.appendChild(image);
+      return preview;
+    }
+    preview.innerHTML = `
+            <svg
+                viewBox="0 -960 960 960"
+                aria-hidden="true"
+            >
+                <path
+                    d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80Zm-80 280q-33 0-56.5-23.5T160-200v-560q0-33 23.5-56.5T240-840h320l240 240v400q0 33-23.5 56.5T720-120H240Zm280-440h160L520-720v160Z"
+                />
+            </svg>
+        `;
+    return preview;
+  }
+  function createManagerBody(presetDocument) {
+    const body = document.createElement("div");
+    body.className = "preset-manager-item__body";
+    const titleRow = document.createElement("div");
+    titleRow.className = "preset-manager-item__title-row";
+    const title = document.createElement("h3");
+    title.className = "preset-manager-item__title";
+    title.textContent = presetDocument.title;
+    const orientation = document.createElement("span");
+    orientation.className = "preset-manager-item__orientation";
+    orientation.textContent = getPresetOrientationLabel(presetDocument.orientation);
+    titleRow.append(title, orientation);
+    const file = document.createElement("p");
+    file.className = "preset-manager-item__file";
+    file.textContent = [
+      presetDocument.pdfFileName,
+      formatBytes2(presetDocument.pdfBlob.size)
+    ].join(" \xB7 ");
+    body.append(titleRow, file);
+    return body;
+  }
+  function createManagerActions(presetDocument) {
+    const actions = document.createElement("div");
+    actions.className = "preset-manager-item__actions";
+    const editButton = createActionButton("\u7DE8\u96C6");
+    editButton.addEventListener("click", () => {
+      openEditEditor(presetDocument);
+    });
+    const deleteButton = createActionButton("\u524A\u9664");
+    deleteButton.addEventListener("click", () => {
+      void handleDelete(presetDocument);
+    });
+    actions.append(editButton, deleteButton);
+    return actions;
+  }
+  return { renderManagerEmpty, renderManagerListError, createManagerItem, createManagerPreview, createManagerBody, createManagerActions };
+}
+function createPresetActionButton(label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "glass-button";
+  button.textContent = label;
+  return button;
+}
+
+// dist/preset/preset-manager.js
+function setupPresetManager(options) {
+  const presetElements = resolvePresetManagerElements();
+  const { settingsButton, dialog, listView, addButton, managerList, editorView, editorBackButton, editorHeadingTitle, editorForm, editorIdInput, titleInput, descriptionInput, portraitInput, landscapeInput, pdfInput, currentPdf, previewInput, currentPreview, editorError, cancelButton, saveButton } = presetElements;
   let editingDocument = null;
   let editorOrigin = "direct";
   let managerPreviewObjectUrls = [];
+  const presetListView = createPresetManagerListView({
+    managerList,
+    rememberPreviewUrl: (url) => {
+      managerPreviewObjectUrls.push(url);
+    },
+    revokeManagerPreviewObjectUrls,
+    openEditEditor,
+    handleDelete,
+    createActionButton,
+    formatBytes
+  });
   function showListView() {
     listView.hidden = false;
     editorView.hidden = true;
@@ -2925,92 +3190,25 @@ function setupPresetManager(options) {
     }
   }
   function renderManagerEmpty() {
-    const empty = document.createElement("div");
-    empty.className = "preset-manager-empty";
-    empty.textContent = "\u5B9A\u578B\u5370\u5237\u7269\u306F\u307E\u3060\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002";
-    managerList.appendChild(empty);
+    return presetListView.renderManagerEmpty();
   }
   function renderManagerListError() {
-    revokeManagerPreviewObjectUrls();
-    managerList.replaceChildren();
-    const error = document.createElement("div");
-    error.className = "preset-manager-empty";
-    error.textContent = "\u4FDD\u5B58\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
-    managerList.appendChild(error);
+    return presetListView.renderManagerListError();
   }
   function createManagerItem(presetDocument) {
-    const item = document.createElement("article");
-    item.className = "preset-manager-item";
-    item.appendChild(createManagerPreview(presetDocument));
-    item.appendChild(createManagerBody(presetDocument));
-    item.appendChild(createManagerActions(presetDocument));
-    return item;
+    return presetListView.createManagerItem(presetDocument);
   }
   function createManagerPreview(presetDocument) {
-    const preview = document.createElement("div");
-    preview.className = "preset-manager-item__preview";
-    if (presetDocument.previewBlob) {
-      const objectUrl = URL.createObjectURL(presetDocument.previewBlob);
-      managerPreviewObjectUrls.push(objectUrl);
-      const image = document.createElement("img");
-      image.src = objectUrl;
-      image.alt = `${presetDocument.title}\u306E\u30D7\u30EC\u30D3\u30E5\u30FC`;
-      preview.appendChild(image);
-      return preview;
-    }
-    preview.innerHTML = `
-            <svg
-                viewBox="0 -960 960 960"
-                aria-hidden="true"
-            >
-                <path
-                    d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80Zm-80 280q-33 0-56.5-23.5T160-200v-560q0-33 23.5-56.5T240-840h320l240 240v400q0 33-23.5 56.5T720-120H240Zm280-440h160L520-720v160Z"
-                />
-            </svg>
-        `;
-    return preview;
+    return presetListView.createManagerPreview(presetDocument);
   }
   function createManagerBody(presetDocument) {
-    const body = document.createElement("div");
-    body.className = "preset-manager-item__body";
-    const titleRow = document.createElement("div");
-    titleRow.className = "preset-manager-item__title-row";
-    const title = document.createElement("h3");
-    title.className = "preset-manager-item__title";
-    title.textContent = presetDocument.title;
-    const orientation = document.createElement("span");
-    orientation.className = "preset-manager-item__orientation";
-    orientation.textContent = getPresetOrientationLabel(presetDocument.orientation);
-    titleRow.append(title, orientation);
-    const file = document.createElement("p");
-    file.className = "preset-manager-item__file";
-    file.textContent = [
-      presetDocument.pdfFileName,
-      formatBytes(presetDocument.pdfBlob.size)
-    ].join(" \xB7 ");
-    body.append(titleRow, file);
-    return body;
+    return presetListView.createManagerBody(presetDocument);
   }
   function createManagerActions(presetDocument) {
-    const actions = document.createElement("div");
-    actions.className = "preset-manager-item__actions";
-    const editButton = createActionButton("\u7DE8\u96C6");
-    editButton.addEventListener("click", () => {
-      openEditEditor(presetDocument);
-    });
-    const deleteButton = createActionButton("\u524A\u9664");
-    deleteButton.addEventListener("click", () => {
-      void handleDelete(presetDocument);
-    });
-    actions.append(editButton, deleteButton);
-    return actions;
+    return presetListView.createManagerActions(presetDocument);
   }
   function createActionButton(label) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "glass-button";
-    button.textContent = label;
-    return button;
+    return createPresetActionButton(label);
   }
   async function handleDelete(presetDocument) {
     const confirmed = window.confirm(`\u300C${presetDocument.title}\u300D\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F
@@ -3029,92 +3227,7 @@ function setupPresetManager(options) {
     }
   }
   async function handleSubmit(event) {
-    event.preventDefault();
-    hideEditorError();
-    const title = titleInput.value.trim();
-    const description = descriptionInput.value.trim();
-    const orientation = getSelectedOrientation();
-    if (title.length === 0) {
-      showEditorError("\u30BF\u30A4\u30C8\u30EB\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-      titleInput.focus();
-      return;
-    }
-    const selectedPdf = pdfInput.files?.[0] ?? null;
-    const selectedPreview = previewInput.files?.[0] ?? null;
-    if (!editingDocument && !selectedPdf) {
-      showEditorError("PDF\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-      pdfInput.focus();
-      return;
-    }
-    if (selectedPdf && !isPdfFile(selectedPdf)) {
-      showEditorError("PDF\u30D5\u30A1\u30A4\u30EB\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-      pdfInput.focus();
-      return;
-    }
-    if (selectedPreview && !isPreviewImageFile(selectedPreview)) {
-      showEditorError("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306FPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u304B\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-      previewInput.focus();
-      return;
-    }
-    saveButton.disabled = true;
-    const originalButtonText = saveButton.textContent;
-    saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
-    try {
-      const now = Date.now();
-      let presetDocument;
-      if (editingDocument) {
-        presetDocument = {
-          ...editingDocument,
-          title,
-          description,
-          orientation,
-          pdfFileName: selectedPdf ? selectedPdf.name : editingDocument.pdfFileName,
-          pdfMimeType: selectedPdf ? selectedPdf.type || "application/pdf" : editingDocument.pdfMimeType,
-          pdfBlob: selectedPdf ?? editingDocument.pdfBlob,
-          previewFileName: selectedPreview ? selectedPreview.name : editingDocument.previewFileName,
-          previewMimeType: selectedPreview ? selectedPreview.type || null : editingDocument.previewMimeType,
-          previewBlob: selectedPreview ?? editingDocument.previewBlob,
-          updatedAt: now
-        };
-      } else {
-        if (!selectedPdf) {
-          throw new Error("PDF\u304C\u9078\u629E\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
-        }
-        const sortOrder = await getNextPresetSortOrder();
-        presetDocument = {
-          id: createPresetDocumentId(),
-          title,
-          description,
-          orientation,
-          pdfFileName: selectedPdf.name,
-          pdfMimeType: selectedPdf.type || "application/pdf",
-          pdfBlob: selectedPdf,
-          previewFileName: selectedPreview ? selectedPreview.name : null,
-          previewMimeType: selectedPreview ? selectedPreview.type || null : null,
-          previewBlob: selectedPreview,
-          sortOrder,
-          createdAt: now,
-          updatedAt: now
-        };
-      }
-      await putPresetDocument(presetDocument);
-      void requestPersistentStorage();
-      editingDocument = null;
-      await notifyChanged();
-      if (editorOrigin === "manager") {
-        await refreshManagerList();
-        resetEditor();
-        showListView();
-      } else {
-        dialog.close();
-      }
-    } catch (error) {
-      console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
-      showEditorError("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-    } finally {
-      saveButton.disabled = false;
-      saveButton.textContent = originalButtonText;
-    }
+    return presetEditorSubmit.handleSubmit(event);
   }
   async function notifyChanged() {
     await options.onChanged();
@@ -3132,27 +3245,41 @@ function setupPresetManager(options) {
       element.focus();
     }, 0);
   }
-  settingsButton.addEventListener("click", () => {
-    void openManager();
+  const presetEditorSubmit = createPresetEditorSubmit({
+    titleInput,
+    descriptionInput,
+    pdfInput,
+    previewInput,
+    saveButton,
+    dialog,
+    get editingDocument() {
+      return editingDocument;
+    },
+    set editingDocument(value) {
+      editingDocument = value;
+    },
+    get editorOrigin() {
+      return editorOrigin;
+    },
+    getSelectedOrientation,
+    hideEditorError,
+    showEditorError,
+    notifyChanged,
+    refreshManagerList,
+    resetEditor,
+    showListView
   });
-  addButton.addEventListener("click", () => {
-    openCreateEditorFromManager();
-  });
-  editorBackButton.addEventListener("click", () => {
-    leaveEditor();
-  });
-  cancelButton.addEventListener("click", () => {
-    leaveEditor();
-  });
-  editorForm.addEventListener("submit", (event) => {
-    void handleSubmit(event);
-  });
-  dialog.addEventListener("close", () => {
-    revokeManagerPreviewObjectUrls();
-    resetEditor();
-    editorOrigin = "direct";
-    editorBackButton.hidden = true;
-    showListView();
+  bindPresetManagerEvents(presetElements, {
+    openManager,
+    openCreateEditorFromManager,
+    leaveEditor,
+    handleSubmit,
+    revokeManagerPreviewObjectUrls,
+    resetEditor,
+    showListView,
+    resetEditorOrigin: () => {
+      editorOrigin = "direct";
+    }
   });
   return {
     openManager,
@@ -3165,31 +3292,207 @@ function setupPresetManager(options) {
     managerPreviewObjectUrls = [];
   }
 }
-function requireElement(selector) {
-  const element = document.querySelector(selector);
-  if (!element) {
-    throw new Error(`\u5FC5\u8981\u306A\u8981\u7D20\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093: ${selector}`);
-  }
-  return element;
+
+// dist/backup/backup-password-dialog.js
+function requestBackupPasswordDialog(mode, controls, updatePasswordVisibility = () => {
+}) {
+  const { passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel } = controls;
+  return new Promise((resolve) => {
+    passwordForm.reset();
+    updatePasswordVisibility();
+    passwordError.textContent = "";
+    passwordConfirmRow.hidden = mode !== "export";
+    passwordConfirmInput.required = mode === "export";
+    passwordInput.minLength = mode === "export" ? 12 : 1;
+    passwordDescription.textContent = mode === "export" ? "12\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5168\u4F53\u3092\u6697\u53F7\u5316\u3057\u307E\u3059\u3002\u5FD8\u308C\u308B\u3068\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3002\u5B89\u5168\u306A\u5834\u6240\u3067\u7BA1\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3059\u308B\u305F\u3081\u3001\u8A2D\u5B9A\u3057\u305F\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+    passwordSubmit.textContent = mode === "export" ? "\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58" : "\u5FA9\u53F7\u3057\u3066\u5FA9\u5143";
+    let settled = false;
+    const settle = (value) => {
+      if (settled)
+        return;
+      settled = true;
+      passwordForm.removeEventListener("submit", submit);
+      passwordCancel.removeEventListener("click", cancel);
+      passwordDialog.removeEventListener("cancel", escape);
+      passwordDialog.removeEventListener("close", closed);
+      passwordForm.reset();
+      updatePasswordVisibility();
+      if (passwordDialog.open)
+        passwordDialog.close();
+      resolve(value);
+    };
+    const submit = (event) => {
+      event.preventDefault();
+      const password = passwordInput.value;
+      if (mode === "export" && password !== passwordConfirmInput.value) {
+        passwordError.textContent = "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      if (!password || mode === "export" && password.length < 12) {
+        passwordError.textContent = "\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u9577\u3055\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        return;
+      }
+      settle(password);
+    };
+    const cancel = () => settle(null);
+    const escape = (event) => {
+      event.preventDefault();
+      settle(null);
+    };
+    const closed = () => settle(null);
+    passwordForm.addEventListener("submit", submit);
+    passwordCancel.addEventListener("click", cancel);
+    passwordDialog.addEventListener("cancel", escape);
+    passwordDialog.addEventListener("close", closed);
+    passwordDialog.showModal();
+    passwordInput.focus();
+  });
 }
-function formatBytes(bytes) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
+
+// dist/backup/backup-ui-utils.js
+function downloadBlob(blob, fileName) {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 1e3);
+}
+function createBackupFileName() {
+  const now = /* @__PURE__ */ new Date();
+  const year = String(now.getFullYear());
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return [
+    "WORKBENCH_backup_",
+    year,
+    month,
+    day,
+    "_",
+    hours,
+    minutes,
+    ".wbenc"
+  ].join("");
+}
+function formatErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message;
   }
-  const kilobytes = bytes / 1024;
-  if (kilobytes < 1024) {
-    return `${kilobytes.toFixed(1)} KB`;
+  return "\u4E0D\u660E\u306A\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002";
+}
+
+// dist/backup/archive-file-utils.js
+function createBlob(bytes, mimeType) {
+  const copy = new Uint8Array(bytes);
+  return new Blob([
+    copy.buffer
+  ], {
+    type: mimeType
+  });
+}
+function stringifyJson(value) {
+  return JSON.stringify(value, null, 2);
+}
+function getImageExtension(mimeType) {
+  switch (mimeType) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    default:
+      throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
   }
-  const megabytes = kilobytes / 1024;
-  if (megabytes < 1024) {
-    return `${megabytes.toFixed(1)} MB`;
+}
+function isPng(bytes) {
+  const signature = [
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10
+  ];
+  if (bytes.length < signature.length) {
+    return false;
   }
-  const gigabytes = megabytes / 1024;
-  return `${gigabytes.toFixed(2)} GB`;
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+function isJpeg(bytes) {
+  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+}
+function isWebp(bytes) {
+  if (bytes.length < 12) {
+    return false;
+  }
+  return bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
+}
+function sanitizeFileName(value) {
+  const normalized = value.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/\.+$/g, "");
+  if (normalized.length === 0) {
+    return "document";
+  }
+  return normalized.slice(0, 80);
 }
 
 // dist/backup/backup-zip.js
 var import_jszip = __toESM(require_jszip_min());
+
+// dist/backup/archive-validation.js
+function requireRecord(value, path) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return value;
+}
+function requireString(value, path, maxLength, required = false) {
+  if (typeof value !== "string") {
+    throw new Error(`${path} \u304C\u6587\u5B57\u5217\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002`);
+  }
+  if (required && value.length === 0) {
+    throw new Error(`${path} \u304C\u7A7A\u3067\u3059\u3002`);
+  }
+  if (value.length > maxLength) {
+    throw new Error(`${path} \u304C\u9577\u3059\u304E\u307E\u3059\u3002`);
+  }
+  return value;
+}
+function requireNonNegativeInteger(value, path) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return value;
+}
+function requireFiniteNumber(value, path) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return value;
+}
+function requireUniqueIds(values, label) {
+  const ids = /* @__PURE__ */ new Set();
+  for (const value of values) {
+    if (ids.has(value.id)) {
+      throw new Error(`${label}\u306B\u91CD\u8907\u3057\u305FID\u304C\u3042\u308A\u307E\u3059: ${value.id}`);
+    }
+    ids.add(value.id);
+  }
+}
+function requireSafeArchivePath(path, requiredPrefix) {
+  if (!path.startsWith(requiredPrefix) || path.includes("..") || path.includes("\\") || path.startsWith("/")) {
+    throw new Error(`ZIP\u5185\u306E\u30D5\u30A1\u30A4\u30EB\u30D1\u30B9\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
+  }
+}
 
 // dist/backup/backup-types.js
 var WORKBENCH_BACKUP_VERSION = 2;
@@ -3416,55 +3719,11 @@ function parsePresetDocumentMetadata(value, index) {
   requireNonNegativeInteger(record.updatedAt, `${path}.updatedAt`);
   return value;
 }
-function requireRecord(value, path) {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
-  }
-  return value;
-}
-function requireString(value, path, maxLength, required = false) {
-  if (typeof value !== "string") {
-    throw new Error(`${path} \u304C\u6587\u5B57\u5217\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002`);
-  }
-  if (required && value.length === 0) {
-    throw new Error(`${path} \u304C\u7A7A\u3067\u3059\u3002`);
-  }
-  if (value.length > maxLength) {
-    throw new Error(`${path} \u304C\u9577\u3059\u304E\u307E\u3059\u3002`);
-  }
-  return value;
-}
 function requireNullableString(value, path, maxLength) {
   if (value === null) {
     return null;
   }
   return requireString(value, path, maxLength, true);
-}
-function requireNonNegativeInteger(value, path) {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
-    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
-  }
-  return value;
-}
-function requireFiniteNumber(value, path) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`${path} \u304C\u4E0D\u6B63\u3067\u3059\u3002`);
-  }
-  return value;
-}
-function requireUniqueIds(values, label) {
-  const ids = /* @__PURE__ */ new Set();
-  for (const value of values) {
-    if (ids.has(value.id)) {
-      throw new Error(`${label}\u306B\u91CD\u8907\u3057\u305FID\u304C\u3042\u308A\u307E\u3059: ${value.id}`);
-    }
-    ids.add(value.id);
-  }
-}
-function requireSafeArchivePath(path, requiredPrefix) {
-  if (!path.startsWith(requiredPrefix) || path.includes("..") || path.includes("\\") || path.startsWith("/")) {
-    throw new Error(`ZIP\u5185\u306E\u30D5\u30A1\u30A4\u30EB\u30D1\u30B9\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
-  }
 }
 
 // dist/backup/backup-zip.js
@@ -3796,60 +4055,30 @@ function validatePreviewBytes(bytes, mimeType, path) {
       throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
   }
 }
-function isPng(bytes) {
-  const signature = [
-    137,
-    80,
-    78,
-    71,
-    13,
-    10,
-    26,
-    10
-  ];
-  if (bytes.length < signature.length) {
-    return false;
-  }
-  return signature.every((byte, index) => bytes[index] === byte);
-}
-function isJpeg(bytes) {
-  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-}
-function isWebp(bytes) {
-  if (bytes.length < 12) {
-    return false;
-  }
-  return bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
-}
-function createBlob(bytes, mimeType) {
-  const copy = new Uint8Array(bytes);
-  return new Blob([
-    copy.buffer
-  ], {
-    type: mimeType
+
+// dist/backup/backup-storage-utils.js
+function requestToPromise2(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
   });
 }
-function stringifyJson(value) {
-  return JSON.stringify(value, null, 2);
-}
-function sanitizeFileName(value) {
-  const normalized = value.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/\.+$/g, "");
-  if (normalized.length === 0) {
-    return "document";
-  }
-  return normalized.slice(0, 80);
-}
-function getImageExtension(mimeType) {
-  switch (mimeType) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-      return "jpg";
-    case "image/webp":
-      return "webp";
-    default:
-      throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
-  }
+function waitForTransaction2(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
+    transaction.onabort = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+    };
+  });
 }
 
 // dist/backup/backup-storage.js
@@ -4142,29 +4371,6 @@ function openDocumentDatabase() {
     };
   });
 }
-function requestToPromise2(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-    request.onerror = () => {
-      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-  });
-}
-function waitForTransaction2(transaction) {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => {
-      resolve();
-    };
-    transaction.onerror = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-    transaction.onabort = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
-    };
-  });
-}
 
 // dist/backup/restore-policy.js
 function createRestoredSnapshot(imported, current) {
@@ -4362,7 +4568,7 @@ async function decryptBackupFile(file, password) {
 // dist/backup/backup.js
 var MAX_IMPORT_FILE_SIZE = 512 * 1024 * 1024 + 56;
 function setupWorkbenchBackup(options) {
-  const { exportButton, importButton, importInput, status, recoveryButton, passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel, onRestored } = options;
+  const { exportButton, importButton, importInput, status, recoveryButton, passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordVisibilityToggle, passwordError, passwordDescription, passwordSubmit, passwordCancel, onRestored } = options;
   let isBusy = true;
   let recoveryState = "checking";
   setBusy(true);
@@ -4505,55 +4711,14 @@ function setupWorkbenchBackup(options) {
       setBusy(false);
     }
   }
+  const updatePasswordVisibility = () => {
+    const type = passwordVisibilityToggle.checked ? "text" : "password";
+    passwordInput.type = type;
+    passwordConfirmInput.type = type;
+  };
+  passwordVisibilityToggle.addEventListener("change", updatePasswordVisibility);
   function requestBackupPassword(mode) {
-    return new Promise((resolve) => {
-      passwordForm.reset();
-      passwordError.textContent = "";
-      passwordConfirmRow.hidden = mode !== "export";
-      passwordConfirmInput.required = mode === "export";
-      passwordInput.minLength = mode === "export" ? 12 : 1;
-      passwordDescription.textContent = mode === "export" ? "12\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5168\u4F53\u3092\u6697\u53F7\u5316\u3057\u307E\u3059\u3002\u5FD8\u308C\u308B\u3068\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3002\u5B89\u5168\u306A\u5834\u6240\u3067\u7BA1\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3059\u308B\u305F\u3081\u3001\u8A2D\u5B9A\u3057\u305F\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
-      passwordSubmit.textContent = mode === "export" ? "\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58" : "\u5FA9\u53F7\u3057\u3066\u5FA9\u5143";
-      let settled = false;
-      const settle = (value) => {
-        if (settled)
-          return;
-        settled = true;
-        passwordForm.removeEventListener("submit", submit);
-        passwordCancel.removeEventListener("click", cancel);
-        passwordDialog.removeEventListener("cancel", escape);
-        passwordDialog.removeEventListener("close", closed);
-        passwordForm.reset();
-        if (passwordDialog.open)
-          passwordDialog.close();
-        resolve(value);
-      };
-      const submit = (event) => {
-        event.preventDefault();
-        const password = passwordInput.value;
-        if (mode === "export" && password !== passwordConfirmInput.value) {
-          passwordError.textContent = "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
-          return;
-        }
-        if (!password || mode === "export" && password.length < 12) {
-          passwordError.textContent = "\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u9577\u3055\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
-          return;
-        }
-        settle(password);
-      };
-      const cancel = () => settle(null);
-      const escape = (event) => {
-        event.preventDefault();
-        settle(null);
-      };
-      const closed = () => settle(null);
-      passwordForm.addEventListener("submit", submit);
-      passwordCancel.addEventListener("click", cancel);
-      passwordDialog.addEventListener("cancel", escape);
-      passwordDialog.addEventListener("close", closed);
-      passwordDialog.showModal();
-      passwordInput.focus();
-    });
+    return requestBackupPasswordDialog(mode, { passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel }, updatePasswordVisibility);
   }
   function updateRecoveryControls() {
     importButton.disabled = isBusy || recoveryState !== "clear";
@@ -4588,37 +4753,6 @@ function confirmRestore(snapshot) {
     "\u3053\u306E\u64CD\u4F5C\u3092\u5B9F\u884C\u3057\u307E\u3059\u304B\uFF1F"
   ].join("\n"));
 }
-function downloadBlob(blob, fileName) {
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fileName;
-  anchor.style.display = "none";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => {
-    URL.revokeObjectURL(objectUrl);
-  }, 1e3);
-}
-function createBackupFileName() {
-  const now = /* @__PURE__ */ new Date();
-  const year = String(now.getFullYear());
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  return [
-    "WORKBENCH_backup_",
-    year,
-    month,
-    day,
-    "_",
-    hours,
-    minutes,
-    ".wbenc"
-  ].join("");
-}
 function createExportSuccessMessage(snapshot) {
   return [
     "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002",
@@ -4634,12 +4768,6 @@ function createImportSuccessMessage(snapshot) {
     `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3001`,
     `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8PDF\u5C65\u6B74 ${snapshot.printHistory.length}\u4EF6\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F\u3002`
   ].join(" ");
-}
-function formatErrorMessage(error) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "\u4E0D\u660E\u306A\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002";
 }
 
 // dist/main.js
@@ -4666,6 +4794,7 @@ setupWorkbenchBackup({
   passwordInput: requireElement2("#backup-password-input"),
   passwordConfirmInput: requireElement2("#backup-password-confirm"),
   passwordConfirmRow: requireElement2("#backup-password-confirm-row"),
+  passwordVisibilityToggle: requireElement2("#backup-password-visible"),
   passwordError: requireElement2("#backup-password-error"),
   passwordDescription: requireElement2("#backup-password-description"),
   passwordSubmit: requireElement2("#backup-password-submit"),

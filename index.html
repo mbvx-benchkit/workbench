@@ -37,9 +37,11 @@
          Scripts
          ===================================================== -->
 
+    <link rel="stylesheet" href="./css/footer.css">
     <script src="./dist/site-header.js" type="module"></script>
 
     <script src="./dist/main.bundle.js" type="module"></script>
+    <script src="./dist/workbench-build-info.js" type="module"></script>
 </head>
 
 
@@ -598,6 +600,10 @@
                 <label for="backup-password-confirm">パスワード（確認用）</label>
                 <input id="backup-password-confirm" type="password" maxlength="1024" autocomplete="new-password">
             </div>
+            <label class="backup-password-dialog__visibility" for="backup-password-visible">
+                <input id="backup-password-visible" type="checkbox">
+                <span>パスワードを表示</span>
+            </label>
             <p id="backup-password-error" class="backup-password-dialog__error" role="alert"></p>
             <div class="backup-password-dialog__actions">
                 <button type="button" id="backup-password-cancel">キャンセル</button>
@@ -922,11 +928,10 @@
          ===================================================== -->
 
     <footer class="footer">
-
-        <small>
-            Copyright © 2026 Morbee. All Rights Reserved.
-        </small>
-
+        <div class="footer__inner">
+            <small class="footer__copyright">Copyright © 2026 Morbee. All Rights Reserved.</small>
+            <small class="footer__build-info" data-workbench-build-info>WORKBENCH v1.1.0</small>
+        </div>
     </footer>
 
 </body>

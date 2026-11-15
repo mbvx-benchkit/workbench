@@ -1,3 +1,4 @@
+import { getErrorMessage } from "./ui-utils.js";
 import { createEmptyCategory } from "./model.js";
 import { loadRedIndexData, saveRedIndexData } from "./storage.js";
 import { exportRedIndexJson, importRedIndexJson } from "./json.js";
@@ -134,15 +135,6 @@ printButton.addEventListener("click", () => {
 function renderAll() {
     renderEditor(editorElements, data, handleDataChange);
     renderPreview(redIndexContent, data);
-}
-/* =========================================================
-   Error
-   ========================================================= */
-function getErrorMessage(error) {
-    if (error instanceof Error) {
-        return error.message;
-    }
-    return ("処理中に不明なエラーが発生しました。");
 }
 function requireElement(id, constructor) {
     const element = document.getElementById(id);

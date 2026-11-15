@@ -1,25 +1,14 @@
-/**
- * preset-manager.ts
- *
- * 定型印刷物の管理UIを担当する。
- *
- * - 管理モーダル
- * - 登録済み一覧
- * - 新規追加
- * - 編集
- * - プレビュー画像差し替え
- * - 削除
- *
- * Editorには2つの入口がある。
- *
- * direct:
- *   メイン画面最後尾の「新規追加」カード
- *
- * manager:
- *   管理一覧内の「新規追加」または「編集」
- */
-import { createPresetDocumentId, getPresetOrientationLabel, isPdfFile, isPreviewImageFile } from "./preset.js";
-import { deletePresetDocument, getNextPresetSortOrder, getPresetDocuments, putPresetDocument, requestPersistentStorage } from "./preset-db.js";
+/* WORKBENCH_STAGE5_PRESET */
+import { resolvePresetManagerElements } from "./preset-manager-elements.js";
+import { bindPresetManagerEvents } from "./preset-manager-events.js";
+/* WORKBENCH_STAGE4_PRESET */
+import { createPresetEditorSubmit } from "./preset-manager-submit.js";
+/* WORKBENCH_STAGE3_PRESET_LIST */
+import { createPresetManagerListView } from "./preset-manager-list-view.js";
+/* WORKBENCH_EXTRACT_createActionButton */
+import { createPresetActionButton } from "./preset-manager-list-view.js";
+import { formatBytes } from "./preset-manager-utils.js";
+import { deletePresetDocument, getPresetDocuments } from "./preset-db.js";
 /* =========================================================
    Setup
    ========================================================= */
@@ -27,33 +16,14 @@ export function setupPresetManager(options) {
     /* -----------------------------------------------------
        Dialog
        ----------------------------------------------------- */
-    const settingsButton = requireElement("#preset-settings-button");
-    const dialog = requireElement("#preset-manager-dialog");
+    const presetElements = resolvePresetManagerElements();
+    const { settingsButton, dialog, listView, addButton, managerList, editorView, editorBackButton, editorHeadingTitle, editorForm, editorIdInput, titleInput, descriptionInput, portraitInput, landscapeInput, pdfInput, currentPdf, previewInput, currentPreview, editorError, cancelButton, saveButton } = presetElements;
     /* -----------------------------------------------------
        List View
        ----------------------------------------------------- */
-    const listView = requireElement("#preset-manager-list-view");
-    const addButton = requireElement("#preset-manager-add-button");
-    const managerList = requireElement("#preset-manager-list");
     /* -----------------------------------------------------
        Editor View
        ----------------------------------------------------- */
-    const editorView = requireElement("#preset-editor-view");
-    const editorBackButton = requireElement("#preset-editor-back-button");
-    const editorHeadingTitle = requireElement("#preset-editor-title");
-    const editorForm = requireElement("#preset-editor-form");
-    const editorIdInput = requireElement("#preset-editor-id");
-    const titleInput = requireElement("#preset-title-input");
-    const descriptionInput = requireElement("#preset-description-input");
-    const portraitInput = requireElement("#preset-orientation-portrait");
-    const landscapeInput = requireElement("#preset-orientation-landscape");
-    const pdfInput = requireElement("#preset-pdf-input");
-    const currentPdf = requireElement("#preset-current-pdf");
-    const previewInput = requireElement("#preset-preview-input");
-    const currentPreview = requireElement("#preset-current-preview");
-    const editorError = requireElement("#preset-editor-error");
-    const cancelButton = requireElement("#preset-editor-cancel-button");
-    const saveButton = requireElement("#preset-editor-save-button");
     /* -----------------------------------------------------
        State
        ----------------------------------------------------- */
@@ -63,6 +33,16 @@ export function setupPresetManager(options) {
     /* =====================================================
        View
        ===================================================== */
+    // Stage 3: list rendering is delegated; the controller owns the state.
+    const presetListView = createPresetManagerListView({
+        managerList,
+        rememberPreviewUrl: url => { managerPreviewObjectUrls.push(url); },
+        revokeManagerPreviewObjectUrls,
+        openEditEditor,
+        handleDelete,
+        createActionButton,
+        formatBytes
+    });
     function showListView() {
         listView.hidden =
             false;
@@ -253,121 +233,28 @@ export function setupPresetManager(options) {
         }
     }
     function renderManagerEmpty() {
-        const empty = document.createElement("div");
-        empty.className =
-            "preset-manager-empty";
-        empty.textContent =
-            "定型印刷物はまだ登録されていません。";
-        managerList.appendChild(empty);
+        return presetListView.renderManagerEmpty();
     }
     function renderManagerListError() {
-        revokeManagerPreviewObjectUrls();
-        managerList.replaceChildren();
-        const error = document.createElement("div");
-        error.className =
-            "preset-manager-empty";
-        error.textContent =
-            "保存データを読み込めませんでした。";
-        managerList.appendChild(error);
+        return presetListView.renderManagerListError();
     }
     /* =====================================================
        Manager Item
        ===================================================== */
     function createManagerItem(presetDocument) {
-        const item = document.createElement("article");
-        item.className =
-            "preset-manager-item";
-        item.appendChild(createManagerPreview(presetDocument));
-        item.appendChild(createManagerBody(presetDocument));
-        item.appendChild(createManagerActions(presetDocument));
-        return item;
+        return presetListView.createManagerItem(presetDocument);
     }
     function createManagerPreview(presetDocument) {
-        const preview = document.createElement("div");
-        preview.className =
-            "preset-manager-item__preview";
-        if (presetDocument.previewBlob) {
-            const objectUrl = URL.createObjectURL(presetDocument.previewBlob);
-            managerPreviewObjectUrls.push(objectUrl);
-            const image = document.createElement("img");
-            image.src =
-                objectUrl;
-            image.alt =
-                `${presetDocument.title}のプレビュー`;
-            preview.appendChild(image);
-            return preview;
-        }
-        preview.innerHTML = `
-            <svg
-                viewBox="0 -960 960 960"
-                aria-hidden="true"
-            >
-                <path
-                    d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80Zm-80 280q-33 0-56.5-23.5T160-200v-560q0-33 23.5-56.5T240-840h320l240 240v400q0 33-23.5 56.5T720-120H240Zm280-440h160L520-720v160Z"
-                />
-            </svg>
-        `;
-        return preview;
+        return presetListView.createManagerPreview(presetDocument);
     }
     function createManagerBody(presetDocument) {
-        const body = document.createElement("div");
-        body.className =
-            "preset-manager-item__body";
-        const titleRow = document.createElement("div");
-        titleRow.className =
-            "preset-manager-item__title-row";
-        const title = document.createElement("h3");
-        title.className =
-            "preset-manager-item__title";
-        title.textContent =
-            presetDocument.title;
-        const orientation = document.createElement("span");
-        orientation.className =
-            "preset-manager-item__orientation";
-        orientation.textContent =
-            getPresetOrientationLabel(presetDocument.orientation);
-        titleRow.append(title, orientation);
-        const file = document.createElement("p");
-        file.className =
-            "preset-manager-item__file";
-        file.textContent =
-            [
-                presetDocument.pdfFileName,
-                formatBytes(presetDocument.pdfBlob.size)
-            ].join(" · ");
-        body.append(titleRow, file);
-        return body;
+        return presetListView.createManagerBody(presetDocument);
     }
     function createManagerActions(presetDocument) {
-        const actions = document.createElement("div");
-        actions.className =
-            "preset-manager-item__actions";
-        /* -------------------------------------------------
-           編集
-           ------------------------------------------------- */
-        const editButton = createActionButton("編集");
-        editButton.addEventListener("click", () => {
-            openEditEditor(presetDocument);
-        });
-        /* -------------------------------------------------
-           削除
-           ------------------------------------------------- */
-        const deleteButton = createActionButton("削除");
-        deleteButton.addEventListener("click", () => {
-            void handleDelete(presetDocument);
-        });
-        actions.append(editButton, deleteButton);
-        return actions;
+        return presetListView.createManagerActions(presetDocument);
     }
     function createActionButton(label) {
-        const button = document.createElement("button");
-        button.type =
-            "button";
-        button.className =
-            "glass-button";
-        button.textContent =
-            label;
-        return button;
+        return createPresetActionButton(label);
     }
     /* =====================================================
        Delete
@@ -391,156 +278,7 @@ export function setupPresetManager(options) {
        Submit
        ===================================================== */
     async function handleSubmit(event) {
-        event.preventDefault();
-        hideEditorError();
-        const title = titleInput.value.trim();
-        const description = descriptionInput
-            .value
-            .trim();
-        const orientation = getSelectedOrientation();
-        if (title.length === 0) {
-            showEditorError("タイトルを入力してください。");
-            titleInput.focus();
-            return;
-        }
-        const selectedPdf = pdfInput.files?.[0] ??
-            null;
-        const selectedPreview = previewInput.files?.[0] ??
-            null;
-        /* -------------------------------------------------
-           PDF
-           ------------------------------------------------- */
-        if (!editingDocument &&
-            !selectedPdf) {
-            showEditorError("PDFを選択してください。");
-            pdfInput.focus();
-            return;
-        }
-        if (selectedPdf &&
-            !isPdfFile(selectedPdf)) {
-            showEditorError("PDFファイルを選択してください。");
-            pdfInput.focus();
-            return;
-        }
-        /* -------------------------------------------------
-           Preview
-           ------------------------------------------------- */
-        if (selectedPreview &&
-            !isPreviewImageFile(selectedPreview)) {
-            showEditorError("プレビュー画像はPNG、JPEG、WebPのいずれかを選択してください。");
-            previewInput.focus();
-            return;
-        }
-        /* -------------------------------------------------
-           保存開始
-           ------------------------------------------------- */
-        saveButton.disabled =
-            true;
-        const originalButtonText = saveButton.textContent;
-        saveButton.textContent =
-            "保存中...";
-        try {
-            const now = Date.now();
-            let presetDocument;
-            /* -------------------------------------------------
-               更新
-               ------------------------------------------------- */
-            if (editingDocument) {
-                presetDocument = {
-                    ...editingDocument,
-                    title,
-                    description,
-                    orientation,
-                    pdfFileName: selectedPdf
-                        ? selectedPdf.name
-                        : editingDocument.pdfFileName,
-                    pdfMimeType: selectedPdf
-                        ? (selectedPdf.type ||
-                            "application/pdf")
-                        : editingDocument.pdfMimeType,
-                    pdfBlob: selectedPdf ??
-                        editingDocument.pdfBlob,
-                    previewFileName: selectedPreview
-                        ? selectedPreview.name
-                        : editingDocument.previewFileName,
-                    previewMimeType: selectedPreview
-                        ? (selectedPreview.type ||
-                            null)
-                        : editingDocument.previewMimeType,
-                    previewBlob: selectedPreview ??
-                        editingDocument.previewBlob,
-                    updatedAt: now
-                };
-            }
-            /* -------------------------------------------------
-               新規追加
-               ------------------------------------------------- */
-            else {
-                if (!selectedPdf) {
-                    throw new Error("PDFが選択されていません。");
-                }
-                const sortOrder = await getNextPresetSortOrder();
-                presetDocument = {
-                    id: createPresetDocumentId(),
-                    title,
-                    description,
-                    orientation,
-                    pdfFileName: selectedPdf.name,
-                    pdfMimeType: selectedPdf.type ||
-                        "application/pdf",
-                    pdfBlob: selectedPdf,
-                    previewFileName: selectedPreview
-                        ? selectedPreview.name
-                        : null,
-                    previewMimeType: selectedPreview
-                        ? (selectedPreview.type ||
-                            null)
-                        : null,
-                    previewBlob: selectedPreview,
-                    sortOrder,
-                    createdAt: now,
-                    updatedAt: now
-                };
-            }
-            /* -------------------------------------------------
-               IndexedDB
-               ------------------------------------------------- */
-            await putPresetDocument(presetDocument);
-            /**
-             * 保存後に永続ストレージを要求する。
-             *
-             * falseでも保存処理自体は成功。
-             */
-            void requestPersistentStorage();
-            editingDocument =
-                null;
-            /**
-             * メイン画面のカードを更新する。
-             */
-            await notifyChanged();
-            /* -------------------------------------------------
-               保存後の遷移
-               ------------------------------------------------- */
-            if (editorOrigin ===
-                "manager") {
-                await refreshManagerList();
-                resetEditor();
-                showListView();
-            }
-            else {
-                dialog.close();
-            }
-        }
-        catch (error) {
-            console.error("定型印刷物を保存できませんでした。", error);
-            showEditorError("定型印刷物を保存できませんでした。");
-        }
-        finally {
-            saveButton.disabled =
-                false;
-            saveButton.textContent =
-                originalButtonText;
-        }
+        return presetEditorSubmit.handleSubmit(event);
     }
     /* =====================================================
        Change Notification
@@ -579,54 +317,19 @@ export function setupPresetManager(options) {
      *
      * 管理一覧を開く。
      */
-    settingsButton.addEventListener("click", () => {
-        void openManager();
+    // Stage 4: the controller owns editable state, the submit module owns the save workflow.
+    const presetEditorSubmit = createPresetEditorSubmit({
+        titleInput, descriptionInput, pdfInput, previewInput, saveButton, dialog,
+        get editingDocument() { return editingDocument; },
+        set editingDocument(value) { editingDocument = value; },
+        get editorOrigin() { return editorOrigin; },
+        getSelectedOrientation, hideEditorError, showEditorError, notifyChanged,
+        refreshManagerList, resetEditor, showListView
     });
-    /**
-     * 管理一覧内の「新規追加」。
-     *
-     * directではなくmanager起点。
-     */
-    addButton.addEventListener("click", () => {
-        openCreateEditorFromManager();
-    });
-    /**
-     * Editor左上の戻るボタン。
-     *
-     * manager起点でのみ表示される。
-     */
-    editorBackButton.addEventListener("click", () => {
-        leaveEditor();
-    });
-    /**
-     * キャンセル。
-     *
-     * direct:
-     *   dialogを閉じる
-     *
-     * manager:
-     *   一覧へ戻る
-     */
-    cancelButton.addEventListener("click", () => {
-        leaveEditor();
-    });
-    /**
-     * 保存。
-     */
-    editorForm.addEventListener("submit", (event) => {
-        void handleSubmit(event);
-    });
-    /**
-     * × やEscなどでdialog自体が閉じられた場合。
-     */
-    dialog.addEventListener("close", () => {
-        revokeManagerPreviewObjectUrls();
-        resetEditor();
-        editorOrigin =
-            "direct";
-        editorBackButton.hidden =
-            true;
-        showListView();
+    bindPresetManagerEvents(presetElements, {
+        openManager, openCreateEditorFromManager, leaveEditor, handleSubmit,
+        revokeManagerPreviewObjectUrls, resetEditor, showListView,
+        resetEditorOrigin: () => { editorOrigin = "direct"; }
     });
     /* =====================================================
        Controller
@@ -645,39 +348,5 @@ export function setupPresetManager(options) {
         managerPreviewObjectUrls =
             [];
     }
-}
-/* =========================================================
-   DOM Utility
-   ========================================================= */
-function requireElement(selector) {
-    const element = document.querySelector(selector);
-    if (!element) {
-        throw new Error(`必要な要素が見つかりません: ${selector}`);
-    }
-    return element;
-}
-/* =========================================================
-   Format
-   ========================================================= */
-function formatBytes(bytes) {
-    if (bytes <
-        1024) {
-        return `${bytes} B`;
-    }
-    const kilobytes = bytes /
-        1024;
-    if (kilobytes <
-        1024) {
-        return `${kilobytes.toFixed(1)} KB`;
-    }
-    const megabytes = kilobytes /
-        1024;
-    if (megabytes <
-        1024) {
-        return `${megabytes.toFixed(1)} MB`;
-    }
-    const gigabytes = megabytes /
-        1024;
-    return `${gigabytes.toFixed(2)} GB`;
 }
 //# sourceMappingURL=preset-manager.js.map

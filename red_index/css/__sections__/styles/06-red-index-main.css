@@ -1,0 +1,172 @@
+
+
+
+/* =========================================================
+   Utility
+   ========================================================= */
+
+[hidden] {
+    display:
+        none !important;
+}
+
+
+/* =========================================================
+   Medium
+   ========================================================= */
+
+@media (max-width: 88rem) {
+
+    .red-index-main {
+        grid-template-columns:
+            20rem minmax(50rem, 1fr);
+    }
+
+}
+
+
+/* =========================================================
+   Print
+   ========================================================= */
+
+@media print {
+
+    @page {
+        size:
+            A4 portrait;
+
+        margin:
+            0;
+    }
+
+
+    html,
+    body {
+        width:
+            210mm;
+
+        height:
+            297mm;
+
+        min-width:
+            0;
+
+        margin:
+            0;
+
+        padding:
+            0;
+
+        background:
+            #ffffff;
+    }
+
+
+    body {
+        print-color-adjust:
+            exact;
+
+        -webkit-print-color-adjust:
+            exact;
+    }
+
+
+    .top-panel,
+    .red-index-editor,
+    .red-index-preview__header,
+    .footer {
+        display:
+            none !important;
+    }
+
+
+    .red-index-main {
+        display:
+            block;
+
+        width:
+            210mm;
+
+        margin:
+            0;
+
+        padding:
+            0;
+    }
+
+
+    .red-index-preview {
+        width:
+            210mm;
+
+        margin:
+            0;
+
+        padding:
+            0;
+    }
+
+
+    .red-index-preview__stage {
+        display:
+            block;
+
+        width:
+            210mm;
+
+        min-height:
+            0;
+
+        margin:
+            0;
+
+        padding:
+            0;
+
+        overflow:
+            visible;
+
+        border:
+            0;
+
+        border-radius:
+            0;
+
+        background:
+            transparent;
+    }
+
+
+    .red-index-page {
+        width:
+            210mm;
+
+        height:
+            297mm;
+
+        min-height:
+            297mm;
+
+        max-height:
+            297mm;
+
+        margin:
+            0;
+
+        padding:
+            0;
+
+        overflow:
+            hidden;
+
+        border:
+            0;
+
+        background:
+            #ffffff;
+
+        box-shadow:
+            none;
+    }
+
+}

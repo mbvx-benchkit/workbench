@@ -1,0 +1,184 @@
+
+
+
+/* =========================================================
+   エラー状態
+   ========================================================= */
+
+.inventory-summary__status {
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.3rem;
+
+    flex:
+        0 0 auto;
+
+    margin-top:
+        0.25rem;
+
+    padding:
+        0.35rem 0.65rem;
+
+    color:
+        #5e725f;
+
+    background-color:
+        #f8fbf8;
+
+    border:
+        1px solid #dfe8df;
+
+    border-radius:
+        999px;
+
+    font-size:
+        0.72rem;
+
+    font-weight:
+        600;
+
+    line-height:
+        1;
+
+    white-space:
+        nowrap;
+}
+
+
+.inventory-summary__status-dot {
+    width:
+        0.4rem;
+
+    height:
+        0.4rem;
+
+    flex:
+        0 0 auto;
+
+    background-color:
+        #8fa28f;
+
+    border-radius:
+        50%;
+}
+
+
+.inventory-summary__status strong {
+    font-weight:
+        700;
+
+    font-variant-numeric:
+        tabular-nums;
+}
+
+
+/* =========================================================
+   印刷枚数
+   ========================================================= */
+
+.inventory-summary__pages {
+    display:
+        grid;
+
+    place-content:
+        center;
+
+    padding:
+        1.5rem;
+
+    text-align:
+        center;
+}
+
+
+.inventory-summary__pages .inventory-summary__label {
+    margin-bottom:
+        0.5rem;
+}
+
+
+.inventory-summary__pages .inventory-summary__value {
+    justify-content:
+        center;
+
+    font-size:
+        2.1rem;
+}
+
+
+/* =========================================================
+   出力調整
+   ========================================================= */
+
+.inventory-settings-section {
+    padding:
+        1.5rem 2rem 1.65rem;
+
+    border-top:
+        1px solid #eceef1;
+}
+
+
+.inventory-settings__heading {
+    display:
+        flex;
+
+    align-items:
+        baseline;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    margin-bottom:
+        1.15rem;
+}
+
+
+.inventory-settings__title {
+    margin:
+        0;
+
+    color:
+        #1f2937;
+
+    font-size:
+        0.95rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.4;
+}
+
+
+.inventory-settings__hint {
+    margin:
+        0;
+
+    color:
+        #9aa0a8;
+
+    font-size:
+        0.7rem;
+
+    line-height:
+        1.4;
+}
+
+
+.inventory-settings {
+    display:
+        grid;
+
+    gap:
+        0.65rem;
+}

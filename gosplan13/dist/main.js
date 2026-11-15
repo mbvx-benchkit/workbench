@@ -1,3 +1,4 @@
+import { handleNameFocusOut } from "./label-input-utils.js";
 import { initializeCopyMenu } from "./button.js";
 import { compressImageToJpeg } from "./image.js";
 import { processJanInput } from "./jan.js";
@@ -292,23 +293,6 @@ function handleJanFocusOut(productLabel, janInput) {
     if (result.jan === "") {
         return;
     }
-}
-/* =========================================================
-   商品名処理
-   ========================================================= */
-/**
- * 商品名入力欄の値を処理する。
- *
- * 現在は先頭と末尾の空白を除去し、
- * 入力欄へ反映する。
- *
- * @param productLabel 処理対象の商品ラベル
- * @param nameInput 商品名入力欄
- */
-function handleNameFocusOut(productLabel, nameInput) {
-    const name = nameInput.value.trim();
-    nameInput.value =
-        name;
 }
 /* =========================================================
    画像処理

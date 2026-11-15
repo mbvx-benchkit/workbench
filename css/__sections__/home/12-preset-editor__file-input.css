@@ -1,0 +1,339 @@
+
+
+
+/* =========================================================
+   Editor File
+   ========================================================= */
+
+.preset-editor__file-input {
+    width:
+        100%;
+
+    color:
+        #4b5563;
+
+    font-size:
+        0.78rem;
+}
+
+
+.preset-editor__file-input::file-selector-button {
+    margin-right:
+        0.65rem;
+
+    padding:
+        0.55rem 0.75rem;
+
+    color:
+        #374151;
+
+    background-color:
+        #f5f6f8;
+
+    border:
+        1px solid #d9dde3;
+
+    border-radius:
+        0.5rem;
+
+    font:
+        inherit;
+
+    font-size:
+        0.75rem;
+
+    cursor:
+        pointer;
+}
+
+
+.preset-editor__file-current {
+    margin:
+        0;
+
+    overflow:
+        hidden;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        0.7rem;
+
+    line-height:
+        1.5;
+
+    white-space:
+        nowrap;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+/* =========================================================
+   Editor Error
+   ========================================================= */
+
+.preset-editor__error {
+    margin:
+        0;
+
+    padding:
+        0.7rem 0.8rem;
+
+    color:
+        #991b1b;
+
+    background-color:
+        #fff7f7;
+
+    border:
+        1px solid #fecaca;
+
+    border-radius:
+        0.55rem;
+
+    font-size:
+        0.75rem;
+
+    line-height:
+        1.5;
+}
+
+
+.preset-editor__error[hidden] {
+    display:
+        none;
+}
+
+
+/* =========================================================
+   Editor Actions
+   ========================================================= */
+
+.preset-editor__actions {
+    display:
+        flex;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        0.5rem;
+
+    padding-top:
+        0.25rem;
+}
+
+
+/* =========================================================
+   レスポンシブ
+   ========================================================= */
+
+@media (max-width: 64rem) {
+
+    .tool-card-grid {
+        grid-template-columns:
+            repeat(2,
+                minmax(0, 1fr));
+    }
+
+
+    .preset-grid {
+        grid-template-columns:
+            repeat(2,
+                minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 42rem) {
+
+    .portal-main {
+        width:
+            min(100% - 1.5rem,
+                80rem);
+
+        padding-block:
+            1.75rem 3rem;
+    }
+
+
+    .portal-hero {
+        padding-bottom:
+            2.25rem;
+    }
+
+
+    .tool-card-grid,
+    .preset-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .tool-card {
+        min-height:
+            0;
+    }
+
+
+    .preset-documents {
+        padding-top:
+            2rem;
+    }
+
+
+    .preset-card--add {
+        min-height:
+            10rem;
+    }
+
+
+    .workbench-backup {
+        margin-top:
+            2.25rem;
+
+        padding-top:
+            2rem;
+    }
+
+
+    .workbench-backup__summary {
+        padding:
+            1.1rem;
+    }
+
+
+    .workbench-backup__actions {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .workbench-backup-action {
+        padding:
+            1.1rem;
+    }
+
+
+    .workbench-backup-action+.workbench-backup-action {
+        border-top:
+            1px solid #e8eaed;
+
+        border-left:
+            0;
+    }
+
+
+    .workbench-backup-action__description {
+        min-height:
+            0;
+    }
+
+
+    .workbench-backup-action__button {
+        width:
+            100%;
+    }
+
+
+    .workbench-backup__notice {
+        padding:
+            0.9rem 1.1rem;
+    }
+
+
+    .preset-manager-dialog {
+        width:
+            calc(100% - 1rem);
+
+        max-height:
+            calc(100dvh - 1rem);
+    }
+
+
+    .preset-manager-dialog__surface {
+        max-height:
+            calc(100dvh - 1rem);
+    }
+
+
+    .preset-manager-dialog__header {
+        padding:
+            1rem;
+    }
+
+
+    .preset-manager-view {
+        padding:
+            1rem;
+    }
+
+
+    .preset-manager-toolbar {
+        align-items:
+            stretch;
+
+        flex-direction:
+            column;
+    }
+
+
+    .preset-manager-toolbar .glass-button {
+        width:
+            100%;
+    }
+
+
+    .preset-manager-item {
+        grid-template-columns:
+            4.5rem minmax(0, 1fr);
+    }
+
+
+    .preset-manager-item__preview {
+        width:
+            4.5rem;
+    }
+
+
+    .preset-manager-item__actions {
+        grid-column:
+            1 / -1;
+
+        justify-content:
+            flex-end;
+
+        padding-top:
+            0.2rem;
+    }
+
+
+    .preset-editor__radio-group {
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(2,
+                minmax(0, 1fr));
+    }
+
+
+    .preset-editor__radio {
+        min-width:
+            0;
+    }
+
+
+    .preset-editor__actions {
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+}

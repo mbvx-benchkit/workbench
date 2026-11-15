@@ -1,0 +1,191 @@
+
+
+
+/* =========================================================
+   Builder Error
+   ========================================================= */
+
+.template-builder-error {
+    margin:
+        0;
+
+    padding:
+        0.7rem 1.1rem;
+
+    border-top:
+        1px solid #ecd1d1;
+
+    background:
+        #fff5f5;
+
+    color:
+        #a53e3e;
+
+    font-size:
+        0.76rem;
+
+    line-height:
+        1.5;
+}
+
+
+/* =========================================================
+   Builder Footer
+   ========================================================= */
+
+.template-builder-footer {
+    flex:
+        0 0 auto;
+
+    padding:
+        0.8rem 1.15rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    border-top:
+        1px solid #e5e8ec;
+
+    background:
+        #ffffff;
+}
+
+
+.template-builder-footer__right {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.5rem;
+}
+
+
+/* =========================================================
+   Confirm
+   ========================================================= */
+
+.confirm-dialog {
+    width:
+        min(26rem, calc(100% - 3rem));
+
+    margin:
+        auto;
+}
+
+
+.confirm-dialog__surface {
+    padding:
+        1.35rem;
+
+    border:
+        1px solid rgba(0, 0, 0, 0.08);
+
+    border-radius:
+        1rem;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 1.5rem 4rem rgba(0, 0, 0, 0.22);
+}
+
+
+.confirm-dialog__title {
+    margin:
+        0;
+
+    font-size:
+        1rem;
+}
+
+
+.confirm-dialog__description {
+    margin:
+        0.55rem 0 0;
+
+    color:
+        #747a84;
+
+    font-size:
+        0.8rem;
+
+    line-height:
+        1.65;
+}
+
+
+.confirm-dialog__actions {
+    margin-top:
+        1.25rem;
+
+    display:
+        flex;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        0.5rem;
+}
+
+
+.confirm-dialog__delete-button {
+    color:
+        #a63838;
+}
+
+
+/* =========================================================
+   Toast
+   ========================================================= */
+
+.document-toast {
+    position:
+        fixed;
+
+    right:
+        1.5rem;
+
+    bottom:
+        1.5rem;
+
+    z-index:
+        100;
+
+    max-width:
+        24rem;
+
+    padding:
+        0.75rem 1rem;
+
+    border-radius:
+        0.7rem;
+
+    background:
+        rgba(32, 36, 43, 0.95);
+
+    color:
+        #ffffff;
+
+    font-size:
+        0.8rem;
+
+    line-height:
+        1.5;
+
+    box-shadow:
+        0 0.75rem 2rem rgba(0, 0, 0, 0.18);
+}

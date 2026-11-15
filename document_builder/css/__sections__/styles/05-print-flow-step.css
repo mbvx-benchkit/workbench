@@ -1,0 +1,192 @@
+
+
+
+/* =========================================================
+   Print Step
+   ========================================================= */
+
+.print-flow-step {
+    display:
+        grid;
+
+    grid-template-columns:
+        2.4rem minmax(0, 1fr);
+
+    gap:
+        0.9rem;
+
+    transition:
+        opacity 120ms ease;
+}
+
+
+.print-flow-step__number {
+    width:
+        2.4rem;
+
+    height:
+        2.4rem;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border-radius:
+        50%;
+
+    background:
+        #252a31;
+
+    color:
+        #ffffff;
+
+    font-size:
+        0.8rem;
+
+    font-weight:
+        800;
+}
+
+
+.print-flow-step--disabled {
+    opacity:
+        0.4;
+}
+
+
+.print-flow-step--disabled .print-flow-step__number {
+    background:
+        #9ca2aa;
+}
+
+
+.print-flow-step--complete .print-flow-step__number {
+    background:
+        #4f7659;
+}
+
+
+.print-flow-step__body {
+    min-width:
+        0;
+}
+
+
+.print-flow-step__title {
+    margin:
+        0 0 0.35rem;
+
+    color:
+        #292d34;
+
+    font-size:
+        0.95rem;
+
+    font-weight:
+        750;
+}
+
+
+.print-flow-step__description {
+    margin:
+        0 0 0.8rem;
+
+    color:
+        #707680;
+
+    font-size:
+        0.78rem;
+
+    line-height:
+        1.7;
+}
+
+
+.print-flow-step__status {
+    margin:
+        0.7rem 0 0;
+
+    color:
+        #4f7459;
+
+    font-size:
+        0.74rem;
+
+    font-weight:
+        700;
+}
+
+
+.print-flow-connector {
+    width:
+        1px;
+
+    height:
+        2rem;
+
+    margin:
+        0.5rem 0 0.5rem 1.2rem;
+
+    background:
+        #d9dde2;
+}
+
+
+/* =========================================================
+   Print File
+   ========================================================= */
+
+.print-flow-file {
+    margin-bottom:
+        0.85rem;
+
+    padding:
+        0.65rem 0.75rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    border:
+        1px solid #e0e3e7;
+
+    border-radius:
+        0.6rem;
+
+    background:
+        #f7f8fa;
+}
+
+
+.print-flow-file__label {
+    color:
+        #7a8089;
+
+    font-size:
+        0.7rem;
+
+    font-weight:
+        700;
+}
+
+
+.print-flow-file__name {
+    color:
+        #3e454e;
+
+    font-size:
+        0.8rem;
+
+    font-weight:
+        700;
+}

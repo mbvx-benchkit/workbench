@@ -1,0 +1,138 @@
+
+
+/*
+ * 印刷時にはplaceholder文字を表示しない。
+ */
+.product-label__name-input::placeholder,
+.product-label__jan-input::placeholder {
+    color: transparent;
+}
+
+/*
+ * 画像領域は通常モードでは表示しない。
+ */
+.product-label__image-area {
+    display: none;
+
+    min-width: 0;
+    min-height: 0;
+}
+
+/*
+ * 画像ありモードの場合のみ画像領域を表示する。
+ */
+.a4-preview--with-images .product-label__image-area {
+    display: block;
+}
+
+/*
+ * ファイル選択inputは印刷しない。
+ */
+.product-label__image-input {
+    display: none !important;
+}
+
+/*
+ * 画像選択枠は印刷時には装飾を消す。
+ */
+.product-label__image-picker {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    min-width: 0;
+    min-height: 0;
+
+    display: grid;
+    place-items: center;
+
+    overflow: hidden;
+
+    border: 0;
+    border-radius: 0;
+
+    background: transparent;
+
+    cursor: default;
+}
+
+/*
+ * 未選択時の案内表示は印刷しない。
+ */
+.product-label__image-placeholder {
+    display: none !important;
+}
+
+/*
+ * 選択済み画像。
+ */
+.product-label__image-preview {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: contain;
+}
+
+/*
+ * hidden属性付き画像は印刷時も非表示にする。
+ */
+.product-label__image-preview[hidden] {
+    display: none !important;
+}
+
+/*
+ * バーコード領域。
+ *
+ * 画面側と同様に、
+ * 内容の高さに応じて配置する。
+ */
+.product-label__barcode-area {
+    min-width: 0;
+    min-height: 0;
+
+    box-sizing: border-box;
+
+    height: 12mm;
+
+    line-height: 0;
+
+    overflow: hidden;
+}
+
+/*
+ * バーコードSVG。
+ *
+ * SVGをblockにすることで、
+ * インライン要素由来の下余白をなくす。
+ */
+.product-label__barcode {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    overflow: hidden;
+}
+
+/*
+ * JAN入力欄を包む領域。
+ *
+ * inputのベースライン由来の余白を防ぐ。
+ */
+.product-label__jan-area {
+    min-width: 0;
+
+    height: fit-content;
+
+    line-height: 0;
+}
+
+/*
+ * 印刷時にリンクURLを自動追加させない。
+ */
+a[href]::after {
+    content: none !important;
+}

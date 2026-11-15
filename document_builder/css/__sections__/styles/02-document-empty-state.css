@@ -1,0 +1,195 @@
+
+
+
+/* =========================================================
+   Empty
+   ========================================================= */
+
+.document-empty-state {
+    min-height:
+        23rem;
+
+    padding:
+        2rem 1.5rem;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    text-align:
+        center;
+}
+
+
+.document-empty-state__title {
+    margin:
+        0;
+
+    color:
+        #292d34;
+
+    font-size:
+        0.98rem;
+
+    font-weight:
+        750;
+}
+
+
+.document-empty-state__description {
+    max-width:
+        17rem;
+
+    margin:
+        0.55rem 0 0;
+
+    color:
+        #777d87;
+
+    font-size:
+        0.8rem;
+
+    line-height:
+        1.75;
+}
+
+
+/* =========================================================
+   Document Fields
+   ========================================================= */
+
+.document-fields-form {
+    min-height:
+        0;
+
+    overflow-y:
+        auto;
+
+    scrollbar-gutter:
+        stable;
+}
+
+
+.document-fields {
+    padding:
+        1rem 1.1rem 1.4rem;
+
+    display:
+        grid;
+
+    gap:
+        1rem;
+}
+
+
+.document-field {
+    display:
+        grid;
+
+    gap:
+        0.4rem;
+}
+
+
+.document-field__label {
+    color:
+        #454a53;
+
+    font-size:
+        0.78rem;
+
+    font-weight:
+        700;
+}
+
+
+.document-field__label[data-required="true"]::after {
+    content:
+        " *";
+
+    color:
+        #bd4343;
+}
+
+
+.document-field__input,
+.document-field__textarea {
+    width:
+        100%;
+
+    border:
+        1px solid #d8dce2;
+
+    border-radius:
+        0.65rem;
+
+    outline:
+        none;
+
+    background:
+        #ffffff;
+
+    color:
+        #20242b;
+
+    font-size:
+        0.875rem;
+
+    transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease;
+}
+
+
+.document-field__input {
+    height:
+        2.6rem;
+
+    padding:
+        0 0.8rem;
+}
+
+
+.document-field__textarea {
+    min-height:
+        7rem;
+
+    padding:
+        0.7rem 0.8rem;
+
+    resize:
+        vertical;
+
+    line-height:
+        1.65;
+}
+
+/* Placeholder */
+
+.document-field__input::placeholder,
+.document-field__textarea::placeholder {
+    color:
+        #b8bdc5;
+
+    opacity:
+        1;
+}
+
+/* Focus */
+
+.document-field__input:focus,
+.document-field__textarea:focus {
+    border-color:
+        #8a929d;
+
+    box-shadow:
+        0 0 0 0.18rem rgba(80, 88, 102, 0.1);
+}

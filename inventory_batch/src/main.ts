@@ -1,3 +1,10 @@
+/* WORKBENCH_STAGE3_ERROR_VIEW */
+import { renderInventoryErrorList, clearInventoryErrorList } from "./errors/error-view.js";
+/* WORKBENCH_EXTRACT_inventoryErrors */
+import { filterCsvErrorsByOutputItems, createDisplayErrors } from "./errors/error-model.js";
+import type { DisplayError } from "./ui/inventory-ui-utils.js";
+import { padTwoDigits, setCountValue, requireElement, requireElements } from "./ui/inventory-ui-utils.js";
+
 /**
  * main.ts
  *
@@ -48,22 +55,6 @@ import {
 import type {
     InventoryRenderError
 } from "./render.js";
-
-
-/* =========================================================
-   型定義
-   ========================================================= */
-
-/**
- * 画面に表示するエラー。
- *
- * CSV由来・バーコード由来・
- * CSV全体の読込失敗を同じ形式で扱う。
- */
-type DisplayError = {
-    rowNumber?: number;
-    message: string;
-};
 
 
 /* =========================================================
@@ -757,23 +748,6 @@ function formatIssuedAt(
 }
 
 
-/**
- * 1桁の数字を
- * 2桁文字列へ変換する。
- */
-function padTwoDigits(
-    value: number
-): string {
-
-    return String(
-        value
-    ).padStart(
-        2,
-        "0"
-    );
-}
-
-
 /* =========================================================
    印刷
    ========================================================= */
@@ -828,114 +802,6 @@ function handleBeforePrint():
 
 
 /* =========================================================
-   CSVエラー絞り込み
-   ========================================================= */
-
-/**
- * 現在の出力対象になっている行だけ
- * CSVエラーを残す。
- */
-function filterCsvErrorsByOutputItems(
-    errors: readonly CsvRowError[],
-    outputItems:
-        readonly InventoryItem[]
-): CsvRowError[] {
-
-    const outputRowNumbers =
-        new Set(
-            outputItems.map(
-                (item) =>
-                    item.rowNumber
-            )
-        );
-
-
-    return errors.filter(
-        (error) =>
-            outputRowNumbers.has(
-                error.rowNumber
-            )
-    );
-}
-
-
-/* =========================================================
-   エラー統合
-   ========================================================= */
-
-/**
- * CSV由来エラーとバーコード由来エラーを
- * 画面表示用形式へ統合する。
- */
-function createDisplayErrors(
-    csvErrors:
-        readonly CsvRowError[],
-    renderErrors:
-        readonly InventoryRenderError[]
-): DisplayError[] {
-
-    const errors:
-        DisplayError[] =
-        [];
-
-
-    for (
-        const error
-        of csvErrors
-    ) {
-
-        errors.push({
-
-            rowNumber:
-                error.rowNumber,
-
-            message:
-                error.message
-        });
-    }
-
-
-    for (
-        const error
-        of renderErrors
-    ) {
-
-        errors.push({
-
-            rowNumber:
-                error.rowNumber,
-
-            message:
-                error.message
-        });
-    }
-
-
-    /**
-     * エラー一覧自体は
-     * CSV元行番号順。
-     */
-    errors.sort(
-        (
-            first,
-            second
-        ) =>
-            (
-                first.rowNumber ??
-                0
-            ) -
-            (
-                second.rowNumber ??
-                0
-            )
-    );
-
-
-    return errors;
-}
-
-
-/* =========================================================
    エラー表示
    ========================================================= */
 
@@ -946,55 +812,7 @@ function renderErrors(
     errors:
         readonly DisplayError[]
 ): void {
-
-    errorList.replaceChildren();
-
-
-    if (
-        errors.length ===
-        0
-    ) {
-
-        errorSection.hidden =
-            true;
-
-
-        return;
-    }
-
-
-    const fragment =
-        document.createDocumentFragment();
-
-
-    for (
-        const error
-        of errors
-    ) {
-
-        const listItem =
-            document.createElement(
-                "li"
-            );
-
-
-        listItem.textContent =
-            error.message;
-
-
-        fragment.appendChild(
-            listItem
-        );
-    }
-
-
-    errorList.appendChild(
-        fragment
-    );
-
-
-    errorSection.hidden =
-        false;
+    return renderInventoryErrorList(errorList, errorSection, errors);
 }
 
 
@@ -1003,12 +821,7 @@ function renderErrors(
  */
 function clearErrorDisplay():
     void {
-
-    errorList.replaceChildren();
-
-
-    errorSection.hidden =
-        true;
+    return clearInventoryErrorList(errorList, errorSection);
 }
 
 
@@ -1146,111 +959,4 @@ function resetSummary():
         errorCount,
         0
     );
-}
-
-
-/**
- * 件数表示を更新する。
- */
-function setCountValue(
-    element: HTMLElement,
-    value: number
-): void {
-
-    const unit =
-        element.querySelector<HTMLElement>(
-            ".inventory-summary__unit"
-        );
-
-
-    if (
-        unit ===
-        null
-    ) {
-
-        element.textContent =
-            String(
-                value
-            );
-
-
-        return;
-    }
-
-
-    element.textContent =
-        String(
-            value
-        );
-
-
-    element.appendChild(
-        unit
-    );
-}
-
-
-/* =========================================================
-   DOMユーティリティ
-   ========================================================= */
-
-/**
- * 必須DOM要素を1件取得する。
- */
-function requireElement<
-    T extends Element
->(
-    selector: string
-): T {
-
-    const element =
-        document.querySelector<T>(
-            selector
-        );
-
-
-    if (
-        element ===
-        null
-    ) {
-
-        throw new Error(
-            `必要な要素が見つかりません: ${selector}`
-        );
-    }
-
-
-    return element;
-}
-
-
-/**
- * 必須DOM要素を複数取得する。
- */
-function requireElements<
-    T extends Element
->(
-    selector: string
-): T[] {
-
-    const elements =
-        Array.from(
-            document.querySelectorAll<T>(
-                selector
-            )
-        );
-
-
-    if (
-        elements.length ===
-        0
-    ) {
-
-        throw new Error(
-            `必要な要素が見つかりません: ${selector}`
-        );
-    }
-
-
-    return elements;
 }

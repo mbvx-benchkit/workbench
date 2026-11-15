@@ -54,9 +54,6 @@ class SiteHeader extends HTMLElement {
                             />
                         </svg>
                         <div class="header__title-content">
-                            <p class="header__eyebrow">
-                                A lightweight in-house toolkit built with HTML, CSS, and TypeScript
-                            </p>
                             <h1 class="header__title">
                                 WORKBENCH
                             </h1>
@@ -64,6 +61,7 @@ class SiteHeader extends HTMLElement {
                     </a>
                 </div>
                 <div class="header__far-item">
+                    <nav class="header__nav" aria-label="ツール一覧">
                     <a
                         href="${barcodeUrl}"
                         class="header__nav-link"
@@ -88,6 +86,7 @@ class SiteHeader extends HTMLElement {
                     >
                         ビジネス文書出力
                     </a>
+                    </nav>
                     <button
                         type="button"
                         class="header__icon-button"
@@ -112,9 +111,20 @@ class SiteHeader extends HTMLElement {
 
             </header>
         `;
+        this.markActiveNavigation();
         this.setupCopyLinkButton();
     }
 
+
+    /** 表示中のツールをナビゲーションで識別できるようにする。 */
+    private markActiveNavigation(): void {
+        const currentPath = window.location.pathname.replace(/\/index\.html$/, "/");
+        this.querySelectorAll<HTMLAnchorElement>(".header__nav-link").forEach((link) => {
+            if (new URL(link.href).pathname === currentPath) {
+                link.setAttribute("aria-current", "page");
+            }
+        });
+    }
 
     /**
      * 「リンクをコピー」ボタンのイベントを設定する。

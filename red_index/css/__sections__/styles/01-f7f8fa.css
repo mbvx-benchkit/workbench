@@ -1,0 +1,153 @@
+/* =========================================================
+   RED INDEX
+   ========================================================= */
+
+
+/* =========================================================
+   Base
+   ========================================================= */
+
+body {
+    min-width:
+        72rem;
+
+    background:
+        linear-gradient(180deg,
+            #f7f8fa 0%,
+            #f1f3f6 100%);
+}
+
+
+/* =========================================================
+   Top Panel
+   ========================================================= */
+
+/* 上部パネルは ../css/styles.css で共通管理。 */
+
+/* =========================================================
+   Ribbon
+   ========================================================= */
+
+/* =========================================================
+   Main
+   ========================================================= */
+
+.red-index-main {
+    width:
+        100%;
+
+    padding:
+        1.5rem clamp(1rem, 2.5vw, 2.5rem) 3rem;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(20rem, 23rem) minmax(52rem, 1fr);
+
+    align-items:
+        start;
+
+    gap:
+        clamp(1.25rem, 2vw, 2rem);
+}
+
+
+/* =========================================================
+   Editor
+   ========================================================= */
+
+.red-index-editor {
+    position:
+        relative;
+
+    min-width:
+        0;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    overflow:
+        visible;
+
+    border:
+        1px solid #dde1e7;
+
+    border-radius:
+        1rem;
+
+    background:
+        rgba(255, 255, 255, 0.96);
+
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.025),
+        0 0.75rem 2.5rem rgba(28, 39, 62, 0.055);
+}
+
+
+/* =========================================================
+   Editor Header
+   ========================================================= */
+
+.red-index-editor__header {
+    flex:
+        0 0 auto;
+
+    padding:
+        1.15rem 1.2rem 1rem;
+
+    border-bottom:
+        1px solid #e7e9ed;
+}
+
+
+.red-index-editor__eyebrow,
+.red-index-preview__eyebrow {
+    margin:
+        0 0 0.25rem;
+
+    color:
+        #858b95;
+
+    font-size:
+        0.68rem;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.red-index-editor__title {
+    margin:
+        0;
+
+    color:
+        #20242b;
+
+    font-size:
+        1.2rem;
+
+    font-weight:
+        750;
+}
+
+
+.red-index-editor__description {
+    margin:
+        0.6rem 0 0;
+
+    color:
+        #777d87;
+
+    font-size:
+        0.76rem;
+
+    line-height:
+        1.6;
+}

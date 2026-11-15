@@ -1,0 +1,151 @@
+/**
+ * print.css
+ *
+ * INVENTORY BATCH
+ * 印刷専用スタイル。
+ *
+ * A4縦固定。
+ *
+ * 1ページ:
+ * 56件
+ *
+ * 左:
+ * 28件
+ *
+ * 右:
+ * 28件
+ */
+
+
+/* =========================================================
+   Page
+   ========================================================= */
+
+@page {
+    size:
+        A4 portrait;
+
+    margin:
+        0;
+}
+
+
+/* =========================================================
+   Document
+   ========================================================= */
+
+html,
+body {
+    width:
+        210mm;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+
+    background:
+        #ffffff !important;
+}
+
+
+body {
+    display:
+        block !important;
+
+    -webkit-print-color-adjust:
+        exact;
+
+    print-color-adjust:
+        exact;
+}
+
+
+/* =========================================================
+   通常UI 非表示
+   ========================================================= */
+
+.top-panel,
+site-header,
+.footer {
+    display:
+        none !important;
+}
+
+
+.inventory-main> :not(.inventory-preview-section) {
+    display:
+        none !important;
+}
+
+
+.inventory-preview-section>.inventory-section__heading {
+    display:
+        none !important;
+}
+
+
+/* =========================================================
+   Main
+   ========================================================= */
+
+.inventory-main {
+    width:
+        auto !important;
+
+    max-width:
+        none !important;
+
+    display:
+        block !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+}
+
+
+/* =========================================================
+   Preview
+   ========================================================= */
+
+.inventory-preview-section {
+    display:
+        block !important;
+
+    width:
+        auto !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+
+    border:
+        0 !important;
+}
+
+
+.inventory-preview {
+    display:
+        block !important;
+
+    width:
+        auto !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+}
+
+
+.inventory-preview__empty {
+    display:
+        none !important;
+}

@@ -1,3 +1,13 @@
+import type { DocumentTemplateFieldType, DocumentTemplateField, DocumentTemplateLayout, DocumentTemplate } from "./archive-types.js";
+export type { DocumentTemplateFieldType, DocumentTemplateField, DocumentTemplateLayout, DocumentTemplate } from "./archive-types.js";
+import type { RedIndexCategory } from "./archive-types.js";
+export type { RedIndexCategory } from "./archive-types.js";
+import type { PresetDocumentArchiveMetadata } from "./archive-types.js";
+export type { PresetDocumentArchiveMetadata } from "./archive-types.js";
+import type { PrintHistoryRecord, PrintHistoryArchiveMetadata } from "./archive-types.js";
+export type { PrintHistoryRecord, PrintHistoryArchiveMetadata } from "./archive-types.js";
+import { requireRecord, requireString, requireNonNegativeInteger, requireFiniteNumber, requireUniqueIds, requireSafeArchivePath } from "./archive-validation.js";
+
 /**
  * backup-types.ts
  *
@@ -41,63 +51,6 @@ export const RED_INDEX_VERSION =
     1 as const;
 
 
-/* =========================================================
-   Document Builder
-   ========================================================= */
-
-export type DocumentTemplateFieldType =
-    | "text"
-    | "textarea"
-    | "date";
-
-
-export type DocumentTemplateField = {
-
-    id: string;
-
-    label: string;
-
-    type:
-    DocumentTemplateFieldType;
-
-    required?: boolean;
-
-    defaultValue?: string;
-
-    placeholder?: string;
-};
-
-
-export type DocumentTemplateLayout = {
-
-    topLeft: string;
-
-    topRight: string;
-
-    opening: string;
-
-    body: string;
-
-    closing: string;
-
-    end: string;
-};
-
-
-export type DocumentTemplate = {
-
-    id: string;
-
-    name: string;
-
-    fields:
-    DocumentTemplateField[];
-
-    document:
-    DocumentTemplateLayout;
-};
-
-
 export type DocumentTemplatesArchive = {
 
     version:
@@ -105,18 +58,6 @@ export type DocumentTemplatesArchive = {
 
     templates:
     DocumentTemplate[];
-};
-
-
-/* =========================================================
-   RED INDEX
-   ========================================================= */
-
-export type RedIndexCategory = {
-
-    category: string;
-
-    items: string[];
 };
 
 
@@ -130,55 +71,6 @@ export type RedIndexData = {
 };
 
 
-/* =========================================================
-   PRESET DOCUMENTS
-   ========================================================= */
-
-/**
- * Blob自体はZIP内の別ファイルとして保持する。
- *
- * documents.jsonには
- * IndexedDBレコードのメタ情報と、
- * ZIP内のBlobパスだけを保持する。
- */
-export type PresetDocumentArchiveMetadata = {
-
-    id: string;
-
-    title: string;
-
-    description: string;
-
-    orientation:
-    "portrait" |
-    "landscape";
-
-    pdfFileName: string;
-
-    pdfMimeType: string;
-
-    pdfPath: string;
-
-    previewFileName:
-    string |
-    null;
-
-    previewMimeType:
-    string |
-    null;
-
-    previewPath:
-    string |
-    null;
-
-    sortOrder: number;
-
-    createdAt: number;
-
-    updatedAt: number;
-};
-
-
 export type PresetDocumentsArchive = {
 
     version:
@@ -186,28 +78,6 @@ export type PresetDocumentsArchive = {
 
     documents:
     PresetDocumentArchiveMetadata[];
-};
-
-
-/* =========================================================
-   DOCUMENT BUILDER PDF History
-   ========================================================= */
-
-export type PrintHistoryRecord = {
-    id: string;
-    recipientName: string;
-    fileName: string;
-    createdAt: number;
-    pdfBlob: Blob;
-};
-
-export type PrintHistoryArchiveMetadata = {
-    id: string;
-    recipientName: string;
-    fileName: string;
-    createdAt: number;
-    pdfMimeType: "application/pdf";
-    pdfPath: string;
 };
 
 export type PrintHistoryArchive = {
@@ -1166,84 +1036,6 @@ function parsePresetDocumentMetadata(
 }
 
 
-/* =========================================================
-   Generic Validation
-   ========================================================= */
-
-function requireRecord(
-    value: unknown,
-    path: string
-): Record<string, unknown> {
-
-    if (
-        typeof value !==
-        "object" ||
-
-        value ===
-        null ||
-
-        Array.isArray(
-            value
-        )
-    ) {
-
-        throw new Error(
-            `${path} が不正です。`
-        );
-    }
-
-
-    return value as
-        Record<string, unknown>;
-}
-
-
-function requireString(
-    value: unknown,
-    path: string,
-    maxLength: number,
-    required = false
-): string {
-
-    if (
-        typeof value !==
-        "string"
-    ) {
-
-        throw new Error(
-            `${path} が文字列ではありません。`
-        );
-    }
-
-
-    if (
-        required &&
-
-        value.length ===
-        0
-    ) {
-
-        throw new Error(
-            `${path} が空です。`
-        );
-    }
-
-
-    if (
-        value.length >
-        maxLength
-    ) {
-
-        throw new Error(
-            `${path} が長すぎます。`
-        );
-    }
-
-
-    return value;
-}
-
-
 function requireNullableString(
     value: unknown,
     path: string,
@@ -1265,121 +1057,4 @@ function requireNullableString(
         maxLength,
         true
     );
-}
-
-
-function requireNonNegativeInteger(
-    value: unknown,
-    path: string
-): number {
-
-    if (
-        typeof value !==
-        "number" ||
-
-        !Number.isSafeInteger(
-            value
-        ) ||
-
-        value <
-        0
-    ) {
-
-        throw new Error(
-            `${path} が不正です。`
-        );
-    }
-
-
-    return value;
-}
-
-
-function requireFiniteNumber(
-    value: unknown,
-    path: string
-): number {
-
-    if (
-        typeof value !==
-        "number" ||
-
-        !Number.isFinite(
-            value
-        )
-    ) {
-
-        throw new Error(
-            `${path} が不正です。`
-        );
-    }
-
-
-    return value;
-}
-
-
-function requireUniqueIds(
-    values:
-        Array<{
-            id: string;
-        }>,
-    label: string
-): void {
-
-    const ids =
-        new Set<string>();
-
-
-    for (
-        const value
-        of values
-    ) {
-
-        if (
-            ids.has(
-                value.id
-            )
-        ) {
-
-            throw new Error(
-                `${label}に重複したIDがあります: ${value.id}`
-            );
-        }
-
-
-        ids.add(
-            value.id
-        );
-    }
-}
-
-
-function requireSafeArchivePath(
-    path: string,
-    requiredPrefix: string
-): void {
-
-    if (
-        !path.startsWith(
-            requiredPrefix
-        ) ||
-
-        path.includes(
-            ".."
-        ) ||
-
-        path.includes(
-            "\\"
-        ) ||
-
-        path.startsWith(
-            "/"
-        )
-    ) {
-
-        throw new Error(
-            `ZIP内のファイルパスが不正です: ${path}`
-        );
-    }
 }

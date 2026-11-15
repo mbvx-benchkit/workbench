@@ -1,0 +1,261 @@
+
+
+
+/* =========================================================
+   Business Document
+   ========================================================= */
+
+.business-document__top {
+    min-height:
+        28mm;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr);
+
+    gap:
+        10mm;
+}
+
+
+.business-document__top-left,
+.business-document__top-right {
+    white-space:
+        pre-wrap;
+}
+
+
+.business-document__top-left {
+    text-align:
+        left;
+
+    text-decoration-line:
+        underline;
+
+    text-decoration-thickness:
+        1px;
+
+    text-underline-offset:
+        0.18em;
+}
+
+
+.business-document__top-right {
+    text-align:
+        right;
+}
+
+
+.business-document__opening {
+    margin-top:
+        9mm;
+
+    white-space:
+        pre-wrap;
+}
+
+
+.business-document__body {
+    margin-top:
+        5mm;
+
+    white-space:
+        pre-wrap;
+
+    line-height:
+        2;
+}
+
+
+.business-document__closing {
+    margin-top:
+        5mm;
+
+    white-space:
+        pre-wrap;
+
+    text-align:
+        right;
+}
+
+
+.business-document__end {
+    margin-top:
+        9mm;
+
+    white-space:
+        pre-wrap;
+
+    text-align:
+        center;
+}
+
+
+.document-page-empty {
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    color:
+        #a2a7ae;
+
+    text-align:
+        center;
+}
+
+
+/* =========================================================
+   Dialog Common
+   ========================================================= */
+
+.template-dialog,
+.confirm-dialog,
+.print-flow-dialog {
+    padding:
+        0;
+
+    border:
+        0;
+
+    background:
+        transparent;
+}
+
+
+.template-dialog::backdrop,
+.confirm-dialog::backdrop,
+.print-flow-dialog::backdrop {
+    background:
+        rgba(20, 24, 31, 0.38);
+
+    backdrop-filter:
+        blur(0.18rem);
+
+    -webkit-backdrop-filter:
+        blur(0.18rem);
+}
+
+
+/* =========================================================
+   Print Flow
+   ========================================================= */
+
+.print-flow-dialog {
+    width:
+        min(35rem, calc(100% - 3rem));
+
+    margin:
+        auto;
+}
+
+
+.print-flow-dialog__surface {
+    overflow:
+        hidden;
+
+    border:
+        1px solid rgba(0, 0, 0, 0.08);
+
+    border-radius:
+        1rem;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 1.5rem 5rem rgba(0, 0, 0, 0.22);
+}
+
+
+.print-flow-dialog__header {
+    padding:
+        1.2rem 1.35rem;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    border-bottom:
+        1px solid #e8eaed;
+}
+
+
+.print-flow-dialog__title {
+    margin:
+        0;
+
+    color:
+        #252930;
+
+    font-size:
+        1.15rem;
+
+    font-weight:
+        750;
+}
+
+
+.print-flow-dialog__close {
+    width:
+        2.25rem;
+
+    height:
+        2.25rem;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        transparent;
+
+    color:
+        #676d76;
+
+    font-size:
+        1.25rem;
+
+    cursor:
+        pointer;
+}
+
+
+.print-flow-dialog__close:hover {
+    background:
+        #f0f2f4;
+}
+
+
+.print-flow-dialog__content {
+    padding:
+        1.25rem 1.35rem 1.4rem;
+}

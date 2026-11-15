@@ -1,42 +1,11 @@
+import type { TemplateFieldType, TemplateField, BusinessDocumentLayout, DocumentValues } from "./templates/template-domain.js";
+export type { TemplateFieldType, TemplateField, BusinessDocumentLayout, DocumentValues } from "./templates/template-domain.js";
+import type { DocumentTemplate } from "./templates/template-domain.js";
+export type { DocumentTemplate } from "./templates/template-domain.js";
+import { formatLocalDate } from "./templates/template-domain.js";
+import { requireRecord, requireString } from "./templates/template-domain.js";
+
 export const DOCUMENT_PACKAGE_VERSION = 1 as const;
-
-
-export type TemplateFieldType =
-    | "text"
-    | "textarea"
-    | "date";
-
-
-export type TemplateField = {
-    id: string;
-    label: string;
-    type: TemplateFieldType;
-    required?: boolean;
-    defaultValue?: string;
-    placeholder?: string;
-};
-
-
-export type BusinessDocumentLayout = {
-    topLeft: string;
-    topRight: string;
-    opening: string;
-    body: string;
-    closing: string;
-    end: string;
-};
-
-
-export type DocumentTemplate = {
-    id: string;
-    name: string;
-    fields: TemplateField[];
-    document: BusinessDocumentLayout;
-};
-
-
-export type DocumentValues =
-    Record<string, string>;
 
 
 export type DocumentPackage = {
@@ -862,45 +831,6 @@ function resolveDefaultValue(
 
 
 /* =========================================================
-   Local date
-   ========================================================= */
-
-function formatLocalDate(
-    date: Date
-): string {
-
-    const year =
-        String(
-            date.getFullYear()
-        );
-
-
-    const month =
-        String(
-            date.getMonth() +
-            1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const day =
-        String(
-            date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    return (
-        `${year}-${month}-${day}`
-    );
-}
-
-
-/* =========================================================
    Clone
    ========================================================= */
 
@@ -927,60 +857,6 @@ function cloneTemplate(
             ...template.document
         }
     };
-}
-
-
-/* =========================================================
-   Generic validation
-   ========================================================= */
-
-function requireRecord(
-    value: unknown,
-    message: string
-): Record<string, unknown> {
-
-    if (
-        typeof value !==
-        "object" ||
-
-        value ===
-        null ||
-
-        Array.isArray(
-            value
-        )
-    ) {
-
-        throw new Error(
-            message
-        );
-    }
-
-
-    return (
-        value as
-        Record<string, unknown>
-    );
-}
-
-
-function requireString(
-    value: unknown,
-    path: string
-): string {
-
-    if (
-        typeof value !==
-        "string"
-    ) {
-
-        throw new Error(
-            `${path} は文字列である必要があります。`
-        );
-    }
-
-
-    return value;
 }
 
 

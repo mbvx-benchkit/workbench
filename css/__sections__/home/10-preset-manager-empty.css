@@ -1,0 +1,231 @@
+
+
+
+/* =========================================================
+   管理一覧 空状態
+   ========================================================= */
+
+.preset-manager-empty {
+    padding:
+        2rem 1rem;
+
+    color:
+        #6b7280;
+
+    background-color:
+        #fafafa;
+
+    border:
+        1px dashed #d1d5db;
+
+    border-radius:
+        0.75rem;
+
+    font-size:
+        0.8rem;
+
+    text-align:
+        center;
+}
+
+
+/* =========================================================
+   ローカル保存 注意書き
+   ========================================================= */
+
+.preset-manager-storage-note {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        0.45rem;
+
+    margin:
+        1rem 0 0;
+
+    padding-top:
+        0.9rem;
+
+    color:
+        #8a919c;
+
+    border-top:
+        1px solid #eeeeef;
+
+    font-size:
+        0.72rem;
+
+    line-height:
+        1.55;
+}
+
+
+.preset-manager-storage-note svg {
+    width:
+        1rem;
+
+    height:
+        1rem;
+
+    flex:
+        0 0 auto;
+
+    margin-top:
+        0.1rem;
+
+    fill:
+        currentColor;
+}
+
+
+/* =========================================================
+   Editor Header
+   ========================================================= */
+
+.preset-editor-heading {
+    min-height:
+        2.2rem;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        0.65rem;
+
+    margin-bottom:
+        1.25rem;
+}
+
+
+.preset-editor-heading__content {
+    min-width:
+        0;
+}
+
+
+.preset-editor-heading__back {
+    width:
+        2rem;
+
+    height:
+        2rem;
+
+    flex:
+        0 0 auto;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    margin:
+        -0.15rem 0 0;
+
+    padding:
+        0;
+
+    color:
+        #6b7280;
+
+    background-color:
+        transparent;
+
+    border:
+        1px solid transparent;
+
+    border-radius:
+        0.55rem;
+
+    cursor:
+        pointer;
+
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+
+.preset-editor-heading__back:hover {
+    color:
+        #1f2937;
+
+    background-color:
+        #f3f4f6;
+
+    border-color:
+        #e5e7eb;
+}
+
+
+.preset-editor-heading__back:focus-visible {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.125rem;
+}
+
+
+.preset-editor-heading__back[hidden] {
+    display:
+        none;
+}
+
+
+.preset-editor-heading__back svg {
+    width:
+        1.2rem;
+
+    height:
+        1.2rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}
+
+
+.preset-editor-heading__eyebrow {
+    margin:
+        0 0 0.15rem;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        0.65rem;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.preset-editor-heading__title {
+    margin:
+        0;
+
+    color:
+        #1f2937;
+
+    font-size:
+        0.95rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.4;
+}

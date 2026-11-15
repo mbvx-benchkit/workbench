@@ -1,0 +1,220 @@
+
+
+
+/* =========================================================
+   定型印刷物 プレビュー
+   ========================================================= */
+
+.preset-card__preview {
+    width:
+        100%;
+
+    aspect-ratio:
+        16 / 10;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    overflow:
+        hidden;
+
+    background-color:
+        #ffffff;
+
+    border-bottom:
+        1px solid #e5e7eb;
+}
+
+
+.preset-card__preview img {
+    width:
+        100%;
+
+    height:
+        100%;
+
+    display:
+        block;
+
+    object-fit:
+        contain;
+
+    object-position:
+        center;
+}
+
+
+/* =========================================================
+   プレビュー未設定
+   ========================================================= */
+
+.preset-card__preview--placeholder {
+    color:
+        #9ca3af;
+
+    background-color:
+        #f5f6f8;
+}
+
+
+.preset-card__preview-placeholder {
+    display:
+        grid;
+
+    justify-items:
+        center;
+
+    gap:
+        0.4rem;
+
+    color:
+        #9ca3af;
+}
+
+
+.preset-card__preview-placeholder svg {
+    width:
+        2.25rem;
+
+    height:
+        2.25rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}
+
+
+.preset-card__preview-placeholder span {
+    font-size:
+        0.7rem;
+
+    font-weight:
+        600;
+
+    letter-spacing:
+        0.04em;
+}
+
+
+/* =========================================================
+   定型印刷物 本文
+   ========================================================= */
+
+.preset-card__content {
+    min-width:
+        0;
+
+    padding:
+        1rem 1.1rem 1.15rem;
+}
+
+
+.preset-card__title-row {
+    min-width:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        0.75rem;
+}
+
+
+.preset-card__title {
+    min-width:
+        0;
+
+    margin:
+        0;
+
+    overflow:
+        hidden;
+
+    color:
+        #1f2937;
+
+    font-size:
+        0.95rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.4;
+
+    white-space:
+        nowrap;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+.preset-card__orientation {
+    flex:
+        0 0 auto;
+
+    padding:
+        0.25rem 0.45rem;
+
+    color:
+        #6b7280;
+
+    background-color:
+        #f3f4f6;
+
+    border-radius:
+        9999px;
+
+    font-size:
+        0.7rem;
+
+    font-weight:
+        600;
+
+    line-height:
+        1;
+}
+
+
+.preset-card__description {
+    display:
+        -webkit-box;
+
+    margin:
+        0.6rem 0 0;
+
+    overflow:
+        hidden;
+
+    color:
+        #6b7280;
+
+    font-size:
+        0.8rem;
+
+    line-height:
+        1.6;
+
+    -webkit-box-orient:
+        vertical;
+
+    -webkit-line-clamp:
+        2;
+
+    line-clamp:
+        2;
+}

@@ -1,3 +1,5 @@
+import { createTemplateId, focusLater, requireElement, requireChild } from "./templates/template-editor-utils.js";
+import { getErrorMessage } from "./templates/template-editor-utils.js";
 import { DOCUMENT_PACKAGE_VERSION, parseDocumentPackage } from "./template.js";
 import { downloadTemplateJson } from "./template-import.js";
 /* =========================================================
@@ -419,17 +421,6 @@ export function setupTemplateBuilder(options) {
     };
 }
 /* =========================================================
-   Template ID
-   ========================================================= */
-function createTemplateId() {
-    const timestamp = Date.now()
-        .toString(36);
-    const random = Math.random()
-        .toString(36)
-        .slice(2, 8);
-    return (`template-${timestamp}-${random}`);
-}
-/* =========================================================
    Field Type
    ========================================================= */
 function parseFieldType(value) {
@@ -439,41 +430,5 @@ function parseFieldType(value) {
         return value;
     }
     throw new Error("入力項目の種類が正しくありません。");
-}
-/* =========================================================
-   Error
-   ========================================================= */
-function getErrorMessage(error) {
-    if (error instanceof
-        Error &&
-        error.message) {
-        return error.message;
-    }
-    return ("処理に失敗しました。");
-}
-/* =========================================================
-   Focus
-   ========================================================= */
-function focusLater(element) {
-    window.setTimeout(() => {
-        element.focus();
-    }, 0);
-}
-/* =========================================================
-   DOM
-   ========================================================= */
-function requireElement(selector) {
-    const element = document.querySelector(selector);
-    if (!element) {
-        throw new Error(`${selector} が見つかりません。`);
-    }
-    return element;
-}
-function requireChild(parent, selector) {
-    const element = parent.querySelector(selector);
-    if (!element) {
-        throw new Error(`${selector} が見つかりません。`);
-    }
-    return element;
 }
 //# sourceMappingURL=template-builder.js.map

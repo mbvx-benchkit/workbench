@@ -59,6 +59,38 @@ body {
     min-width: 0;
 
     overflow: visible;
+
+    /* 全ページ共通の上部パネル背景。画面別の重複定義は撤去。 */
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(1rem);
+    -webkit-backdrop-filter: blur(1rem);
+}
+
+
+/* =========================================================
+   共通操作リボン（RED INDEX / DOCUMENT BUILDER）
+   ========================================================= */
+.workbench-ribbon {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 4.25rem;
+    padding: 0.65rem clamp(1rem, 2.25vw, 2rem);
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.workbench-ribbon__group {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.workbench-ribbon__group:last-child {
+    flex: 0 0 auto;
 }
 
 

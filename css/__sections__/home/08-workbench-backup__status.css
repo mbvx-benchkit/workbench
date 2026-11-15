@@ -1,0 +1,255 @@
+
+
+
+/* =========================================================
+   バックアップ ステータス
+   ========================================================= */
+
+.workbench-backup__status {
+    margin:
+        0;
+
+    padding:
+        0.75rem 1.5rem;
+
+    color:
+        #4b5563;
+
+    background-color:
+        #f5f6f8;
+
+    border-top:
+        1px solid #e8eaed;
+
+    font-size:
+        0.74rem;
+
+    line-height:
+        1.5;
+}
+
+
+.workbench-backup__status[hidden] {
+    display:
+        none;
+}
+
+
+/* =========================================================
+   定型印刷物 管理モーダル
+   ========================================================= */
+
+.preset-manager-dialog {
+    width:
+        min(calc(100% - 2rem),
+            52rem);
+
+    max-height:
+        min(calc(100dvh - 2rem),
+            48rem);
+
+    margin:
+        auto;
+
+    padding:
+        0;
+
+    overflow:
+        hidden;
+
+    color:
+        #1f2937;
+
+    background-color:
+        transparent;
+
+    border:
+        0;
+
+    border-radius:
+        1rem;
+
+    box-shadow:
+        0 1.5rem 4rem rgb(0 0 0 / 18%);
+}
+
+
+.preset-manager-dialog::backdrop {
+    background-color:
+        rgb(17 24 39 / 32%);
+
+    backdrop-filter:
+        blur(0.125rem);
+}
+
+
+.preset-manager-dialog__surface {
+    max-height:
+        min(calc(100dvh - 2rem),
+            48rem);
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    overflow:
+        hidden;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #e1e4e8;
+
+    border-radius:
+        1rem;
+}
+
+
+/* =========================================================
+   管理モーダル ヘッダー
+   ========================================================= */
+
+.preset-manager-dialog__header {
+    flex:
+        0 0 auto;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    padding:
+        1.2rem 1.25rem;
+
+    border-bottom:
+        1px solid #e5e7eb;
+}
+
+
+.preset-manager-dialog__heading {
+    min-width:
+        0;
+}
+
+
+.preset-manager-dialog__eyebrow {
+    margin:
+        0 0 0.2rem;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        0.68rem;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.preset-manager-dialog__title {
+    margin:
+        0;
+
+    color:
+        #1f2937;
+
+    font-size:
+        1.1rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.35;
+}
+
+
+.preset-manager-dialog__close {
+    width:
+        2rem;
+
+    height:
+        2rem;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    color:
+        #6b7280;
+
+    background-color:
+        transparent;
+
+    border:
+        1px solid transparent;
+
+    border-radius:
+        0.55rem;
+
+    cursor:
+        pointer;
+
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+
+.preset-manager-dialog__close:hover {
+    color:
+        #1f2937;
+
+    background-color:
+        #f3f4f6;
+
+    border-color:
+        #e5e7eb;
+}
+
+
+.preset-manager-dialog__close:focus-visible {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.125rem;
+}
+
+
+.preset-manager-dialog__close svg {
+    width:
+        1.1rem;
+
+    height:
+        1.1rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}

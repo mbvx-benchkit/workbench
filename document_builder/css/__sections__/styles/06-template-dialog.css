@@ -1,0 +1,212 @@
+
+
+
+/* =========================================================
+   Template Dialog
+   ========================================================= */
+
+.template-dialog {
+    width:
+        min(70rem, calc(100% - 3rem));
+
+    max-height:
+        calc(100vh - 3rem);
+
+    margin:
+        auto;
+}
+
+
+.template-dialog__surface {
+    max-height:
+        calc(100vh - 3rem);
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    overflow:
+        hidden;
+
+    border:
+        1px solid rgba(0, 0, 0, 0.08);
+
+    border-radius:
+        1rem;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 1.5rem 5rem rgba(0, 0, 0, 0.22);
+}
+
+
+.template-dialog__view {
+    min-height:
+        0;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+}
+
+
+.template-dialog__header {
+    flex:
+        0 0 auto;
+
+    padding:
+        1.2rem 1.35rem;
+
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    border-bottom:
+        1px solid #e8eaed;
+}
+
+
+.template-dialog__title {
+    margin:
+        0;
+
+    color:
+        #252930;
+
+    font-size:
+        1.15rem;
+
+    font-weight:
+        750;
+}
+
+
+.template-dialog__close {
+    width:
+        2.25rem;
+
+    height:
+        2.25rem;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        transparent;
+
+    color:
+        #676d76;
+
+    font-size:
+        1.25rem;
+
+    cursor:
+        pointer;
+}
+
+
+.template-dialog__close:hover {
+    background:
+        #f0f2f4;
+}
+
+
+.template-dialog__intro {
+    padding:
+        0.85rem 1.35rem;
+
+    border-bottom:
+        1px solid #eceef1;
+
+    background:
+        #fafbfc;
+}
+
+
+.template-dialog__intro p {
+    margin:
+        0;
+
+    color:
+        #6d737d;
+
+    font-size:
+        0.78rem;
+
+    line-height:
+        1.7;
+}
+
+
+.template-dialog__toolbar {
+    padding:
+        0.85rem 1.35rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        0.55rem;
+
+    border-bottom:
+        1px solid #eceef1;
+}
+
+
+.template-dialog__content {
+    min-height:
+        18rem;
+
+    padding:
+        0.9rem 1rem 1rem;
+
+    overflow-y:
+        auto;
+}
+
+
+.template-dialog__footer {
+    padding:
+        0.8rem 1.35rem;
+
+    display:
+        flex;
+
+    justify-content:
+        flex-end;
+
+    border-top:
+        1px solid #e8eaed;
+
+    background:
+        #fafbfc;
+}

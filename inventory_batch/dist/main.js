@@ -1,3 +1,8 @@
+/* WORKBENCH_STAGE3_ERROR_VIEW */
+import { renderInventoryErrorList, clearInventoryErrorList } from "./errors/error-view.js";
+/* WORKBENCH_EXTRACT_inventoryErrors */
+import { filterCsvErrorsByOutputItems, createDisplayErrors } from "./errors/error-model.js";
+import { padTwoDigits, setCountValue, requireElement, requireElements } from "./ui/inventory-ui-utils.js";
 /**
  * main.ts
  *
@@ -317,13 +322,6 @@ function formatIssuedAt(date) {
     const minute = padTwoDigits(date.getMinutes());
     return (`${year}/${month}/${day} ${hour}:${minute}`);
 }
-/**
- * 1桁の数字を
- * 2桁文字列へ変換する。
- */
-function padTwoDigits(value) {
-    return String(value).padStart(2, "0");
-}
 /* =========================================================
    印刷
    ========================================================= */
@@ -357,79 +355,19 @@ function handleBeforePrint() {
     updateIssuedLabels();
 }
 /* =========================================================
-   CSVエラー絞り込み
-   ========================================================= */
-/**
- * 現在の出力対象になっている行だけ
- * CSVエラーを残す。
- */
-function filterCsvErrorsByOutputItems(errors, outputItems) {
-    const outputRowNumbers = new Set(outputItems.map((item) => item.rowNumber));
-    return errors.filter((error) => outputRowNumbers.has(error.rowNumber));
-}
-/* =========================================================
-   エラー統合
-   ========================================================= */
-/**
- * CSV由来エラーとバーコード由来エラーを
- * 画面表示用形式へ統合する。
- */
-function createDisplayErrors(csvErrors, renderErrors) {
-    const errors = [];
-    for (const error of csvErrors) {
-        errors.push({
-            rowNumber: error.rowNumber,
-            message: error.message
-        });
-    }
-    for (const error of renderErrors) {
-        errors.push({
-            rowNumber: error.rowNumber,
-            message: error.message
-        });
-    }
-    /**
-     * エラー一覧自体は
-     * CSV元行番号順。
-     */
-    errors.sort((first, second) => (first.rowNumber ??
-        0) -
-        (second.rowNumber ??
-            0));
-    return errors;
-}
-/* =========================================================
    エラー表示
    ========================================================= */
 /**
  * エラー一覧を画面へ描画する。
  */
 function renderErrors(errors) {
-    errorList.replaceChildren();
-    if (errors.length ===
-        0) {
-        errorSection.hidden =
-            true;
-        return;
-    }
-    const fragment = document.createDocumentFragment();
-    for (const error of errors) {
-        const listItem = document.createElement("li");
-        listItem.textContent =
-            error.message;
-        fragment.appendChild(listItem);
-    }
-    errorList.appendChild(fragment);
-    errorSection.hidden =
-        false;
+    return renderInventoryErrorList(errorList, errorSection, errors);
 }
 /**
  * エラー表示を初期状態へ戻す。
  */
 function clearErrorDisplay() {
-    errorList.replaceChildren();
-    errorSection.hidden =
-        true;
+    return clearInventoryErrorList(errorList, errorSection);
 }
 /* =========================================================
    CSV読込失敗
@@ -490,45 +428,5 @@ function resetSummary() {
     setCountValue(outputCount, 0);
     setCountValue(pageCount, 0);
     setCountValue(errorCount, 0);
-}
-/**
- * 件数表示を更新する。
- */
-function setCountValue(element, value) {
-    const unit = element.querySelector(".inventory-summary__unit");
-    if (unit ===
-        null) {
-        element.textContent =
-            String(value);
-        return;
-    }
-    element.textContent =
-        String(value);
-    element.appendChild(unit);
-}
-/* =========================================================
-   DOMユーティリティ
-   ========================================================= */
-/**
- * 必須DOM要素を1件取得する。
- */
-function requireElement(selector) {
-    const element = document.querySelector(selector);
-    if (element ===
-        null) {
-        throw new Error(`必要な要素が見つかりません: ${selector}`);
-    }
-    return element;
-}
-/**
- * 必須DOM要素を複数取得する。
- */
-function requireElements(selector) {
-    const elements = Array.from(document.querySelectorAll(selector));
-    if (elements.length ===
-        0) {
-        throw new Error(`必要な要素が見つかりません: ${selector}`);
-    }
-    return elements;
 }
 //# sourceMappingURL=main.js.map

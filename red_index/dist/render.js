@@ -1,3 +1,4 @@
+import { formatCurrentDate, formatCurrentIsoDate } from "./render-utils.js";
 import { RED_INDEX_COPY_COUNT, RED_INDEX_TITLE, getVisibleCategories, splitCategories } from "./model.js";
 /* =========================================================
    Render Editor
@@ -203,24 +204,5 @@ function createOutputCategory(category) {
         category.items.join("、");
     row.append(categoryName, items);
     return row;
-}
-/* =========================================================
-   Date
-   ========================================================= */
-function formatCurrentDate() {
-    const now = new Date();
-    const year = String(now.getFullYear());
-    const month = String(now.getMonth() +
-        1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return (`${year}.${month}.${day}`);
-}
-function formatCurrentIsoDate() {
-    const now = new Date();
-    const year = String(now.getFullYear());
-    const month = String(now.getMonth() +
-        1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return (`${year}-${month}-${day}`);
 }
 //# sourceMappingURL=render.js.map

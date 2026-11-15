@@ -1,0 +1,236 @@
+
+
+
+/* =========================================================
+   バックアップ 操作
+   ========================================================= */
+
+.workbench-backup__actions {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(2,
+            minmax(0, 1fr));
+}
+
+
+.workbench-backup-action {
+    min-width:
+        0;
+
+    padding:
+        1.4rem 1.5rem;
+}
+
+
+.workbench-backup-action+.workbench-backup-action {
+    border-left:
+        1px solid #e8eaed;
+}
+
+
+.workbench-backup-action__heading {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.7rem;
+}
+
+
+.workbench-backup-action__icon {
+    width:
+        2.25rem;
+
+    height:
+        2.25rem;
+
+    flex:
+        0 0 auto;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    color:
+        #6b7280;
+
+    background-color:
+        #f5f6f8;
+
+    border-radius:
+        0.65rem;
+}
+
+
+.workbench-backup-action__icon svg {
+    width:
+        1.2rem;
+
+    height:
+        1.2rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}
+
+
+.workbench-backup-action__eyebrow {
+    margin:
+        0 0 0.1rem;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        0.62rem;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.09em;
+}
+
+
+.workbench-backup-action__title {
+    margin:
+        0;
+
+    color:
+        #303640;
+
+    font-size:
+        0.9rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.35;
+}
+
+
+.workbench-backup-action__description {
+    min-height:
+        3rem;
+
+    margin:
+        0.75rem 0 1rem;
+
+    color:
+        #737984;
+
+    font-size:
+        0.76rem;
+
+    line-height:
+        1.6;
+}
+
+
+.workbench-backup-action__button {
+    min-width:
+        10rem;
+
+    justify-content:
+        center;
+}
+
+
+/* =========================================================
+   バックアップ ファイル入力
+   ========================================================= */
+
+.workbench-backup__file-input[hidden] {
+    display:
+        none;
+}
+
+
+/* =========================================================
+   バックアップ 注意
+   ========================================================= */
+
+.workbench-backup__notice {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        0.55rem;
+
+    padding:
+        1rem 1.5rem;
+
+    color:
+        #737983;
+
+    background-color:
+        #fafafb;
+
+    border-top:
+        1px solid #e8eaed;
+}
+
+
+.workbench-backup__notice>svg {
+    width:
+        1.05rem;
+
+    height:
+        1.05rem;
+
+    flex:
+        0 0 auto;
+
+    margin-top:
+        0.1rem;
+
+    fill:
+        currentColor;
+}
+
+
+.workbench-backup__notice-title {
+    margin:
+        0;
+
+    color:
+        #555c66;
+
+    font-size:
+        0.73rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.5;
+}
+
+
+.workbench-backup__notice-description {
+    margin:
+        0.2rem 0 0;
+
+    color:
+        #8a9099;
+
+    font-size:
+        0.7rem;
+
+    line-height:
+        1.55;
+}

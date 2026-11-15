@@ -47,10 +47,12 @@
          Script
          ===================================================== -->
 
+    <link rel="stylesheet" href="../css/footer.css">
     <script src="../dist/site-header.js" type="module"></script>
 
     <script src="./dist/main.js" type="module"></script>
 
+    <script src="../dist/workbench-build-info.js" type="module"></script>
 </head>
 
 
@@ -564,11 +566,10 @@
          ===================================================== -->
 
     <footer class="footer">
-
-        <small>
-            Copyright © 2026 Morbee. All Rights Reserved.
-        </small>
-
+        <div class="footer__inner">
+            <small class="footer__copyright">Copyright © 2026 Morbee. All Rights Reserved.</small>
+            <small class="footer__build-info" data-workbench-build-info>WORKBENCH v1.1.0</small>
+        </div>
     </footer>
 
 </body>

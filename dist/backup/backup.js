@@ -1,3 +1,7 @@
+/* WORKBENCH_EXTRACT_requestBackupPassword */
+import { requestBackupPasswordDialog } from "./backup-password-dialog.js";
+import { downloadBlob } from "./backup-ui-utils.js";
+import { createBackupFileName, formatErrorMessage } from "./backup-ui-utils.js";
 /**
  * backup.ts
  *
@@ -53,7 +57,7 @@ const MAX_IMPORT_FILE_SIZE = 512 *
    Setup
    ========================================================= */
 export function setupWorkbenchBackup(options) {
-    const { exportButton, importButton, importInput, status, recoveryButton, passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel, onRestored } = options;
+    const { exportButton, importButton, importInput, status, recoveryButton, passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordVisibilityToggle, passwordError, passwordDescription, passwordSubmit, passwordCancel, onRestored } = options;
     // 復旧用データが残る間、次の復元を開始させない。
     // 読み取りに失敗した場合も、状態不明として復元操作を禁止する。
     let isBusy = true;
@@ -234,57 +238,18 @@ export function setupWorkbenchBackup(options) {
             setBusy(false);
         }
     }
+    /* パスワードの表示状態は画面内のみ。保存・記録しない。 */
+    const updatePasswordVisibility = () => {
+        const type = passwordVisibilityToggle.checked ? "text" : "password";
+        passwordInput.type = type;
+        passwordConfirmInput.type = type;
+    };
+    passwordVisibilityToggle.addEventListener("change", updatePasswordVisibility);
     /* =====================================================
        Password dialog (never persisted or logged)
        ===================================================== */
     function requestBackupPassword(mode) {
-        return new Promise((resolve) => {
-            passwordForm.reset();
-            passwordError.textContent = "";
-            passwordConfirmRow.hidden = mode !== "export";
-            passwordConfirmInput.required = mode === "export";
-            passwordInput.minLength = mode === "export" ? 12 : 1;
-            passwordDescription.textContent = mode === "export"
-                ? "12文字以上のパスワードでバックアップ全体を暗号化します。忘れると復元できません。安全な場所で管理してください。"
-                : "暗号化バックアップを復元するため、設定したパスワードを入力してください。";
-            passwordSubmit.textContent = mode === "export" ? "暗号化して保存" : "復号して復元";
-            let settled = false;
-            const settle = (value) => {
-                if (settled)
-                    return;
-                settled = true;
-                passwordForm.removeEventListener("submit", submit);
-                passwordCancel.removeEventListener("click", cancel);
-                passwordDialog.removeEventListener("cancel", escape);
-                passwordDialog.removeEventListener("close", closed);
-                passwordForm.reset();
-                if (passwordDialog.open)
-                    passwordDialog.close();
-                resolve(value);
-            };
-            const submit = (event) => {
-                event.preventDefault();
-                const password = passwordInput.value;
-                if (mode === "export" && password !== passwordConfirmInput.value) {
-                    passwordError.textContent = "確認用パスワードが一致しません。";
-                    return;
-                }
-                if (!password || (mode === "export" && password.length < 12)) {
-                    passwordError.textContent = "パスワードの長さを確認してください。";
-                    return;
-                }
-                settle(password);
-            };
-            const cancel = () => settle(null);
-            const escape = (event) => { event.preventDefault(); settle(null); };
-            const closed = () => settle(null);
-            passwordForm.addEventListener("submit", submit);
-            passwordCancel.addEventListener("click", cancel);
-            passwordDialog.addEventListener("cancel", escape);
-            passwordDialog.addEventListener("close", closed);
-            passwordDialog.showModal();
-            passwordInput.focus();
-        });
+        return requestBackupPasswordDialog(mode, { passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel }, updatePasswordVisibility);
     }
     /* =====================================================
        Busy
@@ -338,51 +303,6 @@ function confirmRestore(snapshot) {
     ].join("\n"));
 }
 /* =========================================================
-   Download
-   ========================================================= */
-function downloadBlob(blob, fileName) {
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href =
-        objectUrl;
-    anchor.download =
-        fileName;
-    anchor.style.display =
-        "none";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => {
-        URL.revokeObjectURL(objectUrl);
-    }, 1000);
-}
-/* =========================================================
-   File Name
-   ========================================================= */
-function createBackupFileName() {
-    const now = new Date();
-    const year = String(now.getFullYear());
-    const month = String(now.getMonth() +
-        1)
-        .padStart(2, "0");
-    const day = String(now.getDate())
-        .padStart(2, "0");
-    const hours = String(now.getHours())
-        .padStart(2, "0");
-    const minutes = String(now.getMinutes())
-        .padStart(2, "0");
-    return [
-        "WORKBENCH_backup_",
-        year,
-        month,
-        day,
-        "_",
-        hours,
-        minutes,
-        ".wbenc"
-    ].join("");
-}
-/* =========================================================
    Messages
    ========================================================= */
 function createExportSuccessMessage(snapshot) {
@@ -400,12 +320,5 @@ function createImportSuccessMessage(snapshot) {
         `定型印刷物 ${snapshot.presetDocuments.length}件、`,
         `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を復元しました。`
     ].join(" ");
-}
-function formatErrorMessage(error) {
-    if (error instanceof
-        Error) {
-        return error.message;
-    }
-    return "不明なエラーが発生しました。";
 }
 //# sourceMappingURL=backup.js.map

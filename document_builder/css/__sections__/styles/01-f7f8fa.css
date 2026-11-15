@@ -1,0 +1,271 @@
+/* =========================================================
+   DOCUMENT BUILDER
+   ========================================================= */
+
+
+/* =========================================================
+   Base
+   ========================================================= */
+
+body {
+    min-width: 72rem;
+
+    background:
+        linear-gradient(180deg,
+            #f7f8fa 0%,
+            #f1f3f6 100%);
+}
+
+
+/* =========================================================
+   Top
+   ========================================================= */
+
+/* 上部パネルは ../css/styles.css で共通管理。 */
+
+/* =========================================================
+   Ribbon
+   ========================================================= */
+
+.document-ribbon__left {
+    min-width:
+        0;
+}
+
+
+.document-ribbon__separator {
+    width:
+        1px;
+
+    height:
+        1.75rem;
+
+    margin:
+        0 0.35rem;
+
+    background:
+        #e2e5e9;
+}
+
+
+/* =========================================================
+   Template Selector
+   ========================================================= */
+
+.template-selector {
+    min-width:
+        0;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.55rem;
+}
+
+
+.template-selector__label {
+    flex:
+        0 0 auto;
+
+    color:
+        #686e78;
+
+    font-size:
+        0.76rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-selector__select {
+    width:
+        clamp(13rem, 20vw, 20rem);
+
+    height:
+        2.5rem;
+
+    padding:
+        0 2.25rem 0 0.8rem;
+
+    border:
+        1px solid #d8dce2;
+
+    border-radius:
+        0.65rem;
+
+    outline:
+        none;
+
+    background:
+        #ffffff;
+
+    color:
+        #252a31;
+
+    font-size:
+        0.84rem;
+
+    cursor:
+        pointer;
+}
+
+
+.glass-button--icon {
+    width:
+        2.5rem;
+
+    min-width:
+        2.5rem;
+
+    padding:
+        0;
+
+    display:
+        inline-grid;
+
+    place-items:
+        center;
+}
+
+
+.glass-button--icon .glass-button__icon {
+    margin:
+        0;
+}
+
+
+/* =========================================================
+   Main
+   ========================================================= */
+
+.document-builder-main {
+    width:
+        100%;
+
+    padding:
+        1.5rem clamp(1rem, 2.5vw, 2.5rem) 3rem;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(18rem, 22rem) minmax(52rem, 1fr);
+
+    align-items:
+        start;
+
+    gap:
+        clamp(1.25rem, 2vw, 2rem);
+}
+
+
+/* =========================================================
+   Fields Panel
+   ========================================================= */
+
+.document-fields-panel {
+    position:
+        sticky;
+
+    top:
+        1.25rem;
+
+    min-width:
+        0;
+
+    max-height:
+        calc(100vh - 2.5rem);
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    overflow:
+        hidden;
+
+    border:
+        1px solid #dde1e7;
+
+    border-radius:
+        1rem;
+
+    background:
+        rgba(255, 255, 255, 0.96);
+
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.025),
+        0 0.75rem 2.5rem rgba(28, 39, 62, 0.055);
+}
+
+
+.document-fields-panel__header {
+    padding:
+        1.15rem 1.2rem 1rem;
+
+    border-bottom:
+        1px solid #e7e9ed;
+}
+
+
+.document-fields-panel__eyebrow,
+.document-preview-header__eyebrow,
+.template-dialog__eyebrow,
+.print-flow-dialog__eyebrow {
+    margin:
+        0 0 0.25rem;
+
+    color:
+        #858b95;
+
+    font-size:
+        0.68rem;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.document-fields-panel__title {
+    margin:
+        0;
+
+    color:
+        #20242b;
+
+    font-size:
+        1.2rem;
+
+    font-weight:
+        750;
+}
+
+
+.document-fields-panel__template-name {
+    margin:
+        0.65rem 0 0;
+
+    overflow:
+        hidden;
+
+    color:
+        #707680;
+
+    font-size:
+        0.78rem;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+}

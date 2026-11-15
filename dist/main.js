@@ -60,6 +60,7 @@ setupWorkbenchBackup({
     passwordInput: requireElement("#backup-password-input"),
     passwordConfirmInput: requireElement("#backup-password-confirm"),
     passwordConfirmRow: requireElement("#backup-password-confirm-row"),
+    passwordVisibilityToggle: requireElement("#backup-password-visible"),
     passwordError: requireElement("#backup-password-error"),
     passwordDescription: requireElement("#backup-password-description"),
     passwordSubmit: requireElement("#backup-password-submit"),

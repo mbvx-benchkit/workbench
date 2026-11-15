@@ -1,0 +1,161 @@
+
+
+
+/* =========================================================
+   数量
+   ========================================================= */
+
+.inventory-row__quantity {
+    grid-area:
+        quantity !important;
+
+    min-width:
+        0 !important;
+
+    display:
+        grid !important;
+
+    place-items:
+        center !important;
+
+    overflow:
+        hidden !important;
+}
+
+
+.inventory-row__quantity-value {
+    display:
+        block !important;
+
+    width:
+        100% !important;
+
+    overflow:
+        hidden !important;
+
+    color:
+        #000000 !important;
+
+    font-size:
+        0.66rem !important;
+
+    font-weight:
+        700 !important;
+
+    line-height:
+        1.05 !important;
+
+    text-align:
+        center !important;
+
+    white-space:
+        nowrap !important;
+
+    text-overflow:
+        ellipsis !important;
+
+    font-variant-numeric:
+        tabular-nums !important;
+}
+
+
+/* =========================================================
+   JANセット
+   ========================================================= */
+
+.inventory-row__barcode-area {
+    grid-area:
+        barcode !important;
+
+    width:
+        37.29mm !important;
+
+    min-width:
+        37.29mm !important;
+
+    max-width:
+        37.29mm !important;
+
+    min-height:
+        0 !important;
+
+    display:
+        grid !important;
+
+    justify-items:
+        center !important;
+
+    align-content:
+        center !important;
+
+    gap:
+        0 !important;
+
+    overflow:
+        hidden !important;
+}
+
+
+/* =========================================================
+   JANバーコード
+   ========================================================= */
+
+.inventory-row__barcode {
+    display:
+        block !important;
+
+    width:
+        37.29mm !important;
+
+    min-width:
+        37.29mm !important;
+
+    max-width:
+        37.29mm !important;
+
+    height:
+        6mm !important;
+}
+
+
+/* =========================================================
+   PLU文字
+   ========================================================= */
+
+.inventory-row__plu-text {
+    width:
+        100% !important;
+
+    max-width:
+        100% !important;
+
+    margin:
+        0.1mm 0 0 !important;
+
+    overflow:
+        hidden !important;
+
+    color:
+        #222222 !important;
+
+    font-size:
+        0.36rem !important;
+
+    font-weight:
+        400 !important;
+
+    line-height:
+        1 !important;
+
+    text-align:
+        center !important;
+
+    white-space:
+        nowrap !important;
+
+    text-overflow:
+        ellipsis !important;
+
+    font-variant-numeric:
+        tabular-nums !important;
+}

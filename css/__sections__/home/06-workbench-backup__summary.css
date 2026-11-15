@@ -1,0 +1,150 @@
+
+
+
+/* =========================================================
+   バックアップ 概要
+   ========================================================= */
+
+.workbench-backup__summary {
+    display:
+        flex;
+
+    align-items:
+        flex-start;
+
+    gap:
+        1rem;
+
+    padding:
+        1.4rem 1.5rem;
+
+    border-bottom:
+        1px solid #e8eaed;
+}
+
+
+.workbench-backup__summary-icon {
+    width:
+        2.75rem;
+
+    height:
+        2.75rem;
+
+    flex:
+        0 0 auto;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    color:
+        #4b5563;
+
+    background-color:
+        #f3f4f6;
+
+    border-radius:
+        0.75rem;
+}
+
+
+.workbench-backup__summary-icon svg {
+    width:
+        1.5rem;
+
+    height:
+        1.5rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}
+
+
+.workbench-backup__summary-content {
+    min-width:
+        0;
+}
+
+
+.workbench-backup__summary-title {
+    margin:
+        0;
+
+    color:
+        #1f2937;
+
+    font-size:
+        0.95rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.4;
+}
+
+
+.workbench-backup__summary-description {
+    margin:
+        0.35rem 0 0;
+
+    color:
+        #6b7280;
+
+    font-size:
+        0.8rem;
+
+    line-height:
+        1.6;
+}
+
+
+/* =========================================================
+   バックアップ対象
+   ========================================================= */
+
+.workbench-backup__targets {
+    display:
+        flex;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        0.35rem;
+
+    margin-top:
+        0.75rem;
+}
+
+
+.workbench-backup__target {
+    padding:
+        0.3rem 0.55rem;
+
+    color:
+        #69707a;
+
+    background-color:
+        #f4f5f7;
+
+    border:
+        1px solid #e6e8eb;
+
+    border-radius:
+        9999px;
+
+    font-size:
+        0.65rem;
+
+    font-weight:
+        650;
+
+    line-height:
+        1;
+}

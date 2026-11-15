@@ -1,3 +1,10 @@
+/* WORKBENCH_EXTRACT_requestBackupPassword */
+import { requestBackupPasswordDialog } from "./backup-password-dialog.js";
+import type { WorkbenchBackupOptions } from "./backup-ui-utils.js";
+export type { WorkbenchBackupOptions } from "./backup-ui-utils.js";
+import { downloadBlob } from "./backup-ui-utils.js";
+import { createBackupFileName, formatErrorMessage } from "./backup-ui-utils.js";
+
 /**
  * backup.ts
  *
@@ -72,42 +79,6 @@ const MAX_IMPORT_FILE_SIZE =
 
 
 /* =========================================================
-   Types
-   ========================================================= */
-
-export type WorkbenchBackupOptions = {
-
-    exportButton:
-        HTMLButtonElement;
-
-    importButton:
-        HTMLButtonElement;
-
-    importInput:
-        HTMLInputElement;
-
-    status:
-        HTMLElement;
-    recoveryButton: HTMLButtonElement;
-
-    passwordDialog: HTMLDialogElement;
-    passwordForm: HTMLFormElement;
-    passwordInput: HTMLInputElement;
-    passwordConfirmInput: HTMLInputElement;
-    passwordConfirmRow: HTMLElement;
-    passwordError: HTMLElement;
-    passwordDescription: HTMLElement;
-    passwordSubmit: HTMLButtonElement;
-    passwordCancel: HTMLButtonElement;
-
-    onRestored?:
-        () =>
-            void |
-            Promise<void>;
-};
-
-
-/* =========================================================
    Setup
    ========================================================= */
 
@@ -126,6 +97,7 @@ export function setupWorkbenchBackup(
         passwordInput,
         passwordConfirmInput,
         passwordConfirmRow,
+        passwordVisibilityToggle,
         passwordError,
         passwordDescription,
         passwordSubmit,
@@ -460,56 +432,20 @@ export function setupWorkbenchBackup(
     }
 
 
+    /* パスワードの表示状態は画面内のみ。保存・記録しない。 */
+    const updatePasswordVisibility = (): void => {
+        const type = passwordVisibilityToggle.checked ? "text" : "password";
+        passwordInput.type = type;
+        passwordConfirmInput.type = type;
+    };
+    passwordVisibilityToggle.addEventListener("change", updatePasswordVisibility);
+
     /* =====================================================
        Password dialog (never persisted or logged)
        ===================================================== */
     function requestBackupPassword(mode: "export" | "import"): Promise<string | null> {
-        return new Promise((resolve) => {
-            passwordForm.reset();
-            passwordError.textContent = "";
-            passwordConfirmRow.hidden = mode !== "export";
-            passwordConfirmInput.required = mode === "export";
-            passwordInput.minLength = mode === "export" ? 12 : 1;
-            passwordDescription.textContent = mode === "export"
-                ? "12文字以上のパスワードでバックアップ全体を暗号化します。忘れると復元できません。安全な場所で管理してください。"
-                : "暗号化バックアップを復元するため、設定したパスワードを入力してください。";
-            passwordSubmit.textContent = mode === "export" ? "暗号化して保存" : "復号して復元";
-            let settled = false;
-            const settle = (value: string | null) => {
-                if (settled) return;
-                settled = true;
-                passwordForm.removeEventListener("submit", submit);
-                passwordCancel.removeEventListener("click", cancel);
-                passwordDialog.removeEventListener("cancel", escape);
-                passwordDialog.removeEventListener("close", closed);
-                passwordForm.reset();
-                if (passwordDialog.open) passwordDialog.close();
-                resolve(value);
-            };
-            const submit = (event: Event) => {
-                event.preventDefault();
-                const password = passwordInput.value;
-                if (mode === "export" && password !== passwordConfirmInput.value) {
-                    passwordError.textContent = "確認用パスワードが一致しません。";
-                    return;
-                }
-                if (!password || (mode === "export" && password.length < 12)) {
-                    passwordError.textContent = "パスワードの長さを確認してください。";
-                    return;
-                }
-                settle(password);
-            };
-            const cancel = () => settle(null);
-            const escape = (event: Event) => { event.preventDefault(); settle(null); };
-            const closed = () => settle(null);
-            passwordForm.addEventListener("submit", submit);
-            passwordCancel.addEventListener("click", cancel);
-            passwordDialog.addEventListener("cancel", escape);
-            passwordDialog.addEventListener("close", closed);
-            passwordDialog.showModal();
-            passwordInput.focus();
-        });
-    }
+    return requestBackupPasswordDialog(mode, { passwordDialog, passwordForm, passwordInput, passwordConfirmInput, passwordConfirmRow, passwordError, passwordDescription, passwordSubmit, passwordCancel }, updatePasswordVisibility);
+}
 
     /* =====================================================
        Busy
@@ -610,133 +546,6 @@ function confirmRestore(
 
 
 /* =========================================================
-   Download
-   ========================================================= */
-
-function downloadBlob(
-    blob: Blob,
-    fileName: string
-): void {
-
-    const objectUrl =
-        URL.createObjectURL(
-            blob
-        );
-
-
-    const anchor =
-        document.createElement(
-            "a"
-        );
-
-
-    anchor.href =
-        objectUrl;
-
-
-    anchor.download =
-        fileName;
-
-
-    anchor.style.display =
-        "none";
-
-
-    document.body.appendChild(
-        anchor
-    );
-
-
-    anchor.click();
-
-
-    anchor.remove();
-
-
-    window.setTimeout(
-        () => {
-
-            URL.revokeObjectURL(
-                objectUrl
-            );
-        },
-        1_000
-    );
-}
-
-
-/* =========================================================
-   File Name
-   ========================================================= */
-
-function createBackupFileName():
-    string {
-
-    const now =
-        new Date();
-
-
-    const year =
-        String(
-            now.getFullYear()
-        );
-
-
-    const month =
-        String(
-            now.getMonth() +
-            1
-        )
-            .padStart(
-                2,
-                "0"
-            );
-
-
-    const day =
-        String(
-            now.getDate()
-        )
-            .padStart(
-                2,
-                "0"
-            );
-
-
-    const hours =
-        String(
-            now.getHours()
-        )
-            .padStart(
-                2,
-                "0"
-            );
-
-
-    const minutes =
-        String(
-            now.getMinutes()
-        )
-            .padStart(
-                2,
-                "0"
-            );
-
-
-    return [
-        "WORKBENCH_backup_",
-        year,
-        month,
-        day,
-        "_",
-        hours,
-        minutes,
-        ".wbenc"
-    ].join("");
-}
-
-
-/* =========================================================
    Messages
    ========================================================= */
 
@@ -763,21 +572,4 @@ function createImportSuccessMessage(
         `定型印刷物 ${snapshot.presetDocuments.length}件、`,
         `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を復元しました。`
     ].join(" ");
-}
-
-
-function formatErrorMessage(
-    error: unknown
-): string {
-
-    if (
-        error instanceof
-        Error
-    ) {
-
-        return error.message;
-    }
-
-
-    return "不明なエラーが発生しました。";
 }

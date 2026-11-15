@@ -1,0 +1,186 @@
+
+
+
+/* =========================================================
+   A4中央線
+   ========================================================= */
+
+.inventory-page::before {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    z-index:
+        2;
+
+    top:
+        10mm;
+
+    bottom:
+        10mm;
+
+    left:
+        50%;
+
+    width:
+        0;
+
+    border-left:
+        1px solid #bfc3c9;
+
+    pointer-events:
+        none;
+}
+
+
+/* =========================================================
+   商品1行
+   ========================================================= */
+
+.inventory-row {
+    min-width:
+        0;
+
+    min-height:
+        0;
+
+    box-sizing:
+        border-box;
+
+    display:
+        grid;
+
+    align-items:
+        center;
+
+    column-gap:
+        0.15rem;
+
+    row-gap:
+        0;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    overflow:
+        hidden;
+
+    border-bottom:
+        1px solid #e5e7eb;
+}
+
+
+/* =========================================================
+   商品名 / 数量 / JAN
+   ========================================================= */
+
+.inventory-row--odd,
+.inventory-row--even {
+    grid-template-columns:
+        minmax(0,
+            1fr) 8mm 42mm;
+
+    grid-template-areas:
+        "name quantity barcode";
+}
+
+
+/* =========================================================
+   JANセット 左右交互
+   ========================================================= */
+
+.inventory-row--odd .inventory-row__barcode-area {
+    justify-self:
+        end;
+}
+
+
+.inventory-row--even .inventory-row__barcode-area {
+    justify-self:
+        start;
+}
+
+
+/* =========================================================
+   右半分 商品名余白
+   ========================================================= */
+
+.inventory-page .inventory-row:nth-child(n + 29) .inventory-row__name {
+    box-sizing:
+        border-box;
+
+    padding-left:
+        1.5mm;
+}
+
+
+/* =========================================================
+   商品名
+   ========================================================= */
+
+.inventory-row__name {
+    grid-area:
+        name;
+
+    min-width:
+        0;
+
+    max-height:
+        100%;
+
+    overflow:
+        hidden;
+}
+
+
+.inventory-row__name-text {
+    display:
+        -webkit-box;
+
+    width:
+        100%;
+
+    min-width:
+        0;
+
+    max-width:
+        100%;
+
+    max-height:
+        100%;
+
+    overflow:
+        hidden;
+
+    color:
+        #1f2937;
+
+    font-size:
+        0.66rem;
+
+    font-weight:
+        500;
+
+    line-height:
+        1.05;
+
+    white-space:
+        normal;
+
+    overflow-wrap:
+        anywhere;
+
+    -webkit-box-orient:
+        vertical;
+
+    -webkit-line-clamp:
+        2;
+
+    line-clamp:
+        2;
+}

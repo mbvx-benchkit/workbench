@@ -1,0 +1,158 @@
+
+
+
+/* =========================================================
+   Template List
+   ========================================================= */
+
+.template-list-empty {
+    min-height:
+        16rem;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    text-align:
+        center;
+}
+
+
+.template-list-empty__title {
+    margin:
+        0;
+
+    color:
+        #42474f;
+
+    font-size:
+        0.9rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-list-empty__description {
+    margin:
+        0.35rem 0 0;
+
+    color:
+        #838993;
+
+    font-size:
+        0.76rem;
+}
+
+
+.template-list {
+    display:
+        grid;
+
+    gap:
+        0.65rem;
+}
+
+
+.template-card {
+    padding:
+        0.8rem 0.85rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        1rem;
+
+    border:
+        1px solid #e1e4e8;
+
+    border-radius:
+        0.8rem;
+
+    background:
+        #ffffff;
+}
+
+
+.template-card__main {
+    min-width:
+        0;
+}
+
+
+.template-card__information {
+    min-width:
+        0;
+}
+
+
+.template-card__name {
+    margin:
+        0;
+
+    color:
+        #292d34;
+
+    font-size:
+        0.88rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-card__meta {
+    margin:
+        0.2rem 0 0;
+
+    color:
+        #858b94;
+
+    font-size:
+        0.7rem;
+}
+
+
+.template-card__actions {
+    flex:
+        0 0 auto;
+
+    display:
+        flex;
+
+    gap:
+        0.4rem;
+}
+
+
+.template-card__actions .glass-button {
+    min-height:
+        2.1rem;
+
+    padding:
+        0.35rem 0.65rem;
+
+    font-size:
+        0.72rem;
+}
+
+
+.template-card__delete-button {
+    color:
+        #a73d3d;
+}

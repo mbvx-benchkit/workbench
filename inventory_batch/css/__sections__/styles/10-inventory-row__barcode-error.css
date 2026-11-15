@@ -1,0 +1,328 @@
+
+
+
+/* =========================================================
+   バーコードエラー
+   ========================================================= */
+
+.inventory-row__barcode-error {
+    width:
+        100%;
+
+    max-width:
+        100%;
+
+    overflow:
+        hidden;
+
+    color:
+        #991b1b;
+
+    font-size:
+        0.36rem;
+
+    font-weight:
+        600;
+
+    line-height:
+        1.1;
+
+    text-align:
+        center;
+
+    white-space:
+        nowrap;
+
+    text-overflow:
+        ellipsis;
+}
+
+
+/* =========================================================
+   中程度の画面
+   ========================================================= */
+
+@media (max-width: 64rem) {
+
+    .inventory-main {
+        width:
+            min(100% - 2rem,
+                80rem);
+    }
+
+
+    .inventory-summary {
+        grid-template-columns:
+            minmax(0,
+                1fr) 9rem;
+    }
+
+
+    .inventory-summary__flow {
+        padding-inline:
+            1.5rem;
+    }
+
+
+    .inventory-summary__flow-main {
+        gap:
+            1.25rem;
+    }
+
+
+    .inventory-sort__options {
+        grid-template-columns:
+            repeat(5,
+                4.6rem);
+    }
+
+}
+
+
+/* =========================================================
+   小さい画面
+   ========================================================= */
+
+@media (max-width: 42rem) {
+
+    .inventory-main {
+        width:
+            min(100% - 1.5rem,
+                80rem);
+
+        padding-block:
+            1.75rem 3rem;
+    }
+
+
+    .inventory-heading {
+        margin-bottom:
+            1.5rem;
+    }
+
+
+    /* -----------------------------------------------------
+       出力パネル
+       ----------------------------------------------------- */
+
+    .inventory-summary {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .inventory-summary__flow {
+        border-right:
+            0;
+
+        border-bottom:
+            1px solid #eceef1;
+    }
+
+
+    .inventory-summary__flow-main {
+        gap:
+            1rem;
+    }
+
+
+    .inventory-summary__value {
+        font-size:
+            1.6rem;
+    }
+
+
+    .inventory-summary__pages {
+        place-content:
+            start;
+
+        padding:
+            1.25rem 1.5rem;
+
+        text-align:
+            left;
+    }
+
+
+    .inventory-summary__pages .inventory-summary__value {
+        justify-content:
+            flex-start;
+    }
+
+
+    .inventory-settings-section {
+        padding:
+            1.35rem 1.5rem;
+    }
+
+
+    .inventory-settings__heading {
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+
+        gap:
+            0.25rem;
+    }
+
+
+    .inventory-settings__row {
+        grid-template-columns:
+            1fr;
+
+        align-items:
+            start;
+
+        gap:
+            0.45rem;
+    }
+
+
+    .inventory-settings__options {
+        align-items:
+            flex-start;
+
+        flex-direction:
+            column;
+    }
+
+
+    .inventory-sort__options {
+        width:
+            100%;
+
+        grid-template-columns:
+            repeat(2,
+                minmax(0,
+                    1fr));
+    }
+
+
+    .inventory-sort__label {
+        width:
+            100%;
+    }
+
+
+    .inventory-actions {
+        padding:
+            1rem 1.5rem;
+    }
+
+
+    .inventory-actions__print-button {
+        width:
+            100%;
+    }
+
+
+    /* -----------------------------------------------------
+       A4プレビュー
+       ----------------------------------------------------- */
+
+    .inventory-page {
+        padding:
+            3vw;
+    }
+
+
+    .inventory-page::before {
+        top:
+            3vw;
+
+        bottom:
+            3vw;
+    }
+
+
+    .inventory-page__issued {
+        top:
+            1.8vw;
+
+        left:
+            1.8vw;
+
+        font-size:
+            0.28rem;
+    }
+
+
+    .inventory-row {
+        column-gap:
+            0.1rem;
+    }
+
+
+    .inventory-row--odd,
+    .inventory-row--even {
+        grid-template-columns:
+            minmax(0,
+                1fr) 1.4rem minmax(0,
+                1.2fr);
+
+        grid-template-areas:
+            "name quantity barcode";
+    }
+
+
+    .inventory-row__barcode-area {
+        width:
+            88%;
+
+        min-width:
+            0;
+
+        max-width:
+            88%;
+    }
+
+
+    .inventory-row--odd .inventory-row__barcode-area {
+        justify-self:
+            end;
+    }
+
+
+    .inventory-row--even .inventory-row__barcode-area {
+        justify-self:
+            start;
+    }
+
+
+    .inventory-page .inventory-row:nth-child(n + 29) .inventory-row__name {
+        padding-left:
+            0.25rem;
+    }
+
+
+    .inventory-row__name-text,
+    .inventory-row__quantity-value {
+        font-size:
+            0.45rem;
+    }
+
+
+    .inventory-row__barcode {
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        max-width:
+            100%;
+
+        height:
+            1rem;
+    }
+
+
+    .inventory-row__plu-text,
+    .inventory-row__barcode-error {
+        font-size:
+            0.28rem;
+    }
+
+}

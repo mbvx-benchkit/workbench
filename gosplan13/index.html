@@ -15,16 +15,18 @@
     <meta property="og:title" content="GOSPLAN13 | JANコード変換・ラベル作成ツール">
     <meta property="og:description" content="商品名、商品画像、JANコードから、印刷可能なJANラベルを作成するシンプルなWebツールです。">
     <link rel="stylesheet" href="../css/ress.css">
+    <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/header.css">
     <link rel="stylesheet" href="../css/button.css">
     <link rel="stylesheet" href="../css/toggle.css">
-    <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="./css/styles.css">
     <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="./css/main_with_image.css">
     <link rel="stylesheet" href="./css/print.css" media="print">
+    <link rel="stylesheet" href="../css/footer.css">
     <script src="../dist/site-header.js" type="module"></script>
     <script src="./dist/main.js" type="module"></script>
+    <script src="../dist/workbench-build-info.js" type="module"></script>
 </head>
 
 <body>
@@ -230,9 +232,10 @@
          ===================================================== -->
 
     <footer class="footer">
-        <small>
-            Copyright © 2026 Morbee. All Rights Reserved.
-        </small>
+        <div class="footer__inner">
+            <small class="footer__copyright">Copyright © 2026 Morbee. All Rights Reserved.</small>
+            <small class="footer__build-info" data-workbench-build-info>WORKBENCH v1.1.0</small>
+        </div>
     </footer>
 
 

@@ -1,0 +1,192 @@
+
+
+
+/* =========================================================
+   定型印刷物
+   ========================================================= */
+
+.preset-documents {
+    padding-top:
+        2.5rem;
+
+    border-top:
+        1px solid #dedfe2;
+}
+
+
+/* =========================================================
+   定型印刷物 管理ボタン
+   ========================================================= */
+
+.preset-settings-button {
+    width:
+        2rem;
+
+    height:
+        2rem;
+
+    flex:
+        0 0 auto;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    color:
+        #9ca3af;
+
+    background-color:
+        transparent;
+
+    border:
+        1px solid transparent;
+
+    border-radius:
+        0.55rem;
+
+    cursor:
+        pointer;
+
+    transition:
+        color 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+
+.preset-settings-button svg {
+    width:
+        1.15rem;
+
+    height:
+        1.15rem;
+
+    display:
+        block;
+
+    fill:
+        currentColor;
+}
+
+
+.preset-settings-button:hover {
+    color:
+        #4b5563;
+
+    background-color:
+        #f3f4f6;
+
+    border-color:
+        #e5e7eb;
+}
+
+
+.preset-settings-button:focus-visible {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.125rem;
+}
+
+
+/* =========================================================
+   定型印刷物 グリッド
+   ========================================================= */
+
+.preset-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(3,
+            minmax(0, 1fr));
+
+    gap:
+        1rem;
+}
+
+
+/* =========================================================
+   定型印刷物カード
+   ========================================================= */
+
+.preset-card {
+    min-width:
+        0;
+
+    display:
+        grid;
+
+    grid-template-rows:
+        auto 1fr;
+
+    overflow:
+        hidden;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    color:
+        #1f2937;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius:
+        0.9rem;
+
+    text-align:
+        left;
+
+    font:
+        inherit;
+
+    box-shadow:
+        0 0.0625rem 0.125rem rgb(0 0 0 / 4%),
+        0 0.25rem 1rem rgb(0 0 0 / 3%);
+
+    cursor:
+        pointer;
+
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+
+.preset-card:hover {
+    border-color:
+        #d1d5db;
+
+    box-shadow:
+        0 0.125rem 0.25rem rgb(0 0 0 / 5%),
+        0 0.5rem 1.5rem rgb(0 0 0 / 6%);
+
+    transform:
+        translateY(-0.125rem);
+}
+
+
+.preset-card:focus-visible {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.1875rem;
+}

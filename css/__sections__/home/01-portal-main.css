@@ -1,0 +1,203 @@
+/**
+ * home.css
+ *
+ * WORKBENCH 親ポータル画面専用スタイル。
+ *
+ * 担当:
+ *
+ * - ツール一覧
+ * - ツールカード
+ * - 定型印刷物一覧
+ * - 定型印刷物カード
+ * - 新規追加カード
+ * - 定型印刷物管理ボタン
+ * - 定型印刷物管理モーダル
+ * - 定型印刷物編集フォーム
+ * - WORKBENCHバックアップ / 復元
+ *
+ * 共通Header / Footer / Buttonの見た目は
+ * ルートの共通CSS側で管理する。
+ */
+
+
+/* =========================================================
+   メイン
+   ========================================================= */
+
+.portal-main {
+    width:
+        min(100% - 3rem, 80rem);
+
+    margin-inline:
+        auto;
+
+    padding-block:
+        2.5rem 4rem;
+}
+
+
+/* =========================================================
+   共通セクション見出し
+   ========================================================= */
+
+.portal-section-heading {
+    margin-bottom:
+        1.25rem;
+}
+
+
+.portal-section-heading__eyebrow {
+    margin:
+        0 0 0.25rem;
+
+    color:
+        #6b7280;
+
+    font-size:
+        0.72rem;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        0.1em;
+}
+
+
+.portal-section-heading__title-row {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.5rem;
+}
+
+
+.portal-section-heading__title {
+    margin:
+        0;
+
+    color:
+        #1f2937;
+
+    font-size:
+        1.4rem;
+
+    font-weight:
+        700;
+
+    line-height:
+        1.3;
+}
+
+
+.portal-section-heading__description {
+    margin:
+        0.4rem 0 0;
+
+    color:
+        #6b7280;
+
+    font-size:
+        0.9rem;
+
+    line-height:
+        1.6;
+}
+
+
+/* =========================================================
+   ファーストビュー / ツール一覧
+   ========================================================= */
+
+.portal-hero {
+    padding-bottom:
+        3rem;
+}
+
+
+.tool-card-grid {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(4,
+            minmax(0, 1fr));
+
+    gap:
+        1rem;
+}
+
+
+/* =========================================================
+   ツールカード
+   ========================================================= */
+
+.tool-card {
+    min-width:
+        0;
+
+    min-height:
+        11rem;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    position:
+        relative;
+
+    padding:
+        1.25rem;
+
+    color:
+        #1f2937;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius:
+        0.9rem;
+
+    text-decoration:
+        none;
+
+    box-shadow:
+        0 0.0625rem 0.125rem rgb(0 0 0 / 4%),
+        0 0.25rem 1rem rgb(0 0 0 / 3%);
+
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+
+a.tool-card:hover {
+    border-color:
+        #d1d5db;
+
+    box-shadow:
+        0 0.125rem 0.25rem rgb(0 0 0 / 5%),
+        0 0.5rem 1.5rem rgb(0 0 0 / 6%);
+
+    transform:
+        translateY(-0.125rem);
+}
+
+
+a.tool-card:focus-visible {
+    outline:
+        0.125rem solid #9ca3af;
+
+    outline-offset:
+        0.1875rem;
+}

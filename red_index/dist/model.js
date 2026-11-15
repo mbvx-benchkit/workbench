@@ -1,3 +1,4 @@
+import { requireRecord, requireString } from "./model-utils.js";
 export const RED_INDEX_VERSION = 1;
 export const RED_INDEX_TITLE = "割引不可商品リスト";
 export const RED_INDEX_COPY_COUNT = 4;
@@ -122,25 +123,5 @@ export function splitCategories(categories) {
         categories.slice(0, midpoint),
         categories.slice(midpoint)
     ];
-}
-/* =========================================================
-   Generic Validation
-   ========================================================= */
-function requireRecord(value, message) {
-    if (typeof value !==
-        "object" ||
-        value ===
-            null ||
-        Array.isArray(value)) {
-        throw new Error(message);
-    }
-    return value;
-}
-function requireString(value, path) {
-    if (typeof value !==
-        "string") {
-        throw new Error(`${path} は文字列である必要があります。`);
-    }
-    return value;
 }
 //# sourceMappingURL=model.js.map

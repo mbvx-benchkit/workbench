@@ -1,33 +1,11 @@
-/**
- * import.ts
- *
- * GOSPLAN13でExportしたJSONファイルを読み込み、
- * 画面上の入力状態を復元する。
- *
- * 復元するもの:
- * - 画像あり / 画像なしモード
- * - 全ラベルの商品名
- * - 全ラベルのJANコード
- * - 全ラベルの商品画像（Base64 Data URL）
- *
- * labels配列の位置 = 画面上のラベル位置として扱う。
- *
- * Import時にデータを詰めたり、
- * 空欄を削除したりしてはいけない。
- */
+import { isObject } from "./import-utils.js";
+import { readJsonFile, getProductLabels } from "./import-utils.js";
+import { notifyInputChanged, restoreLabelImage, createFileInput } from "./import-utils.js";
 /* =========================================================
    定数
    ========================================================= */
 const SUPPORTED_APP_NAME = "GOSPLAN13";
 const SUPPORTED_VERSION = 1;
-/* =========================================================
-   汎用型判定
-   ========================================================= */
-function isObject(value) {
-    return (typeof value === "object"
-        && value !== null
-        && !Array.isArray(value));
-}
 /* =========================================================
    ラベルデータ検証
    ========================================================= */
@@ -96,46 +74,6 @@ function validateImportData(value) {
     return value;
 }
 /* =========================================================
-   JSONファイル読込
-   ========================================================= */
-async function readJsonFile(file) {
-    const text = await file.text();
-    try {
-        return JSON.parse(text);
-    }
-    catch {
-        throw new Error("JSONファイルを読み取れませんでした。");
-    }
-}
-/* =========================================================
-   ラベルDOM取得
-   ========================================================= */
-function getProductLabels(preview) {
-    return Array.from(preview.querySelectorAll(".product-label"));
-}
-/* =========================================================
-   入力イベント通知
-   ========================================================= */
-/**
- * JANをプログラムから変更した場合でも、
- * main.ts側の既存処理へ変更を通知する。
- *
- * 現在のGOSPLAN13では入力欄のchange / focusoutを
- * 利用してJAN描画などを行うため、
- * 両方を発火する。
- */
-function notifyInputChanged(input) {
-    input.dispatchEvent(new Event("input", {
-        bubbles: true,
-    }));
-    input.dispatchEvent(new Event("change", {
-        bubbles: true,
-    }));
-    input.dispatchEvent(new FocusEvent("focusout", {
-        bubbles: true,
-    }));
-}
-/* =========================================================
    商品名復元
    ========================================================= */
 function restoreLabelName(label, value) {
@@ -162,48 +100,6 @@ function restoreLabelJan(label, value) {
      * main.ts側へ通知する。
      */
     notifyInputChanged(input);
-}
-/* =========================================================
-   商品画像復元
-   ========================================================= */
-function restoreLabelImage(label, imageDataUrl) {
-    const imageInput = label.querySelector(".product-label__image-input");
-    const imagePreview = label.querySelector(".product-label__image-preview");
-    const imagePlaceholder = label.querySelector(".product-label__image-placeholder");
-    if (!imageInput) {
-        throw new Error("商品画像入力欄が見つかりません。");
-    }
-    if (!imagePreview) {
-        throw new Error("商品画像プレビューが見つかりません。");
-    }
-    if (!imagePlaceholder) {
-        throw new Error("商品画像プレースホルダーが見つかりません。");
-    }
-    /*
-     * File inputへプログラムからファイルを
-     * セットすることはできないため、
-     * Import時には選択状態をクリアする。
-     */
-    imageInput.value = "";
-    if (imageDataUrl === null
-        || imageDataUrl === "") {
-        imagePreview.removeAttribute("src");
-        imagePreview.hidden =
-            true;
-        imagePlaceholder.hidden =
-            false;
-        return;
-    }
-    /*
-     * Export時に保存した加工済みBase64画像を
-     * そのままプレビューへ復元する。
-     */
-    imagePreview.src =
-        imageDataUrl;
-    imagePreview.hidden =
-        false;
-    imagePlaceholder.hidden =
-        true;
 }
 /* =========================================================
    1面分を復元
@@ -280,23 +176,6 @@ export async function importFromFile(file, preview, imageModeToggle) {
     const json = await readJsonFile(file);
     const data = validateImportData(json);
     restoreImportData(data, preview, imageModeToggle);
-}
-/* =========================================================
-   ファイル選択input生成
-   ========================================================= */
-function createFileInput() {
-    const input = document.createElement("input");
-    input.type =
-        "file";
-    input.accept =
-        ".json,application/json";
-    /*
-     * UIとして表示する必要はない。
-     * JSONインポートボタンからのみ使用する。
-     */
-    input.hidden =
-        true;
-    return input;
 }
 /* =========================================================
    初期化

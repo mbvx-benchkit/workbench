@@ -1,0 +1,250 @@
+
+
+
+/* =========================================================
+   Child Items
+   ========================================================= */
+
+.category-items {
+    display:
+        grid;
+
+    gap:
+        0.45rem;
+}
+
+
+.category-items__heading {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    gap:
+        0.5rem;
+}
+
+
+.category-items__add-button {
+    width:
+        1.8rem;
+
+    height:
+        1.8rem;
+
+    padding:
+        0;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        1px solid #d7dce2;
+
+    border-radius:
+        50%;
+
+    background:
+        #ffffff;
+
+    color:
+        #535a64;
+
+    font-size:
+        1rem;
+
+    cursor:
+        pointer;
+}
+
+
+.category-items__add-button:hover {
+    border-color:
+        #bfc6cf;
+
+    background:
+        #f4f6f8;
+}
+
+
+.category-items__list {
+    display:
+        grid;
+
+    gap:
+        0.4rem;
+}
+
+
+.category-item {
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) 1.9rem;
+
+    align-items:
+        center;
+
+    gap:
+        0.35rem;
+}
+
+
+.category-item__remove-button {
+    width:
+        1.9rem;
+
+    height:
+        1.9rem;
+
+    padding:
+        0;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        transparent;
+
+    color:
+        #a0a5ad;
+
+    font-size:
+        0.95rem;
+
+    cursor:
+        pointer;
+}
+
+
+.category-item__remove-button:hover {
+    background:
+        #f6eeee;
+
+    color:
+        #a34747;
+}
+
+
+/* =========================================================
+   Add Category
+   ========================================================= */
+
+.category-add {
+    flex:
+        0 0 auto;
+
+    padding:
+        0.8rem 1rem 1rem;
+
+    border-top:
+        1px solid #e7e9ed;
+
+    background:
+        #fafbfc;
+}
+
+
+.category-add__button {
+    width:
+        100%;
+
+    justify-content:
+        center;
+}
+
+
+/* =========================================================
+   Preview
+   ========================================================= */
+
+.red-index-preview {
+    min-width:
+        0;
+}
+
+
+.red-index-preview__header {
+    min-height:
+        3.4rem;
+
+    margin-bottom:
+        0.75rem;
+
+    display:
+        flex;
+
+    align-items:
+        flex-end;
+
+    justify-content:
+        space-between;
+}
+
+
+.red-index-preview__title {
+    margin:
+        0;
+
+    color:
+        #30343a;
+
+    font-size:
+        1rem;
+
+    font-weight:
+        750;
+}
+
+
+.red-index-preview__badges {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.35rem;
+}
+
+
+.red-index-preview__badge {
+    padding:
+        0.25rem 0.55rem;
+
+    border:
+        1px solid #dfe2e6;
+
+    border-radius:
+        9999px;
+
+    background:
+        rgba(255, 255, 255, 0.82);
+
+    color:
+        #737983;
+
+    font-size:
+        0.7rem;
+
+    font-weight:
+        700;
+}

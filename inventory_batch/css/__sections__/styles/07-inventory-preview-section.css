@@ -1,0 +1,172 @@
+
+
+
+/* =========================================================
+   プレビュー
+   ========================================================= */
+
+.inventory-preview-section {
+    padding-top:
+        2rem;
+
+    border-top:
+        1px solid #dedfe2;
+}
+
+
+.inventory-preview {
+    width:
+        100%;
+
+    display:
+        grid;
+
+    justify-items:
+        center;
+
+    gap:
+        2rem;
+
+    padding-block:
+        1rem;
+}
+
+
+.inventory-preview__empty {
+    width:
+        100%;
+
+    padding:
+        2rem 1rem;
+
+    color:
+        #9ca3af;
+
+    background-color:
+        #fafafa;
+
+    border:
+        1px dashed #d1d5db;
+
+    border-radius:
+        0.75rem;
+
+    font-size:
+        0.82rem;
+
+    line-height:
+        1.6;
+
+    text-align:
+        center;
+}
+
+
+/* =========================================================
+   A4ページ
+   ========================================================= */
+
+.inventory-page {
+    position:
+        relative;
+
+    width:
+        min(100%,
+            210mm);
+
+    aspect-ratio:
+        210 / 297;
+
+    box-sizing:
+        border-box;
+
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(2,
+            minmax(0,
+                1fr));
+
+    grid-template-rows:
+        repeat(28,
+            minmax(0,
+                1fr));
+
+    grid-auto-flow:
+        column;
+
+    column-gap:
+        0;
+
+    row-gap:
+        0;
+
+    padding:
+        10mm;
+
+    overflow:
+        hidden;
+
+    background-color:
+        #ffffff;
+
+    border:
+        1px solid #d1d5db;
+
+    box-shadow:
+        0 0.125rem 0.25rem rgb(0 0 0 / 4%),
+        0 0.75rem 2rem rgb(0 0 0 / 6%);
+}
+
+
+/* =========================================================
+   発行情報
+   ========================================================= */
+
+.inventory-page__issued {
+    position:
+        absolute;
+
+    z-index:
+        3;
+
+    top:
+        6mm;
+
+    left:
+        6mm;
+
+    margin:
+        0;
+
+    padding:
+        0;
+
+    color:
+        #9ca3af;
+
+    font-size:
+        5.5pt;
+
+    font-weight:
+        400;
+
+    line-height:
+        1;
+
+    letter-spacing:
+        0.01em;
+
+    white-space:
+        nowrap;
+
+    pointer-events:
+        none;
+}
+
+
+.inventory-page__issued:empty {
+    display:
+        none;
+}

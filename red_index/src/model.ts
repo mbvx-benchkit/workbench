@@ -1,3 +1,7 @@
+import type { RedIndexCategory } from "./model-utils.js";
+export type { RedIndexCategory } from "./model-utils.js";
+import { requireRecord, requireString } from "./model-utils.js";
+
 export const RED_INDEX_VERSION =
     1 as const;
 
@@ -8,12 +12,6 @@ export const RED_INDEX_TITLE =
 
 export const RED_INDEX_COPY_COUNT =
     4;
-
-
-export type RedIndexCategory = {
-    category: string;
-    items: string[];
-};
 
 
 export type RedIndexData = {
@@ -307,56 +305,4 @@ export function splitCategories(
             midpoint
         )
     ];
-}
-
-
-/* =========================================================
-   Generic Validation
-   ========================================================= */
-
-function requireRecord(
-    value: unknown,
-    message: string
-): Record<string, unknown> {
-
-    if (
-        typeof value !==
-        "object" ||
-
-        value ===
-        null ||
-
-        Array.isArray(
-            value
-        )
-    ) {
-
-        throw new Error(
-            message
-        );
-    }
-
-
-    return value as
-        Record<string, unknown>;
-}
-
-
-function requireString(
-    value: unknown,
-    path: string
-): string {
-
-    if (
-        typeof value !==
-        "string"
-    ) {
-
-        throw new Error(
-            `${path} は文字列である必要があります。`
-        );
-    }
-
-
-    return value;
 }

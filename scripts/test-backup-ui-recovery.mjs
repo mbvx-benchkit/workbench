@@ -24,7 +24,7 @@ class FakeElement {
 }
 const keys = ['exportButton', 'importButton', 'importInput', 'status', 'recoveryButton',
   'passwordDialog', 'passwordForm', 'passwordInput', 'passwordConfirmInput',
-  'passwordConfirmRow', 'passwordError', 'passwordDescription', 'passwordSubmit', 'passwordCancel'];
+  'passwordConfirmRow', 'passwordVisibilityToggle', 'passwordError', 'passwordDescription', 'passwordSubmit', 'passwordCancel'];
 const ui = Object.fromEntries(keys.map(key => [key, new FakeElement()]));
 globalThis.window = { confirm: () => true };
 const waitFor = async condition => {

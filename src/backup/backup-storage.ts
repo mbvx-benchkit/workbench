@@ -1,3 +1,5 @@
+import { requestToPromise, waitForTransaction } from "./backup-storage-utils.js";
+
 /**
  * backup-storage.ts
  *
@@ -632,88 +634,6 @@ function openDocumentDatabase():
 
                     console.warn(
                         "DOCUMENT BUILDERのデータベース処理がブロックされています。"
-                    );
-                };
-        }
-    );
-}
-
-
-/* =========================================================
-   IndexedDB Utilities
-   ========================================================= */
-
-function requestToPromise<T>(
-    request: IDBRequest<T>
-): Promise<T> {
-
-    return new Promise<T>(
-        (
-            resolve,
-            reject
-        ) => {
-
-            request.onsuccess =
-                () => {
-
-                    resolve(
-                        request.result
-                    );
-                };
-
-
-            request.onerror =
-                () => {
-
-                    reject(
-                        request.error ??
-                        new Error(
-                            "IndexedDBの処理に失敗しました。"
-                        )
-                    );
-                };
-        }
-    );
-}
-
-
-function waitForTransaction(
-    transaction: IDBTransaction
-): Promise<void> {
-
-    return new Promise<void>(
-        (
-            resolve,
-            reject
-        ) => {
-
-            transaction.oncomplete =
-                () => {
-
-                    resolve();
-                };
-
-
-            transaction.onerror =
-                () => {
-
-                    reject(
-                        transaction.error ??
-                        new Error(
-                            "IndexedDBトランザクションに失敗しました。"
-                        )
-                    );
-                };
-
-
-            transaction.onabort =
-                () => {
-
-                    reject(
-                        transaction.error ??
-                        new Error(
-                            "IndexedDBトランザクションが中断されました。"
-                        )
                     );
                 };
         }

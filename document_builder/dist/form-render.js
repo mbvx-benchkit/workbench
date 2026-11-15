@@ -1,3 +1,4 @@
+import { requireTemplate } from "./dom/document-utils.js";
 import { getReferencedFields } from "./template.js";
 /* =========================================================
    Render
@@ -82,16 +83,5 @@ function getFieldTemplate(field) {
         case "date":
             return requireTemplate("date-field-template");
     }
-}
-/* =========================================================
-   DOM
-   ========================================================= */
-function requireTemplate(id) {
-    const element = document.getElementById(id);
-    if (!(element instanceof
-        HTMLTemplateElement)) {
-        throw new Error(`#${id} が見つかりません。`);
-    }
-    return element;
 }
 //# sourceMappingURL=form-render.js.map

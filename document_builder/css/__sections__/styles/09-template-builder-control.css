@@ -1,0 +1,155 @@
+
+
+
+/* =========================================================
+   Builder Controls
+   ========================================================= */
+
+.template-builder-control {
+    min-width:
+        0;
+
+    display:
+        grid;
+
+    gap:
+        0.35rem;
+}
+
+
+.template-builder-control+.template-builder-control {
+    margin-top:
+        0.8rem;
+}
+
+
+.template-builder-control__label {
+    color:
+        #555c66;
+
+    font-size:
+        0.72rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-builder-control__input,
+.template-builder-control__textarea,
+.template-builder-control__select {
+    width:
+        100%;
+
+    border:
+        1px solid #d8dce2;
+
+    border-radius:
+        0.6rem;
+
+    outline:
+        none;
+
+    background:
+        #ffffff;
+
+    color:
+        #252a31;
+
+    font-size:
+        0.8rem;
+}
+
+
+.template-builder-control__input,
+.template-builder-control__select {
+    height:
+        2.45rem;
+
+    padding:
+        0 0.7rem;
+}
+
+
+.template-builder-control__textarea {
+    padding:
+        0.65rem 0.7rem;
+
+    resize:
+        vertical;
+
+    line-height:
+        1.6;
+}
+
+
+.template-builder-control__textarea--small {
+    min-height:
+        4rem;
+}
+
+
+.template-builder-control__textarea--body {
+    min-height:
+        14rem;
+}
+
+
+.template-builder-control__input:focus,
+.template-builder-control__textarea:focus,
+.template-builder-control__select:focus {
+    border-color:
+        #8a929d;
+
+    box-shadow:
+        0 0 0 0.18rem rgba(80, 88, 102, 0.1);
+}
+
+
+/* =========================================================
+   Builder ID
+   ========================================================= */
+
+.template-builder-id {
+    margin-top:
+        0.8rem;
+
+    padding:
+        0.6rem 0.7rem;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        0.65rem;
+
+    border-radius:
+        0.55rem;
+
+    background:
+        #f6f7f9;
+}
+
+
+.template-builder-id__label {
+    color:
+        #7b818a;
+
+    font-size:
+        0.68rem;
+
+    font-weight:
+        700;
+}
+
+
+.template-builder-id__value {
+    color:
+        #4b525c;
+
+    font-size:
+        0.7rem;
+}

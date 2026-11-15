@@ -1,3 +1,7 @@
+import type { StorageElements, StorageController } from "./storage-utils.js";
+export type { StorageElements, StorageController } from "./storage-utils.js";
+import { isObject } from "./storage-utils.js";
+
 /**
  * storage.ts
  *
@@ -94,56 +98,6 @@ const SAVE_FAILURE_MESSAGE =
     + "以前の自動保存データは消さずに保持します。\n"
     + "現在の作業内容は画面に残りますが、ページを閉じる前に"
     + "JSONへ退避することをおすすめします。";
-
-
-/* =========================================================
-   型
-   ========================================================= */
-
-export type StorageElements = {
-    preview: HTMLElement;
-    imageModeToggle: HTMLInputElement;
-};
-
-
-export type StorageController = {
-    /**
-     * 現在の状態を即座に保存する。
-     */
-    saveNow: () => boolean;
-
-    /**
-     * 自動保存データを削除する。
-     *
-     * 画面上の入力内容は変更しない。
-     */
-    clearStorage: () => void;
-
-    /**
-     * 自動保存データが存在するか確認する。
-     */
-    hasStoredData: () => boolean;
-
-    /**
-     * イベント監視を解除する。
-     */
-    destroy: () => void;
-};
-
-
-/* =========================================================
-   汎用型判定
-   ========================================================= */
-
-function isObject(
-    value: unknown,
-): value is Record<string, unknown> {
-    return (
-        typeof value === "object"
-        && value !== null
-        && !Array.isArray(value)
-    );
-}
 
 
 /* =========================================================

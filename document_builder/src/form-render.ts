@@ -1,3 +1,5 @@
+import { requireTemplate } from "./dom/document-utils.js";
+
 import {
     DocumentTemplate,
     DocumentValues,
@@ -269,35 +271,4 @@ function getFieldTemplate(
                 "date-field-template"
             );
     }
-}
-
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-function requireTemplate(
-    id: string
-): HTMLTemplateElement {
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-    if (
-        !(
-            element instanceof
-            HTMLTemplateElement
-        )
-    ) {
-
-        throw new Error(
-            `#${id} が見つかりません。`
-        );
-    }
-
-
-    return element;
 }

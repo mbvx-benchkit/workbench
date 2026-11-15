@@ -19893,6 +19893,212 @@ var init_index_es = __esm({
   }
 });
 
+// document_builder/dist/dom/document-utils.js
+function formatPrintHistoryBytes(bytes) {
+  if (bytes < 1024)
+    return `${bytes} B`;
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+}
+function formatPrintHistoryDate(timestamp) {
+  const date = new Date(timestamp);
+  const pad = (number) => String(number).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+function requireElement(selector) {
+  const element = document.querySelector(selector);
+  if (!element) {
+    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
+  }
+  return element;
+}
+function requireChild(parent, selector) {
+  const element = parent.querySelector(selector);
+  if (!element) {
+    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
+  }
+  return element;
+}
+function getErrorMessage(error) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
+}
+function requireTemplate(id) {
+  const element = document.getElementById(id);
+  if (!(element instanceof HTMLTemplateElement)) {
+    throw new Error(`#${id} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
+  }
+  return element;
+}
+
+// document_builder/dist/dom/main-elements.js
+var jsonImportInput = requireElement("#json-import-input");
+var jsonImportButton = requireElement("#json-import-button");
+var jsonExportButton = requireElement("#json-export-button");
+var templateSelect = requireElement("#template-select");
+var templateSettingsButton = requireElement("#template-settings-button");
+var printHistoryButton = requireElement("#print-history-button");
+var printButton = requireElement("#print-button");
+var documentFieldsEmpty = requireElement("#document-fields-empty");
+var documentFieldsForm = requireElement("#document-fields-form");
+var documentFields = requireElement("#document-fields");
+var activeTemplateName = requireElement("#active-template-name");
+var documentPage = requireElement("#document-page");
+var documentPreviewEmpty = requireElement("#document-preview-empty");
+var documentContent = requireElement("#document-content");
+var documentRenderElements = {
+  topLeft: requireElement("#document-top-left"),
+  topRight: requireElement("#document-top-right"),
+  opening: requireElement("#document-opening"),
+  body: requireElement("#document-body"),
+  closing: requireElement("#document-closing"),
+  end: requireElement("#document-end")
+};
+var printFlowDialog = requireElement("#print-flow-dialog");
+var printFlowCloseButton = requireElement("#print-flow-close-button");
+var printSavePdfButton = requireElement("#print-save-pdf-button");
+var printFinalButton = requireElement("#print-final-button");
+var printStepOne = requireElement("#print-step-one");
+var printStepTwo = requireElement("#print-step-two");
+var printStepOneStatus = requireElement("#print-step-one-status");
+var printFileName = requireElement("#print-file-name");
+var printHistoryDialog = requireElement("#print-history-dialog");
+var printHistoryCloseButton = requireElement("#print-history-close-button");
+var printHistoryList = requireElement("#print-history-list");
+var printHistoryStats = requireElement("#print-history-stats");
+var printHistoryMoreButton = requireElement("#print-history-more-button");
+var templateSettingsDialog = requireElement("#template-settings-dialog");
+var templateDialogCloseButton = requireElement("#template-dialog-close-button");
+var templateDialogDoneButton = requireElement("#template-dialog-done-button");
+var templateBuilderButton = requireElement("#template-builder-button");
+var templateAddInput = requireElement("#template-add-input");
+var templateAddButton = requireElement("#template-add-button");
+var templateListEmpty = requireElement("#template-list-empty");
+var templateList = requireElement("#template-list");
+var templateCardTemplate = requireElement("#template-card-template");
+var templateDeleteDialog = requireElement("#template-delete-dialog");
+var templateDeleteCancelButton = requireElement("#template-delete-cancel-button");
+var templateDeleteConfirmButton = requireElement("#template-delete-confirm-button");
+var documentToast = requireElement("#document-toast");
+
+// document_builder/dist/events/document-events.js
+function bindDocumentEvents(deps) {
+  jsonImportButton.addEventListener("click", () => {
+    jsonImportInput.value = "";
+    jsonImportInput.click();
+  });
+  jsonImportInput.addEventListener("change", () => {
+    void deps.handleDocumentImport();
+  });
+  jsonExportButton.addEventListener("click", () => {
+    if (!deps.activeTemplate) {
+      return;
+    }
+    deps.downloadDocumentJson(deps.activeTemplate, deps.activeValues);
+    deps.showToast("\u73FE\u5728\u306E\u6587\u66F8\u3092JSON\u51FA\u529B\u3057\u307E\u3057\u305F\u3002");
+  });
+  templateSelect.addEventListener("change", () => {
+    void deps.handleTemplateSelection();
+  });
+  templateSettingsButton.addEventListener("click", () => {
+    deps.openTemplateSettings();
+  });
+  printButton.addEventListener("click", () => {
+    deps.openPrintFlow();
+  });
+  printHistoryButton.addEventListener("click", () => {
+    void deps.openPrintHistory();
+  });
+  printHistoryCloseButton.addEventListener("click", () => {
+    printHistoryDialog.close();
+  });
+  printHistoryDialog.addEventListener("close", () => {
+    deps.invalidatePrintHistory();
+  });
+  printHistoryMoreButton.addEventListener("click", () => {
+    void deps.loadMorePrintHistory();
+  });
+  printHistoryDialog.addEventListener("click", (event) => {
+    if (event.target === printHistoryDialog) {
+      printHistoryDialog.close();
+    }
+  });
+  printFlowCloseButton.addEventListener("click", () => {
+    printFlowDialog.close();
+  });
+  printFlowDialog.addEventListener("click", (event) => {
+    if (event.target === printFlowDialog) {
+      printFlowDialog.close();
+    }
+  });
+  printSavePdfButton.addEventListener("click", () => {
+    void deps.runPdfSaveStep();
+  });
+  printFinalButton.addEventListener("click", () => {
+    deps.runFinalPrint();
+  });
+  templateDialogCloseButton.addEventListener("click", () => {
+    templateSettingsDialog.close();
+  });
+  templateDialogDoneButton.addEventListener("click", () => {
+    templateSettingsDialog.close();
+  });
+  templateBuilderButton.addEventListener("click", () => {
+    deps.templateBuilder.openCreate();
+  });
+  templateAddButton.addEventListener("click", () => {
+    templateAddInput.value = "";
+    templateAddInput.click();
+  });
+  templateAddInput.addEventListener("change", () => {
+    void deps.handleTemplateAddImport();
+  });
+  templateSettingsDialog.addEventListener("click", (event) => {
+    if (event.target === templateSettingsDialog) {
+      templateSettingsDialog.close();
+    }
+  });
+  templateSettingsDialog.addEventListener("close", () => {
+    deps.templateBuilder.reset();
+  });
+  templateDeleteCancelButton.addEventListener("click", () => {
+    deps.clearPendingDeleteTemplate();
+    templateDeleteDialog.close();
+  });
+  templateDeleteConfirmButton.addEventListener("click", () => {
+    void deps.confirmTemplateDelete();
+  });
+  templateDeleteDialog.addEventListener("click", (event) => {
+    if (event.target === templateDeleteDialog) {
+      deps.clearPendingDeleteTemplate();
+      templateDeleteDialog.close();
+    }
+  });
+}
+
+// document_builder/dist/templates/template-domain.js
+function requireRecord(value, message) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(message);
+  }
+  return value;
+}
+function requireString(value, path) {
+  if (typeof value !== "string") {
+    throw new Error(`${path} \u306F\u6587\u5B57\u5217\u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002`);
+  }
+  return value;
+}
+function formatLocalDate(date) {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // document_builder/dist/template.js
 var DOCUMENT_PACKAGE_VERSION = 1;
 var TEMPLATE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
@@ -20086,12 +20292,6 @@ function resolveDefaultValue(field) {
   }
   return field.defaultValue ?? "";
 }
-function formatLocalDate(date) {
-  const year = String(date.getFullYear());
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 function cloneTemplate(template) {
   return {
     id: template.id,
@@ -20104,24 +20304,103 @@ function cloneTemplate(template) {
     }
   };
 }
-function requireRecord(value, message) {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(message);
-  }
-  return value;
-}
-function requireString(value, path) {
-  if (typeof value !== "string") {
-    throw new Error(`${path} \u306F\u6587\u5B57\u5217\u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002`);
-  }
-  return value;
-}
 function requireNonEmptyString(value, path) {
   const text2 = requireString(value, path).trim();
   if (text2.length === 0) {
     throw new Error(`${path} \u306F\u7A7A\u306B\u3067\u304D\u307E\u305B\u3093\u3002`);
   }
   return text2;
+}
+
+// document_builder/dist/form/document-field-rules.js
+function validateDocumentRequiredFields(activeTemplate2, activeValues2, showToast2) {
+  if (!activeTemplate2) {
+    return false;
+  }
+  const missingField = getReferencedFields(activeTemplate2).find((field) => {
+    if (!field.required) {
+      return false;
+    }
+    const value = activeValues2[field.id] ?? "";
+    return value.trim().length === 0;
+  });
+  if (!missingField) {
+    return true;
+  }
+  showToast2(`\u5FC5\u9808\u9805\u76EE\u300C${missingField.label}\u300D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
+  const control = document.getElementById(`document-field-${missingField.id}`);
+  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+    control.focus();
+    control.reportValidity();
+  }
+  return false;
+}
+function resolveDocumentRecipientName(activeTemplate2, activeValues2) {
+  if (!activeTemplate2) {
+    return "";
+  }
+  const fields = getReferencedFields(activeTemplate2);
+  const exactLabelCandidates = [
+    "\u76F8\u624B\u306E\u540D\u524D",
+    "\u5B9B\u540D",
+    "\u5B9B\u5148\u540D",
+    "\u76F8\u624B\u540D"
+  ];
+  const exactField = fields.find((field) => exactLabelCandidates.includes(field.label.trim()));
+  if (exactField) {
+    return activeValues2[exactField.id] ?? "";
+  }
+  const semanticField = fields.find((field) => {
+    const label = field.label.trim();
+    return label.includes("\u5B9B\u540D") || label.includes("\u5B9B\u5148") || label.includes("\u76F8\u624B") && (label.includes("\u540D\u524D") || label.includes("\u6C0F\u540D"));
+  });
+  if (semanticField) {
+    return activeValues2[semanticField.id] ?? "";
+  }
+  const genericNameFields = fields.filter((field) => {
+    const label = field.label.trim();
+    return label === "\u540D\u524D" || label === "\u304A\u540D\u524D" || label === "\u6C0F\u540D";
+  });
+  if (genericNameFields.length === 1) {
+    const field = genericNameFields[0];
+    return activeValues2[field.id] ?? "";
+  }
+  return "";
+}
+
+// document_builder/dist/templates/template-db-utils.js
+async function requestPersistentStorage() {
+  if (!navigator.storage || typeof navigator.storage.persist !== "function") {
+    return false;
+  }
+  try {
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
+function requestToPromise(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
+  });
+}
+function waitForTransaction(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => {
+      resolve();
+    };
+    transaction.onerror = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    };
+    transaction.onabort = () => {
+      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+    };
+  });
 }
 
 // document_builder/dist/template-db.js
@@ -20164,16 +20443,6 @@ async function deleteTemplate(id) {
   const request = store.delete(id);
   await requestToPromise(request);
   await completion;
-}
-async function requestPersistentStorage() {
-  if (!navigator.storage || typeof navigator.storage.persist !== "function") {
-    return false;
-  }
-  try {
-    return await navigator.storage.persist();
-  } catch {
-    return false;
-  }
 }
 function sortTemplates(templates2) {
   const collator = new Intl.Collator("ja", {
@@ -20224,29 +20493,6 @@ function openTemplateDatabase() {
   });
   return databasePromise;
 }
-function requestToPromise(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-    request.onerror = () => {
-      reject(request.error ?? new Error("IndexedDB\u306E\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-  });
-}
-function waitForTransaction(transaction) {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => {
-      resolve();
-    };
-    transaction.onerror = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    };
-    transaction.onabort = () => {
-      reject(transaction.error ?? new Error("IndexedDB\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
-    };
-  });
-}
 
 // document_builder/dist/template-import.js
 var MAX_JSON_FILE_SIZE = 1024 * 1024;
@@ -20294,387 +20540,156 @@ function sanitizeFileName(value) {
   return sanitized || "document";
 }
 
-// document_builder/dist/form-render.js
-function renderDocumentFields(options) {
-  const { container, template, values, onChange } = options;
-  container.replaceChildren();
-  const fields = getReferencedFields(template);
-  if (fields.length === 0) {
-    const message = document.createElement("p");
-    message.className = "document-empty-state__description";
-    message.textContent = "\u3053\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306B\u5165\u529B\u9805\u76EE\u306F\u3042\u308A\u307E\u305B\u3093\u3002";
-    container.appendChild(message);
-    return;
-  }
-  for (const field of fields) {
-    const fieldElement = createFieldElement(field, values[field.id] ?? "", onChange);
-    container.appendChild(fieldElement);
-  }
-}
-function createFieldElement(field, value, onChange) {
-  const htmlTemplate = getFieldTemplate(field);
-  const fragment = htmlTemplate.content.cloneNode(true);
-  const root = fragment.firstElementChild;
-  if (!(root instanceof HTMLElement)) {
-    throw new Error("\u5165\u529B\u6B04\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-  }
-  const label = root.querySelector(".document-field__label");
-  const control = root.querySelector("input, textarea");
-  if (!label || !control) {
-    throw new Error("\u5165\u529B\u6B04\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u69CB\u9020\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002");
-  }
-  const controlId = `document-field-${field.id}`;
-  label.textContent = field.label;
-  label.htmlFor = controlId;
-  if (field.required) {
-    label.dataset.required = "true";
-  }
-  control.id = controlId;
-  control.name = field.id;
-  control.required = field.required ?? false;
-  control.placeholder = field.placeholder ?? "";
-  control.value = value;
-  control.addEventListener("input", () => {
-    onChange(field.id, control.value);
-  });
-  return root;
-}
-function getFieldTemplate(field) {
-  switch (field.type) {
-    case "text":
-      return requireTemplate("text-field-template");
-    case "textarea":
-      return requireTemplate("textarea-field-template");
-    case "date":
-      return requireTemplate("date-field-template");
-  }
-}
-function requireTemplate(id) {
-  const element = document.getElementById(id);
-  if (!(element instanceof HTMLTemplateElement)) {
-    throw new Error(`#${id} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
-  }
-  return element;
-}
-
-// document_builder/dist/document-render.js
-function renderBusinessDocument(elements2, template, values) {
-  setText(elements2.topLeft, interpolateTemplateText(template.document.topLeft, values));
-  setText(elements2.topRight, interpolateTemplateText(template.document.topRight, values));
-  setText(elements2.opening, interpolateTemplateText(template.document.opening, values));
-  setText(elements2.body, interpolateTemplateText(template.document.body, values));
-  setText(elements2.closing, interpolateTemplateText(template.document.closing, values));
-  setText(elements2.end, interpolateTemplateText(template.document.end, values));
-}
-function clearBusinessDocument(elements2) {
-  for (const element of Object.values(elements2)) {
-    element.textContent = "";
-    element.hidden = false;
-  }
-}
-function setText(element, text2) {
-  element.textContent = text2;
-  element.hidden = text2.length === 0;
-}
-
-// document_builder/dist/template-builder.js
-function setupTemplateBuilder(options) {
-  const dialog = requireElement("#template-settings-dialog");
-  const listView = requireElement("#template-list-view");
-  const builderView = requireElement("#template-builder-view");
-  const backButton = requireElement("#template-builder-back-button");
-  const closeButton = requireElement("#template-builder-close-button");
-  const title = requireElement("#template-builder-title");
-  const form = requireElement("#template-builder-form");
-  const idInput = requireElement("#template-builder-id");
-  const idDisplay = requireElement("#template-builder-id-display");
-  const nameInput = requireElement("#template-builder-name");
-  const fieldsContainer = requireElement("#template-builder-fields");
-  const addFieldButton = requireElement("#template-builder-add-field-button");
-  const fieldTemplate = requireElement("#template-builder-field-template");
-  const topLeftInput = requireElement("#template-builder-top-left");
-  const topRightInput = requireElement("#template-builder-top-right");
-  const openingInput = requireElement("#template-builder-opening");
-  const bodyInput = requireElement("#template-builder-body");
-  const closingInput = requireElement("#template-builder-closing");
-  const endInput = requireElement("#template-builder-end");
-  const exportButton = requireElement("#template-builder-export-button");
-  const cancelButton = requireElement("#template-builder-cancel-button");
-  const saveButton = requireElement("#template-builder-save-button");
-  const errorElement = requireElement("#template-builder-error");
-  let mode = "create";
-  function showListView() {
-    builderView.hidden = true;
-    listView.hidden = false;
-  }
-  function showBuilderView() {
-    listView.hidden = true;
-    builderView.hidden = false;
-  }
-  function openCreate() {
-    mode = "create";
-    resetBuilder();
-    const templateId = createTemplateId();
-    idInput.value = templateId;
-    idDisplay.textContent = templateId;
-    title.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u4F5C\u6210";
-    saveButton.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3068\u3057\u3066\u767B\u9332";
-    openingInput.value = "\u62DD\u5553";
-    closingInput.value = "\u656C\u5177";
-    endInput.value = "\u4EE5\u4E0A";
-    addField();
-    showBuilderView();
-    focusLater(nameInput);
-  }
-  function openEdit(template) {
-    mode = "edit";
-    resetBuilder();
-    idInput.value = template.id;
-    idDisplay.textContent = template.id;
-    nameInput.value = template.name;
-    for (const field of template.fields) {
-      appendFieldRow(field);
-    }
-    topLeftInput.value = template.document.topLeft;
-    topRightInput.value = template.document.topRight;
-    openingInput.value = template.document.opening;
-    bodyInput.value = template.document.body;
-    closingInput.value = template.document.closing;
-    endInput.value = template.document.end;
-    title.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u7DE8\u96C6";
-    saveButton.textContent = "\u5909\u66F4\u3092\u4FDD\u5B58";
-    showBuilderView();
-    focusLater(nameInput);
-  }
-  function resetBuilder() {
-    form.reset();
-    idInput.value = "";
-    idDisplay.textContent = "";
-    fieldsContainer.replaceChildren();
-    topLeftInput.value = "";
-    topRightInput.value = "";
-    openingInput.value = "";
-    bodyInput.value = "";
-    closingInput.value = "";
-    endInput.value = "";
-    hideError();
-  }
-  function reset() {
-    mode = "create";
-    resetBuilder();
-    showListView();
-  }
-  function addField() {
-    const fieldId = createNextFieldId();
-    appendFieldRow({
-      id: fieldId,
-      label: "",
-      type: "text"
-    });
-  }
-  function appendFieldRow(field) {
-    const fragment = fieldTemplate.content.cloneNode(true);
-    const row = fragment.firstElementChild;
-    if (!(row instanceof HTMLElement)) {
-      throw new Error("\u5165\u529B\u9805\u76EE\u7DE8\u96C6\u6B04\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-    }
-    row.dataset.fieldId = field.id;
-    const id = requireChild(row, ".template-builder-field__id");
-    const token = requireChild(row, ".template-builder-field__token");
-    const label = requireChild(row, ".template-builder-field__label");
-    const type = requireChild(row, ".template-builder-field__type");
-    const defaultValue = requireChild(row, ".template-builder-field__default");
-    const placeholder = requireChild(row, ".template-builder-field__placeholder");
-    const required = requireChild(row, ".template-builder-field__required");
-    const removeButton = requireChild(row, ".template-builder-field__remove");
-    id.textContent = field.id;
-    token.textContent = `{${field.id}}`;
-    label.value = field.label;
-    type.value = field.type;
-    defaultValue.value = field.defaultValue ?? "";
-    placeholder.value = field.placeholder ?? "";
-    required.checked = field.required ?? false;
-    removeButton.addEventListener("click", () => {
-      row.remove();
-    });
-    fieldsContainer.appendChild(row);
-  }
-  function createNextFieldId() {
-    const usedIds = new Set(Array.from(fieldsContainer.querySelectorAll(".template-builder-field")).map((row) => row.dataset.fieldId ?? ""));
-    let number = 1;
-    while (usedIds.has(`field${number}`)) {
-      number += 1;
-    }
-    return `field${number}`;
-  }
-  function buildTemplateFromForm() {
-    hideError();
-    const id = idInput.value.trim();
-    const name = nameInput.value.trim();
-    if (name.length === 0) {
-      throw new Error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-    }
-    const fields = readFields();
-    const packageData = parseDocumentPackage({
-      version: DOCUMENT_PACKAGE_VERSION,
-      template: {
-        id,
-        name,
-        fields,
-        document: {
-          topLeft: topLeftInput.value,
-          topRight: topRightInput.value,
-          opening: openingInput.value,
-          body: bodyInput.value,
-          closing: closingInput.value,
-          end: endInput.value
-        }
-      }
-    });
-    return packageData.template;
-  }
-  function readFields() {
-    const rows = Array.from(fieldsContainer.querySelectorAll(".template-builder-field"));
-    return rows.map((row, index2) => {
-      const id = row.dataset.fieldId;
-      if (!id) {
-        throw new Error(`\u5165\u529B\u9805\u76EE${index2 + 1}\u306EID\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002`);
-      }
-      const label = requireChild(row, ".template-builder-field__label").value.trim();
-      if (label.length === 0) {
-        throw new Error(`{${id}} \u306E\u8868\u793A\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
-      }
-      const typeValue = requireChild(row, ".template-builder-field__type").value;
-      const type = parseFieldType2(typeValue);
-      const defaultValue = requireChild(row, ".template-builder-field__default").value;
-      const placeholder = requireChild(row, ".template-builder-field__placeholder").value;
-      const required = requireChild(row, ".template-builder-field__required").checked;
-      const field = {
-        id,
-        label,
-        type
-      };
-      if (defaultValue.length > 0) {
-        field.defaultValue = defaultValue;
-      }
-      if (placeholder.length > 0) {
-        field.placeholder = placeholder;
-      }
-      if (required) {
-        field.required = true;
-      }
-      return field;
-    });
-  }
-  function handleExport() {
-    try {
-      const template = buildTemplateFromForm();
-      downloadTemplateJson(template);
-    } catch (error) {
-      showError(getErrorMessage(error));
-    }
-  }
-  async function handleSubmit(event) {
-    event.preventDefault();
-    hideError();
-    let template;
-    try {
-      template = buildTemplateFromForm();
-    } catch (error) {
-      showError(getErrorMessage(error));
+// document_builder/dist/templates/template-workflow.js
+function createTemplateWorkflow(deps) {
+  const { jsonImportInput: jsonImportInput2, templateAddInput: templateAddInput2, templateSelect: templateSelect2, refreshTemplateCollections: refreshTemplateCollections2, applyTemplate: applyTemplate2, clearActiveTemplate: clearActiveTemplate2, showToast: showToast2, getErrorMessage: getErrorMessage3 } = deps;
+  async function handleDocumentImport2() {
+    const file = jsonImportInput2.files?.[0];
+    if (!file) {
       return;
     }
-    saveButton.disabled = true;
-    const originalText = saveButton.textContent;
-    saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
     try {
-      await options.onSave(template, mode);
-      resetBuilder();
-      showListView();
-      options.onReturnToList();
+      const packageData = await readDocumentPackageFile(file);
+      await putTemplate(packageData.template);
+      await refreshTemplateCollections2();
+      applyTemplate2(packageData.template, packageData.values);
+      showToast2(packageData.values ? "\u6587\u66F8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002");
     } catch (error) {
-      showError(getErrorMessage(error));
+      console.error("JSON\u30A4\u30F3\u30DD\u30FC\u30C8\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      showToast2(getErrorMessage3(error));
     } finally {
-      saveButton.disabled = false;
-      saveButton.textContent = originalText;
+      jsonImportInput2.value = "";
     }
   }
-  function leaveBuilder() {
-    resetBuilder();
-    showListView();
-    options.onReturnToList();
+  async function handleTemplateAddImport2() {
+    const file = templateAddInput2.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const packageData = await readDocumentPackageFile(file);
+      const existing = await getTemplate(packageData.template.id);
+      if (existing) {
+        throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u65E2\u5B58\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u300C\u7DE8\u96C6\u300D\u3092\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
+      await putTemplate(packageData.template);
+      await refreshTemplateCollections2();
+      applyTemplate2(packageData.template);
+      showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002");
+    } catch (error) {
+      console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u8FFD\u52A0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      showToast2(getErrorMessage3(error));
+    } finally {
+      templateAddInput2.value = "";
+    }
   }
-  function showError(message) {
-    errorElement.textContent = message;
-    errorElement.hidden = false;
+  async function saveTemplateFromBuilder2(template, mode) {
+    if (mode === "create") {
+      const existing2 = await getTemplate(template.id);
+      if (existing2) {
+        throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u5B58\u5728\u3057\u307E\u3059\u3002");
+      }
+      await putTemplate(template);
+      await refreshTemplateCollections2();
+      applyTemplate2(template);
+      showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002");
+      return;
+    }
+    const existing = await getTemplate(template.id);
+    if (!existing) {
+      throw new Error("\u7DE8\u96C6\u5BFE\u8C61\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    }
+    const editingActiveTemplate = deps.activeTemplate?.id === template.id;
+    const preservedValues = editingActiveTemplate ? deps.activeValues : void 0;
+    await putTemplate(template);
+    await refreshTemplateCollections2();
+    if (editingActiveTemplate) {
+      applyTemplate2(template, preservedValues);
+    }
+    showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002");
   }
-  function hideError() {
-    errorElement.textContent = "";
-    errorElement.hidden = true;
+  async function handleTemplateSelection2() {
+    const id = templateSelect2.value;
+    if (!id) {
+      clearActiveTemplate2();
+      return;
+    }
+    const template = await getTemplate(id);
+    if (!template) {
+      await refreshTemplateCollections2();
+      clearActiveTemplate2();
+      showToast2("\u9078\u629E\u3057\u305F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+      return;
+    }
+    applyTemplate2(template);
   }
-  addFieldButton.addEventListener("click", () => {
-    addField();
-  });
-  backButton.addEventListener("click", () => {
-    leaveBuilder();
-  });
-  cancelButton.addEventListener("click", () => {
-    leaveBuilder();
-  });
-  closeButton.addEventListener("click", () => {
-    dialog.close();
-  });
-  exportButton.addEventListener("click", () => {
-    handleExport();
-  });
-  form.addEventListener("submit", (event) => {
-    void handleSubmit(event);
-  });
-  return {
-    showListView,
-    openCreate,
-    openEdit,
-    reset
-  };
-}
-function createTemplateId() {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2, 8);
-  return `template-${timestamp}-${random}`;
-}
-function parseFieldType2(value) {
-  if (value === "text" || value === "textarea" || value === "date") {
-    return value;
-  }
-  throw new Error("\u5165\u529B\u9805\u76EE\u306E\u7A2E\u985E\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002");
-}
-function getErrorMessage(error) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
-}
-function focusLater(element) {
-  window.setTimeout(() => {
-    element.focus();
-  }, 0);
-}
-function requireElement(selector) {
-  const element = document.querySelector(selector);
-  if (!element) {
-    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
-  }
-  return element;
-}
-function requireChild(parent, selector) {
-  const element = parent.querySelector(selector);
-  if (!element) {
-    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
-  }
-  return element;
+  return { handleDocumentImport: handleDocumentImport2, handleTemplateAddImport: handleTemplateAddImport2, saveTemplateFromBuilder: saveTemplateFromBuilder2, handleTemplateSelection: handleTemplateSelection2 };
 }
 
-// document_builder/dist/pdf.js
+// document_builder/dist/templates/active-template-storage.js
+function getSavedActiveTemplateId(storageKey) {
+  try {
+    return localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+function saveActiveTemplateId(storageKey, id) {
+  try {
+    if (id) {
+      localStorage.setItem(storageKey, id);
+      return;
+    }
+    localStorage.removeItem(storageKey);
+  } catch {
+  }
+}
+
+// document_builder/dist/pdf/pdf-internals.js
+function downloadPdfBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.hidden = true;
+  document.body.appendChild(anchor);
+  try {
+    anchor.click();
+  } finally {
+    anchor.remove();
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1e3);
+  }
+}
+function waitForNextFrame() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
+function sanitizeFileNamePart(value) {
+  return value.replace(/[\\/:*?"<>|]/g, "_").replace(/[. ]+$/g, "");
+}
+function isAbortError(error) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+// document_builder/dist/pdf/filename.js
+function createDocumentPdfFileName(recipientName, date = /* @__PURE__ */ new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const sanitizedName = sanitizeFileNamePart(recipientName.trim());
+  if (!sanitizedName) {
+    return `${year}.${month}.${day}_\u6587\u66F8.pdf`;
+  }
+  const nameWithHonorific = sanitizedName.endsWith("\u69D8") ? sanitizedName : `${sanitizedName}\u69D8`;
+  return `${year}.${month}.${day}_${nameWithHonorific}.pdf`;
+}
+
+// document_builder/dist/pdf/render.js
 var import_html2canvas = __toESM(require_html2canvas());
 
 // node_modules/jspdf/dist/jspdf.es.min.js
@@ -34163,39 +34178,10 @@ E.API.PDFObject = (function() {
   }, e2;
 })();
 
-// document_builder/dist/pdf.js
+// document_builder/dist/pdf/render.js
 var A4_WIDTH_MM = 210;
 var A4_HEIGHT_MM = 297;
 var PDF_CAPTURE_SCALE = 2;
-var PdfSaveCancelledError = class extends Error {
-  constructor() {
-    super("PDF\u4FDD\u5B58\u304C\u30AD\u30E3\u30F3\u30BB\u30EB\u3055\u308C\u307E\u3057\u305F\u3002");
-    this.name = "PdfSaveCancelledError";
-  }
-};
-function createDocumentPdfFileName(recipientName, date = /* @__PURE__ */ new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const sanitizedName = sanitizeFileNamePart(recipientName.trim());
-  if (!sanitizedName) {
-    return `${year}.${month}.${day}_\u6587\u66F8.pdf`;
-  }
-  const nameWithHonorific = sanitizedName.endsWith("\u69D8") ? sanitizedName : `${sanitizedName}\u69D8`;
-  return `${year}.${month}.${day}_${nameWithHonorific}.pdf`;
-}
-function sanitizeFileNamePart(value) {
-  return value.replace(/[\\/:*?"<>|]/g, "_").replace(/[. ]+$/g, "");
-}
-async function saveDocumentPdf(pageElement, recipientName) {
-  const pdfBlob = await createDocumentPdfBlob(pageElement);
-  const fileName = createDocumentPdfFileName(recipientName);
-  const result = await savePdfBlob(pdfBlob, fileName);
-  return {
-    ...result,
-    pdfBlob
-  };
-}
 async function createDocumentPdfBlob(pageElement) {
   if (document.fonts) {
     await document.fonts.ready;
@@ -34223,6 +34209,23 @@ async function createDocumentPdfBlob(pageElement) {
   } finally {
     pageElement.classList.remove("document-page--pdf-capture");
   }
+}
+
+// document_builder/dist/pdf/save.js
+var PdfSaveCancelledError = class extends Error {
+  constructor() {
+    super("PDF\u4FDD\u5B58\u304C\u30AD\u30E3\u30F3\u30BB\u30EB\u3055\u308C\u307E\u3057\u305F\u3002");
+    this.name = "PdfSaveCancelledError";
+  }
+};
+async function saveDocumentPdf(pageElement, recipientName) {
+  const pdfBlob = await createDocumentPdfBlob(pageElement);
+  const fileName = createDocumentPdfFileName(recipientName);
+  const result = await savePdfBlob(pdfBlob, fileName);
+  return {
+    ...result,
+    pdfBlob
+  };
 }
 async function savePdfBlob(blob, fileName) {
   const browserWindow = window;
@@ -34260,32 +34263,6 @@ async function savePdfBlob(blob, fileName) {
     fileName,
     method: "download"
   };
-}
-function downloadPdfBlob(blob, fileName) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.hidden = true;
-  document.body.appendChild(anchor);
-  try {
-    anchor.click();
-  } finally {
-    anchor.remove();
-    window.setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1e3);
-  }
-}
-function isAbortError(error) {
-  return error instanceof DOMException && error.name === "AbortError";
-}
-function waitForNextFrame() {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      resolve();
-    });
-  });
 }
 
 // document_builder/dist/print-history-db.js
@@ -34496,435 +34473,180 @@ async function deletePrintHistory(id) {
   }
 }
 
-// document_builder/dist/main.js
-var ACTIVE_TEMPLATE_STORAGE_KEY = "workbench-document-builder-active-template";
-var TOAST_DURATION_MS = 3200;
-var jsonImportInput = requireElement2("#json-import-input");
-var jsonImportButton = requireElement2("#json-import-button");
-var jsonExportButton = requireElement2("#json-export-button");
-var templateSelect = requireElement2("#template-select");
-var templateSettingsButton = requireElement2("#template-settings-button");
-var printHistoryButton = requireElement2("#print-history-button");
-var printButton = requireElement2("#print-button");
-var documentFieldsEmpty = requireElement2("#document-fields-empty");
-var documentFieldsForm = requireElement2("#document-fields-form");
-var documentFields = requireElement2("#document-fields");
-var activeTemplateName = requireElement2("#active-template-name");
-var documentPage = requireElement2("#document-page");
-var documentPreviewEmpty = requireElement2("#document-preview-empty");
-var documentContent = requireElement2("#document-content");
-var documentRenderElements = {
-  topLeft: requireElement2("#document-top-left"),
-  topRight: requireElement2("#document-top-right"),
-  opening: requireElement2("#document-opening"),
-  body: requireElement2("#document-body"),
-  closing: requireElement2("#document-closing"),
-  end: requireElement2("#document-end")
-};
-var printFlowDialog = requireElement2("#print-flow-dialog");
-var printFlowCloseButton = requireElement2("#print-flow-close-button");
-var printSavePdfButton = requireElement2("#print-save-pdf-button");
-var printFinalButton = requireElement2("#print-final-button");
-var printStepOne = requireElement2("#print-step-one");
-var printStepTwo = requireElement2("#print-step-two");
-var printStepOneStatus = requireElement2("#print-step-one-status");
-var printFileName = requireElement2("#print-file-name");
-var printHistoryDialog = requireElement2("#print-history-dialog");
-var printHistoryCloseButton = requireElement2("#print-history-close-button");
-var printHistoryList = requireElement2("#print-history-list");
-var printHistoryStats = requireElement2("#print-history-stats");
-var printHistoryMoreButton = requireElement2("#print-history-more-button");
-var printHistoryNextCursor = null;
-var printHistoryGeneration = 0;
-var printHistoryLoading = false;
-var templateSettingsDialog = requireElement2("#template-settings-dialog");
-var templateDialogCloseButton = requireElement2("#template-dialog-close-button");
-var templateDialogDoneButton = requireElement2("#template-dialog-done-button");
-var templateBuilderButton = requireElement2("#template-builder-button");
-var templateAddInput = requireElement2("#template-add-input");
-var templateAddButton = requireElement2("#template-add-button");
-var templateListEmpty = requireElement2("#template-list-empty");
-var templateList = requireElement2("#template-list");
-var templateCardTemplate = requireElement2("#template-card-template");
-var templateDeleteDialog = requireElement2("#template-delete-dialog");
-var templateDeleteCancelButton = requireElement2("#template-delete-cancel-button");
-var templateDeleteConfirmButton = requireElement2("#template-delete-confirm-button");
-var documentToast = requireElement2("#document-toast");
-var templates = [];
-var activeTemplate = null;
-var activeValues = {};
-var pendingDeleteTemplateId = null;
-var toastTimer = null;
-var templateBuilder = setupTemplateBuilder({
-  onSave: saveTemplateFromBuilder,
-  onReturnToList: () => {
-    renderTemplateManagerList();
-  }
-});
-void initialize();
-async function initialize() {
-  wireEvents();
-  try {
-    await requestPersistentStorage();
-    await refreshTemplateCollections();
-    restoreInitialTemplate();
-  } catch (error) {
-    console.error("DOCUMENT BUILDER\u306E\u521D\u671F\u5316\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage2(error));
-    clearActiveTemplate();
-  }
-}
-function wireEvents() {
-  jsonImportButton.addEventListener("click", () => {
-    jsonImportInput.value = "";
-    jsonImportInput.click();
-  });
-  jsonImportInput.addEventListener("change", () => {
-    void handleDocumentImport();
-  });
-  jsonExportButton.addEventListener("click", () => {
-    if (!activeTemplate) {
+// document_builder/dist/print/print-flow-controller.js
+function createDocumentPrintFlow(deps) {
+  const { printFileName: printFileName2, printFlowDialog: printFlowDialog2, printSavePdfButton: printSavePdfButton2, printFinalButton: printFinalButton2, printStepOne: printStepOne2, printStepTwo: printStepTwo2, printStepOneStatus: printStepOneStatus2, documentPage: documentPage2, validateRequiredFields: validateRequiredFields2, getRecipientName: getRecipientName2, showToast: showToast2, getErrorMessage: getErrorMessage3 } = deps;
+  function openPrintFlow2() {
+    const activeTemplate2 = deps.activeTemplate;
+    if (!activeTemplate2) {
       return;
     }
-    downloadDocumentJson(activeTemplate, activeValues);
-    showToast("\u73FE\u5728\u306E\u6587\u66F8\u3092JSON\u51FA\u529B\u3057\u307E\u3057\u305F\u3002");
-  });
-  templateSelect.addEventListener("change", () => {
-    void handleTemplateSelection();
-  });
-  templateSettingsButton.addEventListener("click", () => {
-    openTemplateSettings();
-  });
-  printButton.addEventListener("click", () => {
-    openPrintFlow();
-  });
-  printHistoryButton.addEventListener("click", () => {
-    void openPrintHistory();
-  });
-  printHistoryCloseButton.addEventListener("click", () => {
-    printHistoryDialog.close();
-  });
-  printHistoryDialog.addEventListener("close", () => {
-    printHistoryGeneration++;
-  });
-  printHistoryMoreButton.addEventListener("click", () => {
-    void loadMorePrintHistory();
-  });
-  printHistoryDialog.addEventListener("click", (event) => {
-    if (event.target === printHistoryDialog) {
-      printHistoryDialog.close();
+    if (!validateRequiredFields2()) {
+      return;
     }
-  });
-  printFlowCloseButton.addEventListener("click", () => {
-    printFlowDialog.close();
-  });
-  printFlowDialog.addEventListener("click", (event) => {
-    if (event.target === printFlowDialog) {
-      printFlowDialog.close();
+    resetPrintFlow();
+    const recipientName = getRecipientName2();
+    printFileName2.textContent = createDocumentPdfFileName(recipientName);
+    if (!printFlowDialog2.open) {
+      printFlowDialog2.showModal();
     }
-  });
-  printSavePdfButton.addEventListener("click", () => {
-    void runPdfSaveStep();
-  });
-  printFinalButton.addEventListener("click", () => {
-    runFinalPrint();
-  });
-  templateDialogCloseButton.addEventListener("click", () => {
-    templateSettingsDialog.close();
-  });
-  templateDialogDoneButton.addEventListener("click", () => {
-    templateSettingsDialog.close();
-  });
-  templateBuilderButton.addEventListener("click", () => {
-    templateBuilder.openCreate();
-  });
-  templateAddButton.addEventListener("click", () => {
-    templateAddInput.value = "";
-    templateAddInput.click();
-  });
-  templateAddInput.addEventListener("change", () => {
-    void handleTemplateAddImport();
-  });
-  templateSettingsDialog.addEventListener("click", (event) => {
-    if (event.target === templateSettingsDialog) {
-      templateSettingsDialog.close();
+  }
+  function resetPrintFlow() {
+    printSavePdfButton2.disabled = false;
+    printSavePdfButton2.textContent = "PDF\u3092\u4FDD\u5B58";
+    printFinalButton2.disabled = true;
+    printStepOne2.classList.remove("print-flow-step--complete");
+    printStepTwo2.classList.add("print-flow-step--disabled");
+    printStepOneStatus2.textContent = "";
+    printStepOneStatus2.hidden = true;
+  }
+  async function runPdfSaveStep2() {
+    const activeTemplate2 = deps.activeTemplate;
+    if (!activeTemplate2) {
+      return;
     }
-  });
-  templateSettingsDialog.addEventListener("close", () => {
-    templateBuilder.reset();
-  });
-  templateDeleteCancelButton.addEventListener("click", () => {
-    pendingDeleteTemplateId = null;
-    templateDeleteDialog.close();
-  });
-  templateDeleteConfirmButton.addEventListener("click", () => {
-    void confirmTemplateDelete();
-  });
-  templateDeleteDialog.addEventListener("click", (event) => {
-    if (event.target === templateDeleteDialog) {
-      pendingDeleteTemplateId = null;
-      templateDeleteDialog.close();
+    if (!validateRequiredFields2()) {
+      printFlowDialog2.close();
+      return;
     }
-  });
-}
-function validateRequiredFields() {
-  if (!activeTemplate) {
-    return false;
-  }
-  const missingField = getReferencedFields(activeTemplate).find((field) => {
-    if (!field.required) {
-      return false;
-    }
-    const value = activeValues[field.id] ?? "";
-    return value.trim().length === 0;
-  });
-  if (!missingField) {
-    return true;
-  }
-  showToast(`\u5FC5\u9808\u9805\u76EE\u300C${missingField.label}\u300D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
-  const control = document.getElementById(`document-field-${missingField.id}`);
-  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
-    control.focus();
-    control.reportValidity();
-  }
-  return false;
-}
-function getRecipientName() {
-  if (!activeTemplate) {
-    return "";
-  }
-  const fields = getReferencedFields(activeTemplate);
-  const exactLabelCandidates = [
-    "\u76F8\u624B\u306E\u540D\u524D",
-    "\u5B9B\u540D",
-    "\u5B9B\u5148\u540D",
-    "\u76F8\u624B\u540D"
-  ];
-  const exactField = fields.find((field) => exactLabelCandidates.includes(field.label.trim()));
-  if (exactField) {
-    return activeValues[exactField.id] ?? "";
-  }
-  const semanticField = fields.find((field) => {
-    const label = field.label.trim();
-    return label.includes("\u5B9B\u540D") || label.includes("\u5B9B\u5148") || label.includes("\u76F8\u624B") && (label.includes("\u540D\u524D") || label.includes("\u6C0F\u540D"));
-  });
-  if (semanticField) {
-    return activeValues[semanticField.id] ?? "";
-  }
-  const genericNameFields = fields.filter((field) => {
-    const label = field.label.trim();
-    return label === "\u540D\u524D" || label === "\u304A\u540D\u524D" || label === "\u6C0F\u540D";
-  });
-  if (genericNameFields.length === 1) {
-    const field = genericNameFields[0];
-    return activeValues[field.id] ?? "";
-  }
-  return "";
-}
-function openPrintFlow() {
-  if (!activeTemplate) {
-    return;
-  }
-  if (!validateRequiredFields()) {
-    return;
-  }
-  resetPrintFlow();
-  const recipientName = getRecipientName();
-  printFileName.textContent = createDocumentPdfFileName(recipientName);
-  if (!printFlowDialog.open) {
-    printFlowDialog.showModal();
-  }
-}
-function resetPrintFlow() {
-  printSavePdfButton.disabled = false;
-  printSavePdfButton.textContent = "PDF\u3092\u4FDD\u5B58";
-  printFinalButton.disabled = true;
-  printStepOne.classList.remove("print-flow-step--complete");
-  printStepTwo.classList.add("print-flow-step--disabled");
-  printStepOneStatus.textContent = "";
-  printStepOneStatus.hidden = true;
-}
-async function runPdfSaveStep() {
-  if (!activeTemplate) {
-    return;
-  }
-  if (!validateRequiredFields()) {
-    printFlowDialog.close();
-    return;
-  }
-  printSavePdfButton.disabled = true;
-  printSavePdfButton.textContent = "PDF\u3092\u4F5C\u6210\u4E2D...";
-  try {
-    const recipientName = getRecipientName();
-    const result = await saveDocumentPdf(documentPage, recipientName);
-    let historySaved = false;
+    printSavePdfButton2.disabled = true;
+    printSavePdfButton2.textContent = "PDF\u3092\u4F5C\u6210\u4E2D...";
     try {
-      await addPrintHistory(recipientName, result.fileName, result.pdfBlob);
-      historySaved = true;
-    } catch (historyError) {
-      console.error("PDF\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", historyError);
-    }
-    printStepOne.classList.add("print-flow-step--complete");
-    printStepTwo.classList.remove("print-flow-step--disabled");
-    printFinalButton.disabled = false;
-    printStepOneStatus.hidden = false;
-    if (result.method === "file-picker") {
-      printStepOneStatus.textContent = "PDF\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002";
-    } else {
-      printStepOneStatus.textContent = "PDF\u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002";
-    }
-    if (historySaved) {
-      showToast(`${result.fileName} \u3092\u4F5C\u6210\u3057\u3001\u5C65\u6B74\u306B\u3082\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`);
-    } else {
-      printStepOneStatus.textContent += " \u30D6\u30E9\u30A6\u30B6\u5185\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u306F\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u7A7A\u304D\u5BB9\u91CF\u3084\u4FDD\u5B58\u8A2D\u5B9A\u3092\u3054\u78BA\u8A8D\u304F\u3060\u3055\u3044\u3002";
-      showToast("PDF\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u5C65\u6B74\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
-    }
-  } catch (error) {
-    if (error instanceof PdfSaveCancelledError) {
-      showToast("PDF\u4FDD\u5B58\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
-      return;
-    }
-    console.error("PDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(`PDF\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
-  } finally {
-    printSavePdfButton.disabled = false;
-    printSavePdfButton.textContent = "PDF\u3092\u4FDD\u5B58";
-  }
-}
-async function openPrintHistory() {
-  const generation = ++printHistoryGeneration;
-  printHistoryNextCursor = null;
-  printHistoryMoreButton.hidden = true;
-  printHistoryList.replaceChildren();
-  printHistoryStats.textContent = "\u5C65\u6B74\u3092\u96C6\u8A08\u3057\u3066\u3044\u307E\u3059...";
-  const loading = document.createElement("p");
-  loading.className = "print-history-dialog__empty";
-  loading.textContent = "\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3093\u3067\u3044\u307E\u3059...";
-  printHistoryList.appendChild(loading);
-  if (!printHistoryDialog.open)
-    printHistoryDialog.showModal();
-  try {
-    const [stats, page] = await Promise.all([
-      getPrintHistoryStats(),
-      getPrintHistoryPage(null, 50)
-    ]);
-    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
-      return;
-    printHistoryStats.textContent = `${stats.count.toLocaleString("ja-JP")}\u4EF6 / PDF\u5408\u8A08 ${formatPrintHistoryBytes(stats.totalBytes)}`;
-    printHistoryList.replaceChildren();
-    if (page.entries.length === 0) {
-      const empty2 = document.createElement("p");
-      empty2.className = "print-history-dialog__empty";
-      empty2.textContent = "\u307E\u3060PDF\u306E\u51FA\u529B\u5C65\u6B74\u304C\u3042\u308A\u307E\u305B\u3093\u3002";
-      printHistoryList.appendChild(empty2);
-      return;
-    }
-    const list = document.createElement("ul");
-    list.className = "print-history-dialog__items";
-    list.id = "print-history-items";
-    printHistoryList.appendChild(list);
-    appendPrintHistoryEntries(list, page.entries);
-    printHistoryNextCursor = page.nextCursor;
-    printHistoryMoreButton.hidden = !page.nextCursor;
-  } catch (error) {
-    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
-      return;
-    printHistoryStats.textContent = "";
-    printHistoryList.textContent = `\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`;
-  }
-}
-async function loadMorePrintHistory() {
-  if (printHistoryLoading || !printHistoryNextCursor || !printHistoryDialog.open)
-    return;
-  const generation = printHistoryGeneration;
-  const cursor = printHistoryNextCursor;
-  printHistoryLoading = true;
-  printHistoryMoreButton.disabled = true;
-  try {
-    const page = await getPrintHistoryPage(cursor, 50);
-    if (generation !== printHistoryGeneration || !printHistoryDialog.open)
-      return;
-    const list = printHistoryList.querySelector("#print-history-items");
-    if (!list)
-      return;
-    appendPrintHistoryEntries(list, page.entries);
-    printHistoryNextCursor = page.nextCursor;
-    printHistoryMoreButton.hidden = !page.nextCursor;
-  } catch (error) {
-    if (generation === printHistoryGeneration) {
-      showToast(`\u8FFD\u52A0\u306E\u5C65\u6B74\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
-    }
-  } finally {
-    printHistoryLoading = false;
-    printHistoryMoreButton.disabled = false;
-  }
-}
-function appendPrintHistoryEntries(list, entries2) {
-  for (const entry of entries2) {
-    const item = document.createElement("li");
-    item.className = "print-history-dialog__item";
-    const info = document.createElement("div");
-    info.className = "print-history-dialog__item-info";
-    const title = document.createElement("strong");
-    title.className = "print-history-dialog__item-name";
-    title.textContent = entry.fileName.replace(/\.pdf$/i, "");
-    const date = document.createElement("small");
-    date.className = "print-history-dialog__item-date";
-    date.textContent = `\u4FDD\u5B58\u65E5\u6642: ${formatPrintHistoryDate(entry.createdAt)} / ${formatPrintHistoryBytes(entry.pdfBytes)}`;
-    info.append(title, date);
-    const actions = document.createElement("div");
-    actions.className = "print-history-dialog__item-actions";
-    const downloadButton = document.createElement("button");
-    downloadButton.type = "button";
-    downloadButton.className = "print-history-dialog__download";
-    downloadButton.title = `${entry.fileName} \u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9`;
-    downloadButton.setAttribute("aria-label", downloadButton.title);
-    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg>`;
-    downloadButton.addEventListener("click", () => {
-      void downloadHistoryPdf(entry.id, downloadButton);
-    });
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "print-history-dialog__delete";
-    deleteButton.title = `${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664`;
-    deleteButton.setAttribute("aria-label", deleteButton.title);
-    deleteButton.textContent = "\u524A\u9664";
-    deleteButton.addEventListener("click", () => {
-      if (!window.confirm(`${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F
-\u4FDD\u5B58\u6E08\u307FPDF\u3082\u524A\u9664\u3055\u308C\u3001\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002`))
+      const recipientName = getRecipientName2();
+      const result = await saveDocumentPdf(documentPage2, recipientName);
+      let historySaved = false;
+      try {
+        await addPrintHistory(recipientName, result.fileName, result.pdfBlob);
+        historySaved = true;
+      } catch (historyError) {
+        console.error("PDF\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", historyError);
+      }
+      printStepOne2.classList.add("print-flow-step--complete");
+      printStepTwo2.classList.remove("print-flow-step--disabled");
+      printFinalButton2.disabled = false;
+      printStepOneStatus2.hidden = false;
+      if (result.method === "file-picker") {
+        printStepOneStatus2.textContent = "PDF\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002";
+      } else {
+        printStepOneStatus2.textContent = "PDF\u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002";
+      }
+      if (historySaved) {
+        showToast2(`${result.fileName} \u3092\u4F5C\u6210\u3057\u3001\u5C65\u6B74\u306B\u3082\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`);
+      } else {
+        printStepOneStatus2.textContent += " \u30D6\u30E9\u30A6\u30B6\u5185\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u306F\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u7A7A\u304D\u5BB9\u91CF\u3084\u4FDD\u5B58\u8A2D\u5B9A\u3092\u3054\u78BA\u8A8D\u304F\u3060\u3055\u3044\u3002";
+        showToast2("PDF\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u5C65\u6B74\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
+      }
+    } catch (error) {
+      if (error instanceof PdfSaveCancelledError) {
+        showToast2("PDF\u4FDD\u5B58\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
         return;
-      deleteButton.disabled = true;
-      void (async () => {
-        try {
-          await deletePrintHistory(entry.id);
-          showToast("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
-          if (printHistoryDialog.open)
-            await openPrintHistory();
-        } catch (error) {
-          showToast(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
-        } finally {
-          deleteButton.disabled = false;
-        }
-      })();
-    });
-    actions.append(downloadButton, deleteButton);
-    item.append(info, actions);
-    list.appendChild(item);
+      }
+      console.error("PDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      showToast2(`PDF\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+    } finally {
+      printSavePdfButton2.disabled = false;
+      printSavePdfButton2.textContent = "PDF\u3092\u4FDD\u5B58";
+    }
   }
+  function runFinalPrint2() {
+    if (printFinalButton2.disabled) {
+      return;
+    }
+    if (!validateRequiredFields2()) {
+      printFlowDialog2.close();
+      return;
+    }
+    window.print();
+  }
+  return { openPrintFlow: openPrintFlow2, resetPrintFlow, runPdfSaveStep: runPdfSaveStep2, runFinalPrint: runFinalPrint2 };
 }
-function formatPrintHistoryBytes(bytes) {
-  if (bytes < 1024)
-    return `${bytes} B`;
-  if (bytes < 1024 * 1024)
-    return `${(bytes / 1024).toFixed(1)} KiB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+
+// document_builder/dist/history/print-history-controller.js
+function createPrintHistoryController(controls) {
+  const { printHistoryDialog: printHistoryDialog2, printHistoryList: printHistoryList2, printHistoryStats: printHistoryStats2, printHistoryMoreButton: printHistoryMoreButton2, appendPrintHistoryEntries: appendPrintHistoryEntries2, formatPrintHistoryBytes: formatPrintHistoryBytes2, getErrorMessage: getErrorMessage3, showToast: showToast2 } = controls;
+  let printHistoryGeneration = 0;
+  let printHistoryNextCursor = null;
+  let printHistoryLoading = false;
+  async function openPrintHistory2() {
+    const generation = ++printHistoryGeneration;
+    printHistoryNextCursor = null;
+    printHistoryMoreButton2.hidden = true;
+    printHistoryList2.replaceChildren();
+    printHistoryStats2.textContent = "\u5C65\u6B74\u3092\u96C6\u8A08\u3057\u3066\u3044\u307E\u3059...";
+    const loading = document.createElement("p");
+    loading.className = "print-history-dialog__empty";
+    loading.textContent = "\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3093\u3067\u3044\u307E\u3059...";
+    printHistoryList2.appendChild(loading);
+    if (!printHistoryDialog2.open)
+      printHistoryDialog2.showModal();
+    try {
+      const [stats, page] = await Promise.all([
+        getPrintHistoryStats(),
+        getPrintHistoryPage(null, 50)
+      ]);
+      if (generation !== printHistoryGeneration || !printHistoryDialog2.open)
+        return;
+      printHistoryStats2.textContent = `${stats.count.toLocaleString("ja-JP")}\u4EF6 / PDF\u5408\u8A08 ${formatPrintHistoryBytes2(stats.totalBytes)}`;
+      printHistoryList2.replaceChildren();
+      if (page.entries.length === 0) {
+        const empty2 = document.createElement("p");
+        empty2.className = "print-history-dialog__empty";
+        empty2.textContent = "\u307E\u3060PDF\u306E\u51FA\u529B\u5C65\u6B74\u304C\u3042\u308A\u307E\u305B\u3093\u3002";
+        printHistoryList2.appendChild(empty2);
+        return;
+      }
+      const list = document.createElement("ul");
+      list.className = "print-history-dialog__items";
+      list.id = "print-history-items";
+      printHistoryList2.appendChild(list);
+      appendPrintHistoryEntries2(list, page.entries);
+      printHistoryNextCursor = page.nextCursor;
+      printHistoryMoreButton2.hidden = !page.nextCursor;
+    } catch (error) {
+      if (generation !== printHistoryGeneration || !printHistoryDialog2.open)
+        return;
+      printHistoryStats2.textContent = "";
+      printHistoryList2.textContent = `\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`;
+    }
+  }
+  async function loadMorePrintHistory2() {
+    if (printHistoryLoading || !printHistoryNextCursor || !printHistoryDialog2.open)
+      return;
+    const generation = printHistoryGeneration;
+    const cursor = printHistoryNextCursor;
+    printHistoryLoading = true;
+    printHistoryMoreButton2.disabled = true;
+    try {
+      const page = await getPrintHistoryPage(cursor, 50);
+      if (generation !== printHistoryGeneration || !printHistoryDialog2.open)
+        return;
+      const list = printHistoryList2.querySelector("#print-history-items");
+      if (!list)
+        return;
+      appendPrintHistoryEntries2(list, page.entries);
+      printHistoryNextCursor = page.nextCursor;
+      printHistoryMoreButton2.hidden = !page.nextCursor;
+    } catch (error) {
+      if (generation === printHistoryGeneration) {
+        showToast2(`\u8FFD\u52A0\u306E\u5C65\u6B74\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+      }
+    } finally {
+      printHistoryLoading = false;
+      printHistoryMoreButton2.disabled = false;
+    }
+  }
+  return {
+    openPrintHistory: openPrintHistory2,
+    loadMorePrintHistory: loadMorePrintHistory2,
+    invalidate: () => {
+      printHistoryGeneration++;
+    }
+  };
 }
-function formatPrintHistoryDate(timestamp) {
-  const date = new Date(timestamp);
-  const pad = (number) => String(number).padStart(2, "0");
-  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-async function downloadHistoryPdf(id, button) {
+
+// document_builder/dist/history/print-history-download.js
+async function downloadStoredHistoryPdf(id, button, callbacks) {
+  const { showToast: showToast2, getErrorMessage: getErrorMessage3 } = callbacks;
   button.disabled = true;
   try {
     const entry = await getPrintHistory(id);
@@ -34943,102 +34665,650 @@ async function downloadHistoryPdf(id, button) {
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
     }
-    showToast(`${entry.fileName} \u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002`);
+    showToast2(`${entry.fileName} \u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002`);
   } catch (error) {
-    showToast(`PDF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage2(error)}`);
+    showToast2(`PDF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
   } finally {
     button.disabled = false;
   }
 }
+
+// document_builder/dist/templates/template-selector-view.js
+function renderTemplateSelectView(templates2, activeTemplate2, templateSelect2) {
+  const selectedId = activeTemplate2?.id ?? templateSelect2.value;
+  templateSelect2.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = templates2.length === 0 ? "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3042\u308A\u307E\u305B\u3093" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u9078\u629E";
+  templateSelect2.appendChild(placeholder);
+  for (const template of templates2) {
+    const option = document.createElement("option");
+    option.value = template.id;
+    option.textContent = template.name;
+    templateSelect2.appendChild(option);
+  }
+  templateSelect2.disabled = templates2.length === 0;
+  if (selectedId && templates2.some((template) => template.id === selectedId)) {
+    templateSelect2.value = selectedId;
+  } else {
+    templateSelect2.value = "";
+  }
+}
+
+// document_builder/dist/templates/template-list-view.js
+function renderTemplateManagerListView(templates2, templateList2, templateListEmpty2, createTemplateCard2) {
+  templateList2.replaceChildren();
+  const isEmpty = templates2.length === 0;
+  templateListEmpty2.hidden = !isEmpty;
+  templateList2.hidden = isEmpty;
+  if (isEmpty) {
+    return;
+  }
+  for (const template of templates2) {
+    templateList2.appendChild(createTemplateCard2(template));
+  }
+}
+
+// document_builder/dist/templates/template-card-view.js
+function createTemplateCardView(template, deps) {
+  const { templateCardTemplate: templateCardTemplate2, templateDeleteDialog: templateDeleteDialog2, templateBuilder: templateBuilder2, showToast: showToast2, setPendingDeleteTemplateId, requireChild: requireChild3 } = deps;
+  const fragment = templateCardTemplate2.content.cloneNode(true);
+  const card = fragment.firstElementChild;
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u30AB\u30FC\u30C9\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+  }
+  const name = requireChild3(card, ".template-card__name");
+  const meta = requireChild3(card, ".template-card__meta");
+  const exportButton = requireChild3(card, ".template-card__export-button");
+  const editButton = requireChild3(card, ".template-card__edit-button");
+  const deleteButton = requireChild3(card, ".template-card__delete-button");
+  name.textContent = template.name;
+  meta.textContent = [
+    `ID: ${template.id}`,
+    `\u5165\u529B\u9805\u76EE: ${getReferencedFields(template).length}\u4EF6`
+  ].join(" / ");
+  exportButton.addEventListener("click", () => {
+    downloadTemplateJson(template);
+    showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002");
+  });
+  editButton.addEventListener("click", () => {
+    templateBuilder2.openEdit(template);
+  });
+  deleteButton.addEventListener("click", () => {
+    setPendingDeleteTemplateId(template.id);
+    if (!templateDeleteDialog2.open) {
+      templateDeleteDialog2.showModal();
+    }
+  });
+  return card;
+}
+
+// document_builder/dist/history/print-history-view.js
+function renderPrintHistoryEntries(list, entries2, deps) {
+  const { downloadHistoryPdf: downloadHistoryPdf2, deletePrintHistory: deletePrintHistory2, showToast: showToast2, printHistoryDialog: printHistoryDialog2, openPrintHistory: openPrintHistory2, getErrorMessage: getErrorMessage3, formatPrintHistoryBytes: formatPrintHistoryBytes2, formatPrintHistoryDate: formatPrintHistoryDate2 } = deps;
+  for (const entry of entries2) {
+    const item = document.createElement("li");
+    item.className = "print-history-dialog__item";
+    const info = document.createElement("div");
+    info.className = "print-history-dialog__item-info";
+    const title = document.createElement("strong");
+    title.className = "print-history-dialog__item-name";
+    title.textContent = entry.fileName.replace(/\.pdf$/i, "");
+    const date = document.createElement("small");
+    date.className = "print-history-dialog__item-date";
+    date.textContent = `\u4FDD\u5B58\u65E5\u6642: ${formatPrintHistoryDate2(entry.createdAt)} / ${formatPrintHistoryBytes2(entry.pdfBytes)}`;
+    info.append(title, date);
+    const actions = document.createElement("div");
+    actions.className = "print-history-dialog__item-actions";
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "print-history-dialog__download";
+    downloadButton.title = `${entry.fileName} \u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9`;
+    downloadButton.setAttribute("aria-label", downloadButton.title);
+    downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg>`;
+    downloadButton.addEventListener("click", () => {
+      void downloadHistoryPdf2(entry.id, downloadButton);
+    });
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "print-history-dialog__delete";
+    deleteButton.title = `${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664`;
+    deleteButton.setAttribute("aria-label", deleteButton.title);
+    deleteButton.textContent = "\u524A\u9664";
+    deleteButton.addEventListener("click", () => {
+      if (!window.confirm(`${entry.fileName} \u3092\u5C65\u6B74\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F
+\u4FDD\u5B58\u6E08\u307FPDF\u3082\u524A\u9664\u3055\u308C\u3001\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002`))
+        return;
+      deleteButton.disabled = true;
+      void (async () => {
+        try {
+          await deletePrintHistory2(entry.id);
+          showToast2("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
+          if (printHistoryDialog2.open)
+            await openPrintHistory2();
+        } catch (error) {
+          showToast2(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+        } finally {
+          deleteButton.disabled = false;
+        }
+      })();
+    });
+    actions.append(downloadButton, deleteButton);
+    item.append(info, actions);
+    list.appendChild(item);
+  }
+}
+
+// document_builder/dist/form-render.js
+function renderDocumentFields(options) {
+  const { container, template, values, onChange } = options;
+  container.replaceChildren();
+  const fields = getReferencedFields(template);
+  if (fields.length === 0) {
+    const message = document.createElement("p");
+    message.className = "document-empty-state__description";
+    message.textContent = "\u3053\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306B\u5165\u529B\u9805\u76EE\u306F\u3042\u308A\u307E\u305B\u3093\u3002";
+    container.appendChild(message);
+    return;
+  }
+  for (const field of fields) {
+    const fieldElement = createFieldElement(field, values[field.id] ?? "", onChange);
+    container.appendChild(fieldElement);
+  }
+}
+function createFieldElement(field, value, onChange) {
+  const htmlTemplate = getFieldTemplate(field);
+  const fragment = htmlTemplate.content.cloneNode(true);
+  const root = fragment.firstElementChild;
+  if (!(root instanceof HTMLElement)) {
+    throw new Error("\u5165\u529B\u6B04\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+  }
+  const label = root.querySelector(".document-field__label");
+  const control = root.querySelector("input, textarea");
+  if (!label || !control) {
+    throw new Error("\u5165\u529B\u6B04\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u69CB\u9020\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002");
+  }
+  const controlId = `document-field-${field.id}`;
+  label.textContent = field.label;
+  label.htmlFor = controlId;
+  if (field.required) {
+    label.dataset.required = "true";
+  }
+  control.id = controlId;
+  control.name = field.id;
+  control.required = field.required ?? false;
+  control.placeholder = field.placeholder ?? "";
+  control.value = value;
+  control.addEventListener("input", () => {
+    onChange(field.id, control.value);
+  });
+  return root;
+}
+function getFieldTemplate(field) {
+  switch (field.type) {
+    case "text":
+      return requireTemplate("text-field-template");
+    case "textarea":
+      return requireTemplate("textarea-field-template");
+    case "date":
+      return requireTemplate("date-field-template");
+  }
+}
+
+// document_builder/dist/document-render.js
+function renderBusinessDocument(elements2, template, values) {
+  setText(elements2.topLeft, interpolateTemplateText(template.document.topLeft, values));
+  setText(elements2.topRight, interpolateTemplateText(template.document.topRight, values));
+  setText(elements2.opening, interpolateTemplateText(template.document.opening, values));
+  setText(elements2.body, interpolateTemplateText(template.document.body, values));
+  setText(elements2.closing, interpolateTemplateText(template.document.closing, values));
+  setText(elements2.end, interpolateTemplateText(template.document.end, values));
+}
+function clearBusinessDocument(elements2) {
+  for (const element of Object.values(elements2)) {
+    element.textContent = "";
+    element.hidden = false;
+  }
+}
+function setText(element, text2) {
+  element.textContent = text2;
+  element.hidden = text2.length === 0;
+}
+
+// document_builder/dist/templates/template-editor-utils.js
+function createTemplateId() {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 8);
+  return `template-${timestamp}-${random}`;
+}
+function focusLater(element) {
+  window.setTimeout(() => {
+    element.focus();
+  }, 0);
+}
+function requireElement2(selector) {
+  const element = document.querySelector(selector);
+  if (!element) {
+    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
+  }
+  return element;
+}
+function requireChild2(parent, selector) {
+  const element = parent.querySelector(selector);
+  if (!element) {
+    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
+  }
+  return element;
+}
+function getErrorMessage2(error) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
+}
+
+// document_builder/dist/template-builder.js
+function setupTemplateBuilder(options) {
+  const dialog = requireElement2("#template-settings-dialog");
+  const listView = requireElement2("#template-list-view");
+  const builderView = requireElement2("#template-builder-view");
+  const backButton = requireElement2("#template-builder-back-button");
+  const closeButton = requireElement2("#template-builder-close-button");
+  const title = requireElement2("#template-builder-title");
+  const form = requireElement2("#template-builder-form");
+  const idInput = requireElement2("#template-builder-id");
+  const idDisplay = requireElement2("#template-builder-id-display");
+  const nameInput = requireElement2("#template-builder-name");
+  const fieldsContainer = requireElement2("#template-builder-fields");
+  const addFieldButton = requireElement2("#template-builder-add-field-button");
+  const fieldTemplate = requireElement2("#template-builder-field-template");
+  const topLeftInput = requireElement2("#template-builder-top-left");
+  const topRightInput = requireElement2("#template-builder-top-right");
+  const openingInput = requireElement2("#template-builder-opening");
+  const bodyInput = requireElement2("#template-builder-body");
+  const closingInput = requireElement2("#template-builder-closing");
+  const endInput = requireElement2("#template-builder-end");
+  const exportButton = requireElement2("#template-builder-export-button");
+  const cancelButton = requireElement2("#template-builder-cancel-button");
+  const saveButton = requireElement2("#template-builder-save-button");
+  const errorElement = requireElement2("#template-builder-error");
+  let mode = "create";
+  function showListView() {
+    builderView.hidden = true;
+    listView.hidden = false;
+  }
+  function showBuilderView() {
+    listView.hidden = true;
+    builderView.hidden = false;
+  }
+  function openCreate() {
+    mode = "create";
+    resetBuilder();
+    const templateId = createTemplateId();
+    idInput.value = templateId;
+    idDisplay.textContent = templateId;
+    title.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u4F5C\u6210";
+    saveButton.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3068\u3057\u3066\u767B\u9332";
+    openingInput.value = "\u62DD\u5553";
+    closingInput.value = "\u656C\u5177";
+    endInput.value = "\u4EE5\u4E0A";
+    addField();
+    showBuilderView();
+    focusLater(nameInput);
+  }
+  function openEdit(template) {
+    mode = "edit";
+    resetBuilder();
+    idInput.value = template.id;
+    idDisplay.textContent = template.id;
+    nameInput.value = template.name;
+    for (const field of template.fields) {
+      appendFieldRow(field);
+    }
+    topLeftInput.value = template.document.topLeft;
+    topRightInput.value = template.document.topRight;
+    openingInput.value = template.document.opening;
+    bodyInput.value = template.document.body;
+    closingInput.value = template.document.closing;
+    endInput.value = template.document.end;
+    title.textContent = "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u7DE8\u96C6";
+    saveButton.textContent = "\u5909\u66F4\u3092\u4FDD\u5B58";
+    showBuilderView();
+    focusLater(nameInput);
+  }
+  function resetBuilder() {
+    form.reset();
+    idInput.value = "";
+    idDisplay.textContent = "";
+    fieldsContainer.replaceChildren();
+    topLeftInput.value = "";
+    topRightInput.value = "";
+    openingInput.value = "";
+    bodyInput.value = "";
+    closingInput.value = "";
+    endInput.value = "";
+    hideError();
+  }
+  function reset() {
+    mode = "create";
+    resetBuilder();
+    showListView();
+  }
+  function addField() {
+    const fieldId = createNextFieldId();
+    appendFieldRow({
+      id: fieldId,
+      label: "",
+      type: "text"
+    });
+  }
+  function appendFieldRow(field) {
+    const fragment = fieldTemplate.content.cloneNode(true);
+    const row = fragment.firstElementChild;
+    if (!(row instanceof HTMLElement)) {
+      throw new Error("\u5165\u529B\u9805\u76EE\u7DE8\u96C6\u6B04\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+    }
+    row.dataset.fieldId = field.id;
+    const id = requireChild2(row, ".template-builder-field__id");
+    const token = requireChild2(row, ".template-builder-field__token");
+    const label = requireChild2(row, ".template-builder-field__label");
+    const type = requireChild2(row, ".template-builder-field__type");
+    const defaultValue = requireChild2(row, ".template-builder-field__default");
+    const placeholder = requireChild2(row, ".template-builder-field__placeholder");
+    const required = requireChild2(row, ".template-builder-field__required");
+    const removeButton = requireChild2(row, ".template-builder-field__remove");
+    id.textContent = field.id;
+    token.textContent = `{${field.id}}`;
+    label.value = field.label;
+    type.value = field.type;
+    defaultValue.value = field.defaultValue ?? "";
+    placeholder.value = field.placeholder ?? "";
+    required.checked = field.required ?? false;
+    removeButton.addEventListener("click", () => {
+      row.remove();
+    });
+    fieldsContainer.appendChild(row);
+  }
+  function createNextFieldId() {
+    const usedIds = new Set(Array.from(fieldsContainer.querySelectorAll(".template-builder-field")).map((row) => row.dataset.fieldId ?? ""));
+    let number = 1;
+    while (usedIds.has(`field${number}`)) {
+      number += 1;
+    }
+    return `field${number}`;
+  }
+  function buildTemplateFromForm() {
+    hideError();
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+    if (name.length === 0) {
+      throw new Error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    const fields = readFields();
+    const packageData = parseDocumentPackage({
+      version: DOCUMENT_PACKAGE_VERSION,
+      template: {
+        id,
+        name,
+        fields,
+        document: {
+          topLeft: topLeftInput.value,
+          topRight: topRightInput.value,
+          opening: openingInput.value,
+          body: bodyInput.value,
+          closing: closingInput.value,
+          end: endInput.value
+        }
+      }
+    });
+    return packageData.template;
+  }
+  function readFields() {
+    const rows = Array.from(fieldsContainer.querySelectorAll(".template-builder-field"));
+    return rows.map((row, index2) => {
+      const id = row.dataset.fieldId;
+      if (!id) {
+        throw new Error(`\u5165\u529B\u9805\u76EE${index2 + 1}\u306EID\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002`);
+      }
+      const label = requireChild2(row, ".template-builder-field__label").value.trim();
+      if (label.length === 0) {
+        throw new Error(`{${id}} \u306E\u8868\u793A\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
+      }
+      const typeValue = requireChild2(row, ".template-builder-field__type").value;
+      const type = parseFieldType2(typeValue);
+      const defaultValue = requireChild2(row, ".template-builder-field__default").value;
+      const placeholder = requireChild2(row, ".template-builder-field__placeholder").value;
+      const required = requireChild2(row, ".template-builder-field__required").checked;
+      const field = {
+        id,
+        label,
+        type
+      };
+      if (defaultValue.length > 0) {
+        field.defaultValue = defaultValue;
+      }
+      if (placeholder.length > 0) {
+        field.placeholder = placeholder;
+      }
+      if (required) {
+        field.required = true;
+      }
+      return field;
+    });
+  }
+  function handleExport() {
+    try {
+      const template = buildTemplateFromForm();
+      downloadTemplateJson(template);
+    } catch (error) {
+      showError(getErrorMessage2(error));
+    }
+  }
+  async function handleSubmit(event) {
+    event.preventDefault();
+    hideError();
+    let template;
+    try {
+      template = buildTemplateFromForm();
+    } catch (error) {
+      showError(getErrorMessage2(error));
+      return;
+    }
+    saveButton.disabled = true;
+    const originalText = saveButton.textContent;
+    saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
+    try {
+      await options.onSave(template, mode);
+      resetBuilder();
+      showListView();
+      options.onReturnToList();
+    } catch (error) {
+      showError(getErrorMessage2(error));
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = originalText;
+    }
+  }
+  function leaveBuilder() {
+    resetBuilder();
+    showListView();
+    options.onReturnToList();
+  }
+  function showError(message) {
+    errorElement.textContent = message;
+    errorElement.hidden = false;
+  }
+  function hideError() {
+    errorElement.textContent = "";
+    errorElement.hidden = true;
+  }
+  addFieldButton.addEventListener("click", () => {
+    addField();
+  });
+  backButton.addEventListener("click", () => {
+    leaveBuilder();
+  });
+  cancelButton.addEventListener("click", () => {
+    leaveBuilder();
+  });
+  closeButton.addEventListener("click", () => {
+    dialog.close();
+  });
+  exportButton.addEventListener("click", () => {
+    handleExport();
+  });
+  form.addEventListener("submit", (event) => {
+    void handleSubmit(event);
+  });
+  return {
+    showListView,
+    openCreate,
+    openEdit,
+    reset
+  };
+}
+function parseFieldType2(value) {
+  if (value === "text" || value === "textarea" || value === "date") {
+    return value;
+  }
+  throw new Error("\u5165\u529B\u9805\u76EE\u306E\u7A2E\u985E\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002");
+}
+
+// document_builder/dist/main.js
+var ACTIVE_TEMPLATE_STORAGE_KEY = "workbench-document-builder-active-template";
+var TOAST_DURATION_MS = 3200;
+var templates = [];
+var activeTemplate = null;
+var activeValues = {};
+var pendingDeleteTemplateId = null;
+var toastTimer = null;
+var templateBuilder = setupTemplateBuilder({
+  onSave: saveTemplateFromBuilder,
+  onReturnToList: () => {
+    renderTemplateManagerList();
+  }
+});
+var printHistoryController = createPrintHistoryController({
+  printHistoryDialog,
+  printHistoryList,
+  printHistoryStats,
+  printHistoryMoreButton,
+  appendPrintHistoryEntries,
+  formatPrintHistoryBytes,
+  getErrorMessage,
+  showToast
+});
+var templateWorkflow = createTemplateWorkflow({
+  jsonImportInput,
+  templateAddInput,
+  templateSelect,
+  get activeTemplate() {
+    return activeTemplate;
+  },
+  get activeValues() {
+    return activeValues;
+  },
+  refreshTemplateCollections,
+  applyTemplate,
+  clearActiveTemplate,
+  showToast,
+  getErrorMessage
+});
+var printFlow = createDocumentPrintFlow({
+  get activeTemplate() {
+    return activeTemplate;
+  },
+  printFileName,
+  printFlowDialog,
+  printSavePdfButton,
+  printFinalButton,
+  printStepOne,
+  printStepTwo,
+  printStepOneStatus,
+  documentPage,
+  validateRequiredFields,
+  getRecipientName,
+  showToast,
+  getErrorMessage
+});
+void initialize();
+async function initialize() {
+  wireEvents();
+  try {
+    await requestPersistentStorage();
+    await refreshTemplateCollections();
+    restoreInitialTemplate();
+  } catch (error) {
+    console.error("DOCUMENT BUILDER\u306E\u521D\u671F\u5316\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+    showToast(getErrorMessage(error));
+    clearActiveTemplate();
+  }
+}
+function wireEvents() {
+  bindDocumentEvents({
+    get activeTemplate() {
+      return activeTemplate;
+    },
+    get activeValues() {
+      return activeValues;
+    },
+    templateBuilder,
+    downloadDocumentJson,
+    handleDocumentImport,
+    handleTemplateSelection,
+    openTemplateSettings,
+    openPrintFlow,
+    openPrintHistory,
+    loadMorePrintHistory,
+    runPdfSaveStep,
+    runFinalPrint,
+    handleTemplateAddImport,
+    confirmTemplateDelete,
+    showToast,
+    invalidatePrintHistory: () => printHistoryController.invalidate(),
+    clearPendingDeleteTemplate: () => {
+      pendingDeleteTemplateId = null;
+    }
+  });
+}
+function validateRequiredFields() {
+  return validateDocumentRequiredFields(activeTemplate, activeValues, showToast);
+}
+function getRecipientName() {
+  return resolveDocumentRecipientName(activeTemplate, activeValues);
+}
+function openPrintFlow() {
+  return printFlow.openPrintFlow();
+}
+async function runPdfSaveStep() {
+  return printFlow.runPdfSaveStep();
+}
+async function openPrintHistory() {
+  return printHistoryController.openPrintHistory();
+}
+async function loadMorePrintHistory() {
+  return printHistoryController.loadMorePrintHistory();
+}
+function appendPrintHistoryEntries(list, entries2) {
+  renderPrintHistoryEntries(list, entries2, { downloadHistoryPdf, deletePrintHistory, showToast, printHistoryDialog, openPrintHistory, getErrorMessage, formatPrintHistoryBytes, formatPrintHistoryDate });
+}
+async function downloadHistoryPdf(id, button) {
+  return downloadStoredHistoryPdf(id, button, { showToast, getErrorMessage });
+}
 function runFinalPrint() {
-  if (printFinalButton.disabled) {
-    return;
-  }
-  if (!validateRequiredFields()) {
-    printFlowDialog.close();
-    return;
-  }
-  window.print();
+  return printFlow.runFinalPrint();
 }
 async function handleDocumentImport() {
-  const file = jsonImportInput.files?.[0];
-  if (!file) {
-    return;
-  }
-  try {
-    const packageData = await readDocumentPackageFile(file);
-    await putTemplate(packageData.template);
-    await refreshTemplateCollections();
-    applyTemplate(packageData.template, packageData.values);
-    showToast(packageData.values ? "\u6587\u66F8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002");
-  } catch (error) {
-    console.error("JSON\u30A4\u30F3\u30DD\u30FC\u30C8\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage2(error));
-  } finally {
-    jsonImportInput.value = "";
-  }
+  return templateWorkflow.handleDocumentImport();
 }
 async function handleTemplateAddImport() {
-  const file = templateAddInput.files?.[0];
-  if (!file) {
-    return;
-  }
-  try {
-    const packageData = await readDocumentPackageFile(file);
-    const existing = await getTemplate(packageData.template.id);
-    if (existing) {
-      throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u65E2\u5B58\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u300C\u7DE8\u96C6\u300D\u3092\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-    }
-    await putTemplate(packageData.template);
-    await refreshTemplateCollections();
-    applyTemplate(packageData.template);
-    showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002");
-  } catch (error) {
-    console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u8FFD\u52A0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage2(error));
-  } finally {
-    templateAddInput.value = "";
-  }
+  return templateWorkflow.handleTemplateAddImport();
 }
 async function saveTemplateFromBuilder(template, mode) {
-  if (mode === "create") {
-    const existing2 = await getTemplate(template.id);
-    if (existing2) {
-      throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u5B58\u5728\u3057\u307E\u3059\u3002");
-    }
-    await putTemplate(template);
-    await refreshTemplateCollections();
-    applyTemplate(template);
-    showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002");
-    return;
-  }
-  const existing = await getTemplate(template.id);
-  if (!existing) {
-    throw new Error("\u7DE8\u96C6\u5BFE\u8C61\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
-  }
-  const editingActiveTemplate = activeTemplate?.id === template.id;
-  const preservedValues = editingActiveTemplate ? activeValues : void 0;
-  await putTemplate(template);
-  await refreshTemplateCollections();
-  if (editingActiveTemplate) {
-    applyTemplate(template, preservedValues);
-  }
-  showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002");
+  return templateWorkflow.saveTemplateFromBuilder(template, mode);
 }
 async function handleTemplateSelection() {
-  const id = templateSelect.value;
-  if (!id) {
-    clearActiveTemplate();
-    return;
-  }
-  const template = await getTemplate(id);
-  if (!template) {
-    await refreshTemplateCollections();
-    clearActiveTemplate();
-    showToast("\u9078\u629E\u3057\u305F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-    return;
-  }
-  applyTemplate(template);
+  return templateWorkflow.handleTemplateSelection();
 }
 function openTemplateSettings() {
   templateBuilder.showListView();
@@ -35053,67 +35323,22 @@ async function refreshTemplateCollections() {
   renderTemplateManagerList();
 }
 function renderTemplateSelect() {
-  const selectedId = activeTemplate?.id ?? templateSelect.value;
-  templateSelect.replaceChildren();
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = templates.length === 0 ? "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3042\u308A\u307E\u305B\u3093" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u9078\u629E";
-  templateSelect.appendChild(placeholder);
-  for (const template of templates) {
-    const option = document.createElement("option");
-    option.value = template.id;
-    option.textContent = template.name;
-    templateSelect.appendChild(option);
-  }
-  templateSelect.disabled = templates.length === 0;
-  if (selectedId && templates.some((template) => template.id === selectedId)) {
-    templateSelect.value = selectedId;
-  } else {
-    templateSelect.value = "";
-  }
+  return renderTemplateSelectView(templates, activeTemplate, templateSelect);
 }
 function renderTemplateManagerList() {
-  templateList.replaceChildren();
-  const isEmpty = templates.length === 0;
-  templateListEmpty.hidden = !isEmpty;
-  templateList.hidden = isEmpty;
-  if (isEmpty) {
-    return;
-  }
-  for (const template of templates) {
-    templateList.appendChild(createTemplateCard(template));
-  }
+  return renderTemplateManagerListView(templates, templateList, templateListEmpty, createTemplateCard);
 }
 function createTemplateCard(template) {
-  const fragment = templateCardTemplate.content.cloneNode(true);
-  const card = fragment.firstElementChild;
-  if (!(card instanceof HTMLElement)) {
-    throw new Error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u30AB\u30FC\u30C9\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-  }
-  const name = requireChild2(card, ".template-card__name");
-  const meta = requireChild2(card, ".template-card__meta");
-  const exportButton = requireChild2(card, ".template-card__export-button");
-  const editButton = requireChild2(card, ".template-card__edit-button");
-  const deleteButton = requireChild2(card, ".template-card__delete-button");
-  name.textContent = template.name;
-  meta.textContent = [
-    `ID: ${template.id}`,
-    `\u5165\u529B\u9805\u76EE: ${getReferencedFields(template).length}\u4EF6`
-  ].join(" / ");
-  exportButton.addEventListener("click", () => {
-    downloadTemplateJson(template);
-    showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002");
-  });
-  editButton.addEventListener("click", () => {
-    templateBuilder.openEdit(template);
-  });
-  deleteButton.addEventListener("click", () => {
-    pendingDeleteTemplateId = template.id;
-    if (!templateDeleteDialog.open) {
-      templateDeleteDialog.showModal();
+  return createTemplateCardView(template, {
+    templateCardTemplate,
+    templateDeleteDialog,
+    templateBuilder,
+    showToast,
+    requireChild,
+    setPendingDeleteTemplateId: (id) => {
+      pendingDeleteTemplateId = id;
     }
   });
-  return card;
 }
 async function confirmTemplateDelete() {
   const id = pendingDeleteTemplateId;
@@ -35138,7 +35363,7 @@ async function confirmTemplateDelete() {
     showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
   } catch (error) {
     console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage2(error));
+    showToast(getErrorMessage(error));
   }
 }
 function restoreInitialTemplate() {
@@ -35198,21 +35423,10 @@ function handleFieldChange(fieldId, value) {
   renderBusinessDocument(documentRenderElements, activeTemplate, activeValues);
 }
 function getStoredActiveTemplateId() {
-  try {
-    return localStorage.getItem(ACTIVE_TEMPLATE_STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  return getSavedActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY);
 }
 function storeActiveTemplateId(id) {
-  try {
-    if (id) {
-      localStorage.setItem(ACTIVE_TEMPLATE_STORAGE_KEY, id);
-      return;
-    }
-    localStorage.removeItem(ACTIVE_TEMPLATE_STORAGE_KEY);
-  } catch {
-  }
+  return saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id);
 }
 function showToast(message) {
   if (toastTimer !== null) {
@@ -35224,26 +35438,6 @@ function showToast(message) {
     documentToast.hidden = true;
     toastTimer = null;
   }, TOAST_DURATION_MS);
-}
-function getErrorMessage2(error) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
-}
-function requireElement2(selector) {
-  const element = document.querySelector(selector);
-  if (!element) {
-    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
-  }
-  return element;
-}
-function requireChild2(parent, selector) {
-  const element = parent.querySelector(selector);
-  if (!element) {
-    throw new Error(`${selector} \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002`);
-  }
-  return element;
 }
 /*! Bundled license information:
 

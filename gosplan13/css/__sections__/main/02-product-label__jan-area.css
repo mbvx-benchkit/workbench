@@ -1,0 +1,58 @@
+
+
+
+/* =========================================================
+   JAN入力欄
+   ========================================================= */
+
+.product-label__jan-area {
+    min-width: 0;
+
+    grid-row: 3;
+
+    /*
+     * inputがインライン要素として作る、
+     * ベースライン下側の余白を防ぐ。
+     */
+    line-height: 0;
+}
+
+.product-label__jan-input {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    height: 2.2cqh;
+
+    box-sizing: border-box;
+
+    font-size: 0.85cqw;
+}
+
+
+
+.ribbon__item {
+    display: flex;
+    gap: 2rem;
+}
+
+.base-options {
+    display: flex;
+    gap: 0.4rem;
+    position: relative;
+}
+
+.base-options::after {
+    content: "";
+    display: inline-block;
+    position: absolute;
+    right: -1rem;
+    top: 10%;
+    width: 1px;
+    height: 80%;
+    border-left: 1px solid #a5a5a5;
+}
+
+.ribbon__option {
+    gap: 0.4rem;
+}

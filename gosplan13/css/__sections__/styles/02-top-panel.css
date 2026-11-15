@@ -1,0 +1,71 @@
+
+
+
+/* =========================================================
+   プレビュー集中表示
+   ========================================================= */
+
+/**
+ * 上部パネルを上方向へ滑らせながら畳む。
+ */
+body.is-preview-only .top-panel {
+    grid-template-rows: 0fr;
+
+    /**
+     * 畳んでいる間にheaderやribbonが
+     * 外へはみ出さないようにする。
+     */
+    overflow: hidden;
+
+    opacity: 0;
+
+    transform:
+        translateY(-0.75rem);
+
+    pointer-events: none;
+}
+
+body.is-preview-only .top-panel__content {
+    overflow: hidden;
+}
+
+
+/**
+ * A4プレビューへ少し広い領域を渡す。
+ */
+body.is-preview-only .main {
+    padding: 0.75rem;
+}
+
+
+/**
+ * 集中表示時はフッターも畳む。
+ */
+body.is-preview-only .footer {
+    max-height: 0;
+
+    padding-top: 0;
+    padding-bottom: 0;
+
+    opacity: 0;
+
+    transform:
+        translateY(0.5rem);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   動きを減らす設定
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .top-panel,
+    .main,
+    .footer,
+    .preview-focus-exit-button {
+        transition: none;
+    }
+}
