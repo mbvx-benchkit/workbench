@@ -38,7 +38,7 @@ while IFS= read -r -d '' file; do
   # Default-deny for non-source formats, including unknown extensions.
   # This blocks .pdf/.json/.xml/.md/.dat as well as newly invented data types.
   case "$file" in
-    .gitignore|package.json|package-lock.json|tsconfig.json|tsconfig.*.json|*/tsconfig.json|*/tsconfig.*.json|README.md|COPYRIGHT.md|SECURITY_GUIDE.md|CSP_GUIDE.md|SECURITY_FIXES.md|document_builder/PRINT_HISTORY.md)
+    .nojekyll|.gitignore|package.json|package-lock.json|tsconfig.json|tsconfig.*.json|*/tsconfig.json|*/tsconfig.*.json|README.md|COPYRIGHT.md|SECURITY_GUIDE.md|CSP_GUIDE.md|SECURITY_FIXES.md|document_builder/PRINT_HISTORY.md)
       ;;
     *.ts|*.js|*.html|*.css|*.sh|*.mjs)
       ;;
