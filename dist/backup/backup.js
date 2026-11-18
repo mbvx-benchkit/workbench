@@ -307,10 +307,10 @@ function confirmRestore(snapshot) {
    ========================================================= */
 function createExportSuccessMessage(snapshot) {
     return [
-        "暗号化バックアップを出力しました。",
+        "暗号化バックアップを作成し、ダウンロードを開始しました。保存先にファイルがあることを確認してください。",
         `文書テンプレート ${snapshot.documentTemplates.length}件、`,
         `定型印刷物 ${snapshot.presetDocuments.length}件、`,
-        `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を保存しました。`
+        `ビジネス文書PDF履歴 ${snapshot.printHistory.length}件を含みます。`
     ].join(" ");
 }
 function createImportSuccessMessage(snapshot) {

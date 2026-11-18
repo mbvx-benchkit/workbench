@@ -19,7 +19,7 @@ export function downloadBlob(blob, fileName) {
     anchor.remove();
     window.setTimeout(() => {
         URL.revokeObjectURL(objectUrl);
-    }, 1000);
+    }, 60000);
 }
 /* =========================================================
    File Name

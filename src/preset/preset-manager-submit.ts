@@ -152,6 +152,8 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
         saveButton.textContent =
             "保存中...";
 
+        // DBのコミット以降は、画面更新の失敗を保存失敗として扱わない。
+        let storageCommitted = false;
 
         try {
 
@@ -296,7 +298,10 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
             await putPresetDocument(
                 presetDocument
             );
+            storageCommitted = true;
 
+            // UI更新に失敗しても、同じIDで再保存して重複作成を防ぐ。
+            deps.editingDocument = presetDocument;
 
             /**
              * 保存後に永続ストレージを要求する。
@@ -304,9 +309,6 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
              * falseでも保存処理自体は成功。
              */
             void requestPersistentStorage();
-
-
-            deps.editingDocument = null;
 
 
             /**
@@ -337,17 +339,14 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
                 dialog.close();
             }
 
+            deps.editingDocument = null;
+
         } catch (error) {
-
-            console.error(
-                "定型印刷物を保存できませんでした。",
-                error
-            );
-
-
-            showEditorError(
-                "定型印刷物を保存できませんでした。"
-            );
+            const message = storageCommitted
+                ? "保存は完了しましたが、画面の更新に失敗しました。ページを再読み込みしてください。再度保存する必要はありません。"
+                : "定型印刷物を保存できませんでした。";
+            console.error(message, error);
+            showEditorError(message);
 
         } finally {
 

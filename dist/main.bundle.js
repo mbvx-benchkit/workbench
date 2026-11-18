@@ -2902,6 +2902,7 @@ function createPresetEditorSubmit(deps) {
     saveButton.disabled = true;
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
+    let storageCommitted = false;
     try {
       const now = Date.now();
       let presetDocument;
@@ -2941,8 +2942,9 @@ function createPresetEditorSubmit(deps) {
         };
       }
       await putPresetDocument(presetDocument);
+      storageCommitted = true;
+      deps.editingDocument = presetDocument;
       void requestPersistentStorage();
-      deps.editingDocument = null;
       await notifyChanged();
       if (deps.editorOrigin === "manager") {
         await refreshManagerList();
@@ -2951,9 +2953,11 @@ function createPresetEditorSubmit(deps) {
       } else {
         dialog.close();
       }
+      deps.editingDocument = null;
     } catch (error) {
-      console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
-      showEditorError("\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+      const message = storageCommitted ? "\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u518D\u5EA6\u4FDD\u5B58\u3059\u308B\u5FC5\u8981\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : "\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
+      console.error(message, error);
+      showEditorError(message);
     } finally {
       saveButton.disabled = false;
       saveButton.textContent = originalButtonText;
@@ -3361,7 +3365,7 @@ function downloadBlob(blob, fileName) {
   anchor.remove();
   window.setTimeout(() => {
     URL.revokeObjectURL(objectUrl);
-  }, 1e3);
+  }, 6e4);
 }
 function createBackupFileName() {
   const now = /* @__PURE__ */ new Date();
@@ -4755,10 +4759,10 @@ function confirmRestore(snapshot) {
 }
 function createExportSuccessMessage(snapshot) {
   return [
-    "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u51FA\u529B\u3057\u307E\u3057\u305F\u3002",
+    "\u6697\u53F7\u5316\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u3001\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002\u4FDD\u5B58\u5148\u306B\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308B\u3053\u3068\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
     `\u6587\u66F8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8 ${snapshot.documentTemplates.length}\u4EF6\u3001`,
     `\u5B9A\u578B\u5370\u5237\u7269 ${snapshot.presetDocuments.length}\u4EF6\u3001`,
-    `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8PDF\u5C65\u6B74 ${snapshot.printHistory.length}\u4EF6\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`
+    `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8PDF\u5C65\u6B74 ${snapshot.printHistory.length}\u4EF6\u3092\u542B\u307F\u307E\u3059\u3002`
   ].join(" ");
 }
 function createImportSuccessMessage(snapshot) {

@@ -54,7 +54,7 @@ export function downloadBlob(
                 objectUrl
             );
         },
-        1_000
+        60_000
     );
 }
 
