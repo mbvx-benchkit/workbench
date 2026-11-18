@@ -1,4 +1,4 @@
-import { promptVaultPassword, confirmVaultReset, promptVaultPasswordChange } from './history-vault-ui.js';
+import { promptVaultPassword, confirmVaultReset, promptVaultPasswordChange, beginVaultMigration } from './history-vault-ui.js';
 import { withWorkbenchSnapshotLock } from '../dist/workbench-data-lock.js';
 /**
  * DOCUMENT BUILDER PDF history vault. Shared by DOCUMENT BUILDER and the WORKBENCH
@@ -259,15 +259,28 @@ async function migratePlainHistory() {
       req.onsuccess=()=>{const cursor=req.result;if(!cursor){resolve(ids);return;}
         if(!isSealed(cursor.value))ids.push(cursor.key);cursor.continue();};
     });await done;
-    for(const id of legacyIds) {
-      const item=await get(db,HISTORY,id);if(!item||isSealed(item))continue;
-      const sealed=await sealRecord(item,key);
-      const update=db.transaction([HISTORY,META],'readwrite');const complete=waitTx(update);
-      // One PDF and its metadata are replaced atomically; a crash can resume.
-      update.objectStore(HISTORY).put(sealed);update.objectStore(META).put(metadataOf(sealed));
-      await complete;
+    const progress = beginVaultMigration(legacyIds.length);
+    let completed = 0;
+    let succeeded = false;
+    try {
+      for(const id of legacyIds) {
+        const item=await get(db,HISTORY,id);
+        if(item&&!isSealed(item)) {
+          const sealed=await sealRecord(item,key);
+          const update=db.transaction([HISTORY,META],'readwrite');const complete=waitTx(update);
+          // Replace the PDF and its plaintext metadata in one transaction.
+          // A crash leaves only the unconverted records to resume later.
+          update.objectStore(HISTORY).put(sealed);update.objectStore(META).put(metadataOf(sealed));
+          await complete;
+        }
+        completed++;
+        progress.update(completed);
+      }
+      migrationCheckedIdentity=sessionIdentity;
+      succeeded=true;
+    } finally {
+      progress.finish(succeeded,completed);
     }
-    migrationCheckedIdentity=sessionIdentity;
   } finally {db.close();}
 }
 export async function addSealedHistory(recipientName,fileName,pdfBlob) {

@@ -3687,7 +3687,7 @@ function el(tag, className, text) {
   if (text !== void 0) node.textContent = text;
   return node;
 }
-function makeDialog(title, description, dangerous = false) {
+function makeDialog(title, description, dangerous = false, purpose = "") {
   const dialog = el("dialog", "history-vault-dialog");
   dialog.setAttribute("aria-label", title);
   const surface = el("div", "history-vault-dialog__surface");
@@ -3696,6 +3696,20 @@ function makeDialog(title, description, dangerous = false) {
   const note = el("p", "history-vault-dialog__description", description);
   const form = el("form", "history-vault-dialog__form");
   form.noValidate = true;
+  if (purpose) {
+    form.id = `workbench-history-${purpose}-form`;
+    form.name = `workbench-history-${purpose}-form`;
+    form.autocomplete = "on";
+    const username = el("input", "history-vault-dialog__username");
+    username.type = "text";
+    username.id = `workbench-history-${purpose}-username`;
+    username.name = "username";
+    username.autocomplete = "section-workbench-history username";
+    username.value = "workbench-pdf-history";
+    username.tabIndex = -1;
+    username.setAttribute("aria-label", "PDF\u5C65\u6B74\u306E\u8B58\u5225\u540D");
+    form.append(username);
+  }
   const alert = el("p", "history-vault-dialog__error");
   alert.setAttribute("role", "alert");
   alert.setAttribute("aria-live", "polite");
@@ -3706,14 +3720,17 @@ function makeDialog(title, description, dangerous = false) {
   document.body.appendChild(dialog);
   return { dialog, form, alert, actions };
 }
-function field(label, autocomplete, placeholder) {
+function field(label, autocomplete, placeholder, identifier) {
   const wrapper = el("label", "history-vault-dialog__field");
   const title = el("span", "history-vault-dialog__label", label);
   const input = el("input", "history-vault-dialog__input");
   input.type = "password";
   input.required = true;
-  input.autocomplete = autocomplete;
+  input.id = `workbench-history-${identifier}`;
+  input.name = `workbench_history_${identifier.replace(/-/g, "_")}`;
+  input.autocomplete = `section-workbench-history ${autocomplete}`;
   input.placeholder = placeholder;
+  input.setAttribute("aria-label", label);
   wrapper.append(title, input);
   return { wrapper, input };
 }
@@ -3741,10 +3758,12 @@ function promptVaultPassword(create, errorMessage = "") {
   return new Promise((resolve, reject) => {
     const ui = makeDialog(
       create ? "PDF\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A" : "PDF\u5C65\u6B74\u306E\u30ED\u30C3\u30AF\u3092\u89E3\u9664",
-      create ? "PDF\u5C65\u6B74\u306EPDF\u672C\u4F53\u30FB\u30D5\u30A1\u30A4\u30EB\u540D\u30FB\u5B9B\u5148\u540D\u3092\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3059\u300212\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u4FDD\u5B58\u3057\u305FPDF\u5C65\u6B74\u3092\u958B\u304F\u305F\u3081\u3001\u5C65\u6B74\u5C02\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
+      create ? "PDF\u5C65\u6B74\u306EPDF\u672C\u4F53\u30FB\u30D5\u30A1\u30A4\u30EB\u540D\u30FB\u5B9B\u5148\u540D\u3092\u6697\u53F7\u5316\u3057\u307E\u3059\u3002\u5F93\u6765\u306E\u5E73\u6587PDF\u5C65\u6B74\u3082\u524A\u9664\u305B\u305A\u6697\u53F7\u5316\u3057\u3066\u5F15\u304D\u7D99\u304E\u307E\u3059\u300212\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "PDF\u5C65\u6B74\u5C02\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u307B\u304B\u306EWORKBENCH\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3068\u306F\u72EC\u7ACB\u3057\u3066\u3044\u307E\u3059\u3002",
+      false,
+      create ? "setup" : "unlock"
     );
-    const pass = field(create ? "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9" : "\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9", create ? "new-password" : "current-password", "12\u6587\u5B57\u4EE5\u4E0A");
-    const confirm = field("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u3082\u3046\u4E00\u5EA6\u5165\u529B", "new-password", "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const pass = field(create ? "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9" : "\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9", create ? "new-password" : "current-password", "12\u6587\u5B57\u4EE5\u4E0A", create ? "new-password" : "current-password");
+    const confirm = field("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u3082\u3046\u4E00\u5EA6\u5165\u529B", "new-password", "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9", "confirm-password");
     const hint = el("p", "history-vault-dialog__hint", "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u308B\u3068\u5C65\u6B74\u306E\u5FA9\u53F7\u306F\u3067\u304D\u307E\u305B\u3093\u3002");
     ui.form.insertBefore(pass.wrapper, ui.alert);
     if (create) ui.form.insertBefore(confirm.wrapper, ui.alert);
@@ -3841,6 +3860,40 @@ function confirmVaultReset(count) {
       reject(e);
     }
   });
+}
+function beginVaultMigration(total) {
+  if (!total || typeof document === "undefined" || !document.body || !document.createElement) {
+    return { update() {
+    }, finish() {
+    } };
+  }
+  const notice = el("div", "history-vault-migration-status");
+  notice.setAttribute("role", "status");
+  notice.setAttribute("aria-live", "polite");
+  const title = el("p", "history-vault-migration-status__title", "\u65E7PDF\u5C65\u6B74\u306E\u6697\u53F7\u5316\u79FB\u884C");
+  const detail = el(
+    "p",
+    "history-vault-migration-status__detail",
+    `\u65E2\u5B58\u306E\u5E73\u6587PDF\u5C65\u6B74 ${total} \u4EF6\u3092\u6697\u53F7\u5316\u3057\u3066\u3044\u307E\u3059\u3002\u30BF\u30D6\u3092\u9589\u3058\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002`
+  );
+  notice.append(title, detail);
+  document.body.appendChild(notice);
+  let ended = false;
+  return {
+    update(done2) {
+      if (!ended) detail.textContent = `${done2} / ${total} \u4EF6\u3092\u6697\u53F7\u5316\u3057\u307E\u3057\u305F\u3002\u30BF\u30D6\u3092\u9589\u3058\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002`;
+    },
+    finish(succeeded, done2) {
+      if (ended) return;
+      ended = true;
+      detail.textContent = succeeded ? `\u4EE5\u524D\u306E\u5E73\u6587PDF\u5C65\u6B74 ${total} \u4EF6\u3092\u6697\u53F7\u5316\u3057\u3066\u5F15\u304D\u7D99\u304E\u307E\u3057\u305F\u3002` : `${done2} / ${total} \u4EF6\u307E\u3067\u79FB\u884C\u3057\u307E\u3057\u305F\u3002\u6B8B\u308A\u306F\u6B21\u56DE\u306E\u89E3\u9664\u6642\u306B\u518D\u958B\u3057\u307E\u3059\u3002`;
+      notice.classList.add(succeeded ? "history-vault-migration-status--complete" : "history-vault-migration-status--incomplete");
+      const dismiss = el("button", "history-vault-migration-status__dismiss", "\u9589\u3058\u308B");
+      dismiss.type = "button";
+      dismiss.addEventListener("click", () => notice.remove());
+      notice.append(dismiss);
+    }
+  };
 }
 
 // shared/print-history-vault.js
@@ -4183,17 +4236,28 @@ async function migratePlainHistory() {
       };
     });
     await done2;
-    for (const id of legacyIds) {
-      const item = await get(db, HISTORY, id);
-      if (!item || isSealed(item)) continue;
-      const sealed = await sealRecord(item, key);
-      const update = db.transaction([HISTORY, META], "readwrite");
-      const complete = waitTx(update);
-      update.objectStore(HISTORY).put(sealed);
-      update.objectStore(META).put(metadataOf(sealed));
-      await complete;
+    const progress = beginVaultMigration(legacyIds.length);
+    let completed = 0;
+    let succeeded = false;
+    try {
+      for (const id of legacyIds) {
+        const item = await get(db, HISTORY, id);
+        if (item && !isSealed(item)) {
+          const sealed = await sealRecord(item, key);
+          const update = db.transaction([HISTORY, META], "readwrite");
+          const complete = waitTx(update);
+          update.objectStore(HISTORY).put(sealed);
+          update.objectStore(META).put(metadataOf(sealed));
+          await complete;
+        }
+        completed++;
+        progress.update(completed);
+      }
+      migrationCheckedIdentity = sessionIdentity;
+      succeeded = true;
+    } finally {
+      progress.finish(succeeded, completed);
     }
-    migrationCheckedIdentity = sessionIdentity;
   } finally {
     db.close();
   }

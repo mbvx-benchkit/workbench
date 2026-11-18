@@ -6,7 +6,7 @@ function el(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
-function makeDialog(title, description, dangerous = false) {
+function makeDialog(title, description, dangerous = false, purpose = '') {
   const dialog = el('dialog', 'history-vault-dialog');
   dialog.setAttribute('aria-label', title);
   const surface = el('div', 'history-vault-dialog__surface');
@@ -15,6 +15,22 @@ function makeDialog(title, description, dangerous = false) {
   const note = el('p', 'history-vault-dialog__description', description);
   const form = el('form', 'history-vault-dialog__form');
   form.noValidate = true;
+  // A stable form identity and a non-personal username help password managers
+  // distinguish this local history password from other WORKBENCH credentials.
+  if (purpose) {
+    form.id = `workbench-history-${purpose}-form`;
+    form.name = `workbench-history-${purpose}-form`;
+    form.autocomplete = 'on';
+    const username = el('input', 'history-vault-dialog__username');
+    username.type = 'text';
+    username.id = `workbench-history-${purpose}-username`;
+    username.name = 'username';
+    username.autocomplete = 'section-workbench-history username';
+    username.value = 'workbench-pdf-history';
+    username.tabIndex = -1;
+    username.setAttribute('aria-label', 'PDF履歴の識別名');
+    form.append(username);
+  }
   const alert = el('p', 'history-vault-dialog__error');
   alert.setAttribute('role', 'alert');
   alert.setAttribute('aria-live', 'polite');
@@ -25,11 +41,16 @@ function makeDialog(title, description, dangerous = false) {
   document.body.appendChild(dialog);
   return {dialog, form, alert, actions};
 }
-function field(label, autocomplete, placeholder) {
+function field(label, autocomplete, placeholder, identifier) {
   const wrapper = el('label', 'history-vault-dialog__field');
   const title = el('span', 'history-vault-dialog__label', label);
   const input = el('input', 'history-vault-dialog__input');
-  input.type = 'password'; input.required = true; input.autocomplete = autocomplete; input.placeholder = placeholder;
+  input.type = 'password'; input.required = true;
+  input.id = `workbench-history-${identifier}`;
+  input.name = `workbench_history_${identifier.replace(/-/g, '_')}`;
+  input.autocomplete = `section-workbench-history ${autocomplete}`;
+  input.placeholder = placeholder;
+  input.setAttribute('aria-label', label);
   wrapper.append(title,input);
   return {wrapper,input};
 }
@@ -52,9 +73,10 @@ export function promptVaultPassword(create, errorMessage = '') {
   if (typeof document === 'undefined') return Promise.reject(new Error('ブラウザのパスワード画面が必要です。'));
   return new Promise((resolve, reject) => {
     const ui = makeDialog(create?'PDF履歴のパスワードを設定':'PDF履歴のロックを解除',
-      create?'PDF履歴のPDF本体・ファイル名・宛先名を暗号化して保存します。12文字以上のパスワードを設定してください。':'保存したPDF履歴を開くため、履歴専用のパスワードを入力してください。');
-    const pass=field(create?'新しいパスワード':'履歴パスワード',create?'new-password':'current-password','12文字以上');
-    const confirm=field('パスワードをもう一度入力','new-password','確認用パスワード');
+      create?'PDF履歴のPDF本体・ファイル名・宛先名を暗号化します。従来の平文PDF履歴も削除せず暗号化して引き継ぎます。12文字以上のパスワードを設定してください。':'PDF履歴専用のパスワードを入力してください。ほかのWORKBENCHのパスワードとは独立しています。',
+      false, create?'setup':'unlock');
+    const pass=field(create?'新しいパスワード':'履歴パスワード',create?'new-password':'current-password','12文字以上',create?'new-password':'current-password');
+    const confirm=field('パスワードをもう一度入力','new-password','確認用パスワード','confirm-password');
     const hint=el('p','history-vault-dialog__hint','パスワードを忘れると履歴の復号はできません。');
     ui.form.insertBefore(pass.wrapper,ui.alert);
     if(create) ui.form.insertBefore(confirm.wrapper,ui.alert);
@@ -103,10 +125,10 @@ export function confirmVaultReset(count) {
 export function promptVaultPasswordChange(onChange) {
   return new Promise((resolve,reject)=>{
     const ui=makeDialog('履歴パスワードを変更',
-      '現在のパスワードで履歴を確認し、新しいパスワードへ暗号化し直します。履歴が多い場合は空き容量と処理時間が必要です。変更中は画面やタブを閉じないでください。以前に作成したバックアップは、その当時のパスワードで開きます。');
-    const old=field('現在のパスワード','current-password','現在のパスワード');
-    const fresh=field('新しいパスワード（12文字以上）','new-password','新しいパスワード');
-    const again=field('新しいパスワードを再入力','new-password','確認用パスワード');
+      '現在のパスワードで履歴を確認し、新しいパスワードへ暗号化し直します。履歴が多い場合は空き容量と処理時間が必要です。変更中は画面やタブを閉じないでください。以前に作成したバックアップは、その当時のパスワードで開きます。', false, 'change');
+    const old=field('現在のパスワード','current-password','現在のパスワード','current-password');
+    const fresh=field('新しいパスワード（12文字以上）','new-password','新しいパスワード','new-password');
+    const again=field('新しいパスワードを再入力','new-password','確認用パスワード','confirm-password');
     const status=el('p','history-vault-dialog__progress');status.setAttribute('aria-live','polite');
     for(const x of [old,fresh,again])ui.form.insertBefore(x.wrapper,ui.alert);
     ui.form.insertBefore(status,ui.alert);
@@ -127,4 +149,38 @@ export function promptVaultPasswordChange(onChange) {
     });
     try{showDialog(ui.dialog,old.input);}catch(e){reject(e);}
   });
+}
+
+/** Show how many legacy plaintext PDF records have been replaced in IndexedDB.
+ * Display only counts, never filenames, recipients or plaintext data. */
+export function beginVaultMigration(total) {
+  if (!total || typeof document === 'undefined' || !document.body || !document.createElement) {
+    return {update() {}, finish() {}};
+  }
+  const notice = el('div', 'history-vault-migration-status');
+  notice.setAttribute('role', 'status');
+  notice.setAttribute('aria-live', 'polite');
+  const title = el('p', 'history-vault-migration-status__title', '旧PDF履歴の暗号化移行');
+  const detail = el('p', 'history-vault-migration-status__detail',
+    `既存の平文PDF履歴 ${total} 件を暗号化しています。タブを閉じないでください。`);
+  notice.append(title, detail);
+  document.body.appendChild(notice);
+  let ended = false;
+  return {
+    update(done) {
+      if (!ended) detail.textContent = `${done} / ${total} 件を暗号化しました。タブを閉じないでください。`;
+    },
+    finish(succeeded, done) {
+      if (ended) return;
+      ended = true;
+      detail.textContent = succeeded
+        ? `以前の平文PDF履歴 ${total} 件を暗号化して引き継ぎました。`
+        : `${done} / ${total} 件まで移行しました。残りは次回の解除時に再開します。`;
+      notice.classList.add(succeeded ? 'history-vault-migration-status--complete' : 'history-vault-migration-status--incomplete');
+      const dismiss = el('button', 'history-vault-migration-status__dismiss', '閉じる');
+      dismiss.type = 'button';
+      dismiss.addEventListener('click', () => notice.remove());
+      notice.append(dismiss);
+    }
+  };
 }
