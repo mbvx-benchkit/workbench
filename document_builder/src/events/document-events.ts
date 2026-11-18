@@ -20,6 +20,7 @@ export interface DocumentEventDeps {
  showToast: (message: string) => void;
  invalidatePrintHistory: () => void;
  clearPendingDeleteTemplate: () => void;
+ changeHistoryPassword: () => Promise<void>;
 }
 export function bindDocumentEvents(deps: DocumentEventDeps): void {
 
@@ -115,6 +116,12 @@ export function bindDocumentEvents(deps: DocumentEventDeps): void {
 
     printHistoryButton.addEventListener("click", () => {
         void deps.openPrintHistory();
+    });
+    const historyPasswordButton=document.getElementById('print-history-password-button') as HTMLButtonElement | null;
+    historyPasswordButton?.addEventListener('click',()=>{
+        if(historyPasswordButton.disabled)return;
+        historyPasswordButton.disabled=true;
+        void deps.changeHistoryPassword().finally(()=>{historyPasswordButton.disabled=false;});
     });
 
     printHistoryCloseButton.addEventListener("click", () => {

@@ -13,8 +13,11 @@ export function getSavedActiveTemplateId(storageKey: string): string | null {
         return null;
     }
 }
-export async function saveActiveTemplateId(storageKey: string, id: string | null): Promise<void> {
-    await withWorkbenchWriteLock(() => {
+// A shared Web Lock prevents restores, but it does not serialize peer writers.
+// Chain requests in call order so a slow earlier write cannot win over a newer selection.
+let lastSelectionWrite: Promise<void> = Promise.resolve();
+export function saveActiveTemplateId(storageKey: string, id: string | null): Promise<void> {
+    const next = lastSelectionWrite.catch(() => {}).then(() => withWorkbenchWriteLock(() => {
 
     try {
 
@@ -40,5 +43,7 @@ export async function saveActiveTemplateId(storageKey: string, id: string | null
         console.warn("使用中テンプレートの保存に失敗しました。", error);
         throw error;
     }
-    });
+    }));
+    lastSelectionWrite = next;
+    return next;
 }

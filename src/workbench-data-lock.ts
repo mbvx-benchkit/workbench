@@ -90,6 +90,11 @@ function hasRecoveryJournal(): Promise<boolean> {
     });
 }
 
+/** UI recovery state must include the marker, even if the journal was already cleared. */
+export function hasWorkbenchRestoreMarker(): boolean {
+    return Boolean(localValue(RESTORE_PENDING_KEY));
+}
+
 async function ensureSafe(): Promise<void> {
     ensureCurrentGeneration();
     if (await hasRecoveryJournal()) {

@@ -1,3 +1,4 @@
+import { validateVaultConfig } from "../../shared/print-history-vault.js";
 import type { DocumentTemplateFieldType, DocumentTemplateField, DocumentTemplateLayout, DocumentTemplate } from "./archive-types.js";
 export type { DocumentTemplateFieldType, DocumentTemplateField, DocumentTemplateLayout, DocumentTemplate } from "./archive-types.js";
 import type { RedIndexCategory } from "./archive-types.js";
@@ -29,7 +30,7 @@ import type {
    ========================================================= */
 
 export const WORKBENCH_BACKUP_VERSION =
-    2 as const;
+    3 as const;
 
 
 export const DOCUMENT_TEMPLATES_VERSION =
@@ -127,6 +128,48 @@ export function parsePrintHistoryArchive(value: unknown): PrintHistoryArchive {
 }
 
 
+export type SealedHistoryArchive = {
+    version: 2;
+    config: import("../../shared/print-history-vault.js").VaultConfig | null;
+    documents: {
+        id: string; createdAt: number; pdfBytes: number;
+        pdfPath: string; pdfIv: number[]; metaIv: number[]; encryptedMeta: number[];
+    }[];
+};
+
+/** Validate the sealed history manifest before trusting any file path. */
+export function parseSealedHistoryArchive(value: unknown): SealedHistoryArchive {
+    const record = requireRecord(value, "document_builder/print-history/history.json");
+    if (record.version !== 2 || !Array.isArray(record.documents) || record.documents.length > MAX_PRINT_HISTORY_RECORDS) {
+        throw new Error("暗号化PDF履歴のバックアップ形式が不正です。");
+    }
+    const config = record.config === null ? null : validateVaultConfig(record.config);
+    if (record.documents.length && !config) throw new Error("PDF履歴の暗号化設定がありません。");
+    const result = record.documents.map((value, index) => {
+        const item = requireRecord(value, `sealedHistory.documents[${index}]`);
+        const id = requireString(item.id, `sealedHistory.documents[${index}].id`, 256, true);
+        const pdfPath = requireString(item.pdfPath, `sealedHistory.documents[${index}].pdfPath`, 2048, true);
+        requireSafeArchivePath(pdfPath, "document_builder/print-history/encrypted/");
+        requireNonNegativeInteger(item.createdAt, "createdAt");
+        requireNonNegativeInteger(item.pdfBytes, "pdfBytes");
+        if ((item.pdfBytes as number) > 64*1024*1024) throw new Error("暗号化PDF履歴のサイズが上限を超えています。");
+        for (const [value,name,length] of [[item.pdfIv,"pdfIv",12],[item.metaIv,"metaIv",12]]) {
+            if (!Array.isArray(value) || value.length !== length || value.some((v:unknown)=>!Number.isInteger(v) || (v as number)<0 || (v as number)>255)) {
+                throw new Error(`暗号化PDF履歴の${name}が不正です。`);
+            }
+        }
+        if (!Array.isArray(item.encryptedMeta) || item.encryptedMeta.length < 16 || item.encryptedMeta.length > 65536 ||
+            item.encryptedMeta.some((v:unknown)=>!Number.isInteger(v) || (v as number)<0 || (v as number)>255)) {
+            throw new Error("暗号化PDF履歴のメタデータが不正です。");
+        }
+        return {id,createdAt:item.createdAt as number,pdfBytes:item.pdfBytes as number,pdfPath,
+            pdfIv:item.pdfIv as number[],metaIv:item.metaIv as number[],encryptedMeta:item.encryptedMeta as number[]};
+    });
+    requireUniqueIds(result, "暗号化PDF履歴");
+    if (new Set(result.map(entry => entry.pdfPath)).size !== result.length) throw new Error("暗号化PDF履歴のパスが重複しています。");
+    return {version:2,config,documents:result};
+}
+
 /* =========================================================
    Manifest
    ========================================================= */
@@ -138,7 +181,7 @@ export type WorkbenchBackupManifest = {
 
     // v1はPDF履歴を含まない旧バックアップ。
     version:
-    1 | typeof WORKBENCH_BACKUP_VERSION;
+    1 | 2 | typeof WORKBENCH_BACKUP_VERSION;
 
     createdAt: string;
 
@@ -201,11 +244,13 @@ export type WorkbenchBackupSnapshot = {
 
     printHistory:
     PrintHistoryRecord[];
+
+    historyVaultConfig?: import("../../shared/print-history-vault.js").VaultConfig | null;
 };
 
 /** Backups v1 did not contain PDF print history. */
 export type ImportedWorkbenchBackupSnapshot = WorkbenchBackupSnapshot & {
-    sourceBackupVersion: 1 | typeof WORKBENCH_BACKUP_VERSION;
+    sourceBackupVersion: 1 | 2 | typeof WORKBENCH_BACKUP_VERSION;
 };
 
 
@@ -237,6 +282,7 @@ export function parseWorkbenchBackupManifest(
 
     if (
         record.version !== 1 &&
+        record.version !== 2 &&
         record.version !== WORKBENCH_BACKUP_VERSION
     ) {
 
@@ -315,7 +361,7 @@ export function parseWorkbenchBackupManifest(
         "manifest.contents.presetDocuments.previewImageCount"
     );
 
-    if (record.version === WORKBENCH_BACKUP_VERSION) {
+    if (record.version >= 2) {
         const history = requireRecord(
             contents.printHistory,
             "manifest.contents.printHistory"

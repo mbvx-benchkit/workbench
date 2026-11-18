@@ -8,8 +8,11 @@ export function getSavedActiveTemplateId(storageKey) {
         return null;
     }
 }
-export async function saveActiveTemplateId(storageKey, id) {
-    await withWorkbenchWriteLock(() => {
+// A shared Web Lock prevents restores, but it does not serialize peer writers.
+// Chain requests in call order so a slow earlier write cannot win over a newer selection.
+let lastSelectionWrite = Promise.resolve();
+export function saveActiveTemplateId(storageKey, id) {
+    const next = lastSelectionWrite.catch(() => { }).then(() => withWorkbenchWriteLock(() => {
         try {
             if (id) {
                 localStorage.setItem(storageKey, id);
@@ -21,6 +24,8 @@ export async function saveActiveTemplateId(storageKey, id) {
             console.warn("使用中テンプレートの保存に失敗しました。", error);
             throw error;
         }
-    });
+    }));
+    lastSelectionWrite = next;
+    return next;
 }
 //# sourceMappingURL=active-template-storage.js.map

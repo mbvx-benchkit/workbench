@@ -1,3 +1,4 @@
+import { isSealed, validateSealedHistoryRecord } from "../../shared/print-history-vault.js";
 import { isPng, isJpeg, isWebp, sanitizeFileName } from "./archive-file-utils.js";
 import { createBlob, stringifyJson } from "./archive-file-utils.js";
 import { getImageExtension } from "./archive-file-utils.js";
@@ -29,7 +30,7 @@ import { getImageExtension } from "./archive-file-utils.js";
 import JSZip from "jszip";
 import { BackupSizeBudget, assertBackupEntrySize, MAX_JSON_TEXT_LENGTH, MAX_ARCHIVE_ENTRIES, MAX_ARCHIVE_EXPANDED_BYTES, MAX_ARCHIVE_ENTRY_BYTES, MAX_ARCHIVE_IMAGE_BYTES } from "./backup-limits.js";
 import { validateRestorablePresetFile } from "../preset/preset-file-policy.js";
-import { DOCUMENT_TEMPLATES_VERSION, PRESET_DOCUMENTS_VERSION, PRINT_HISTORY_ARCHIVE_VERSION, MAX_PRINT_HISTORY_RECORDS, WORKBENCH_BACKUP_VERSION, parseDocumentTemplatesArchive, parsePresetDocumentsArchive, parsePrintHistoryArchive, parseRedIndexData, parseWorkbenchBackupManifest } from "./backup-types.js";
+import { DOCUMENT_TEMPLATES_VERSION, PRESET_DOCUMENTS_VERSION, MAX_PRINT_HISTORY_RECORDS, WORKBENCH_BACKUP_VERSION, parseDocumentTemplatesArchive, parsePresetDocumentsArchive, parsePrintHistoryArchive, parseSealedHistoryArchive, parseRedIndexData, parseWorkbenchBackupManifest } from "./backup-types.js";
 /* =========================================================
    Paths
    ========================================================= */
@@ -146,24 +147,29 @@ export async function createBackupArchive(snapshot) {
     /* -----------------------------------------------------
        DOCUMENT BUILDER PDF HISTORY
        ----------------------------------------------------- */
+    // v3: The ciphertext is exported without decrypting it, so an ordinary
+    // backup can never leave a plaintext history PDF in the recovery journal.
     const historyMetadata = [];
     for (let index = 0; index < snapshot.printHistory.length; index += 1) {
         const entry = snapshot.printHistory[index];
-        const pdfPath = `document_builder/print-history/pdf/${String(index + 1).padStart(5, "0")}.pdf`;
-        addBinary(pdfPath, entry.pdfBlob);
+        if (!isSealed(entry))
+            throw new Error("暗号化していないPDF履歴をバックアップできません。履歴を移行してください。");
+        validateSealedHistoryRecord(entry);
+        const pdfPath = `document_builder/print-history/encrypted/${String(index + 1).padStart(5, "0")}.bin`;
+        budget.add(pdfPath, entry.encryptedPdfBlob.size);
+        zip.file(pdfPath, new Uint8Array(await entry.encryptedPdfBlob.arrayBuffer()));
         historyMetadata.push({
-            id: entry.id,
-            recipientName: entry.recipientName,
-            fileName: entry.fileName,
-            createdAt: entry.createdAt,
-            pdfMimeType: "application/pdf",
-            pdfPath
+            id: entry.id, createdAt: entry.createdAt, pdfBytes: entry.pdfBytes,
+            pdfPath, pdfIv: entry.pdfIv, metaIv: entry.metaIv,
+            encryptedMeta: Array.from(entry.encryptedMeta)
         });
     }
     const historyArchive = {
-        version: PRINT_HISTORY_ARCHIVE_VERSION,
+        version: 2,
+        config: snapshot.historyVaultConfig ?? null,
         documents: historyMetadata
     };
+    parseSealedHistoryArchive(historyArchive);
     addJson(PRINT_HISTORY_PATH, historyArchive);
     /* -----------------------------------------------------
        Manifest
@@ -250,15 +256,14 @@ export async function readBackupArchive(file) {
        DOCUMENT BUILDER PDF HISTORY metadata
        v1バックアップは履歴を持たない。
        ----------------------------------------------------- */
-    const historyArchive = manifest.version === WORKBENCH_BACKUP_VERSION
-        ? parsePrintHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget))
-        : null;
-    if (historyArchive) {
-        if (manifest.contents.printHistory?.documentCount !== historyArchive.documents.length ||
-            manifest.contents.printHistory?.pdfCount !== historyArchive.documents.length) {
-            throw new Error("PDF出力履歴の件数がmanifestと一致しません。");
-        }
-    }
+    const historyArchive = manifest.version === 3
+        ? parseSealedHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget))
+        : manifest.version === 2
+            ? parsePrintHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget))
+            : null;
+    if (historyArchive && (manifest.contents.printHistory?.documentCount !== historyArchive.documents.length ||
+        manifest.contents.printHistory?.pdfCount !== historyArchive.documents.length))
+        throw new Error("PDF出力履歴の件数がmanifestと一致しません。");
     /* -----------------------------------------------------
        Manifest整合性
        ----------------------------------------------------- */
@@ -342,17 +347,32 @@ export async function readBackupArchive(file) {
         });
     }
     const printHistory = [];
-    if (historyArchive) {
+    let historyVaultConfig = null;
+    if (historyArchive?.version === 1) {
         for (const metadata of historyArchive.documents) {
             const pdfBytes = await readBinaryFile(zip, metadata.pdfPath, readBudget);
             validatePdfBytes(pdfBytes, metadata.pdfPath);
             printHistory.push({
-                id: metadata.id,
-                recipientName: metadata.recipientName,
-                fileName: metadata.fileName,
-                createdAt: metadata.createdAt,
+                id: metadata.id, recipientName: metadata.recipientName,
+                fileName: metadata.fileName, createdAt: metadata.createdAt,
                 pdfBlob: createBlob(pdfBytes, "application/pdf")
             });
+        }
+    }
+    else if (historyArchive?.version === 2) {
+        historyVaultConfig = historyArchive.config;
+        for (const metadata of historyArchive.documents) {
+            const encryptedPdf = await readEntryWithLimit(zip, metadata.pdfPath, MAX_ARCHIVE_ENTRY_BYTES + 16, readBudget);
+            if (encryptedPdf.byteLength !== metadata.pdfBytes + 16)
+                throw new Error("暗号化PDF履歴の容量が不正です。");
+            const entry = {
+                id: metadata.id, createdAt: metadata.createdAt, pdfBytes: metadata.pdfBytes,
+                encryptedPdfBlob: new Blob([new Uint8Array(encryptedPdf)], { type: "application/octet-stream" }),
+                pdfIv: metadata.pdfIv, metaIv: metadata.metaIv,
+                encryptedMeta: new Uint8Array(metadata.encryptedMeta)
+            };
+            validateSealedHistoryRecord(entry);
+            printHistory.push(entry);
         }
     }
     return {
@@ -360,6 +380,7 @@ export async function readBackupArchive(file) {
         redIndex,
         presetDocuments,
         printHistory,
+        historyVaultConfig,
         sourceBackupVersion: manifest.version
     };
 }

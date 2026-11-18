@@ -288,33 +288,33 @@ var require_html2canvas = __commonJS({
           }
         }
         var buffer = typeof ArrayBuffer !== "undefined" && typeof Uint8Array !== "undefined" && typeof Uint8Array.prototype.slice !== "undefined" ? new ArrayBuffer(bufferLength) : new Array(bufferLength);
-        var bytes = Array.isArray(buffer) ? buffer : new Uint8Array(buffer);
+        var bytes2 = Array.isArray(buffer) ? buffer : new Uint8Array(buffer);
         for (i5 = 0; i5 < len; i5 += 4) {
           encoded1 = lookup$1$1[base642.charCodeAt(i5)];
           encoded2 = lookup$1$1[base642.charCodeAt(i5 + 1)];
           encoded3 = lookup$1$1[base642.charCodeAt(i5 + 2)];
           encoded4 = lookup$1$1[base642.charCodeAt(i5 + 3)];
-          bytes[p3++] = encoded1 << 2 | encoded2 >> 4;
-          bytes[p3++] = (encoded2 & 15) << 4 | encoded3 >> 2;
-          bytes[p3++] = (encoded3 & 3) << 6 | encoded4 & 63;
+          bytes2[p3++] = encoded1 << 2 | encoded2 >> 4;
+          bytes2[p3++] = (encoded2 & 15) << 4 | encoded3 >> 2;
+          bytes2[p3++] = (encoded3 & 3) << 6 | encoded4 & 63;
         }
         return buffer;
       };
       var polyUint16Array$1 = function(buffer) {
         var length = buffer.length;
-        var bytes = [];
+        var bytes2 = [];
         for (var i5 = 0; i5 < length; i5 += 2) {
-          bytes.push(buffer[i5 + 1] << 8 | buffer[i5]);
+          bytes2.push(buffer[i5 + 1] << 8 | buffer[i5]);
         }
-        return bytes;
+        return bytes2;
       };
       var polyUint32Array$1 = function(buffer) {
         var length = buffer.length;
-        var bytes = [];
+        var bytes2 = [];
         for (var i5 = 0; i5 < length; i5 += 4) {
-          bytes.push(buffer[i5 + 3] << 24 | buffer[i5 + 2] << 16 | buffer[i5 + 1] << 8 | buffer[i5]);
+          bytes2.push(buffer[i5 + 3] << 24 | buffer[i5 + 2] << 16 | buffer[i5 + 1] << 8 | buffer[i5]);
         }
-        return bytes;
+        return bytes2;
       };
       var UTRIE2_SHIFT_2$1 = 5;
       var UTRIE2_SHIFT_1$1 = 6 + 5;
@@ -3836,33 +3836,33 @@ var require_html2canvas = __commonJS({
           }
         }
         var buffer = typeof ArrayBuffer !== "undefined" && typeof Uint8Array !== "undefined" && typeof Uint8Array.prototype.slice !== "undefined" ? new ArrayBuffer(bufferLength) : new Array(bufferLength);
-        var bytes = Array.isArray(buffer) ? buffer : new Uint8Array(buffer);
+        var bytes2 = Array.isArray(buffer) ? buffer : new Uint8Array(buffer);
         for (i5 = 0; i5 < len; i5 += 4) {
           encoded1 = lookup$1[base642.charCodeAt(i5)];
           encoded2 = lookup$1[base642.charCodeAt(i5 + 1)];
           encoded3 = lookup$1[base642.charCodeAt(i5 + 2)];
           encoded4 = lookup$1[base642.charCodeAt(i5 + 3)];
-          bytes[p3++] = encoded1 << 2 | encoded2 >> 4;
-          bytes[p3++] = (encoded2 & 15) << 4 | encoded3 >> 2;
-          bytes[p3++] = (encoded3 & 3) << 6 | encoded4 & 63;
+          bytes2[p3++] = encoded1 << 2 | encoded2 >> 4;
+          bytes2[p3++] = (encoded2 & 15) << 4 | encoded3 >> 2;
+          bytes2[p3++] = (encoded3 & 3) << 6 | encoded4 & 63;
         }
         return buffer;
       };
       var polyUint16Array = function(buffer) {
         var length = buffer.length;
-        var bytes = [];
+        var bytes2 = [];
         for (var i5 = 0; i5 < length; i5 += 2) {
-          bytes.push(buffer[i5 + 1] << 8 | buffer[i5]);
+          bytes2.push(buffer[i5 + 1] << 8 | buffer[i5]);
         }
-        return bytes;
+        return bytes2;
       };
       var polyUint32Array = function(buffer) {
         var length = buffer.length;
-        var bytes = [];
+        var bytes2 = [];
         for (var i5 = 0; i5 < length; i5 += 4) {
-          bytes.push(buffer[i5 + 3] << 24 | buffer[i5 + 2] << 16 | buffer[i5 + 1] << 8 | buffer[i5]);
+          bytes2.push(buffer[i5 + 3] << 24 | buffer[i5 + 2] << 16 | buffer[i5 + 1] << 8 | buffer[i5]);
         }
-        return bytes;
+        return bytes2;
       };
       var UTRIE2_SHIFT_2 = 5;
       var UTRIE2_SHIFT_1 = 6 + 5;
@@ -8214,14 +8214,14 @@ function createDOMPurify() {
   const SUPPORTED_PARSER_MEDIA_TYPES = ["application/xhtml+xml", "text/html"];
   const DEFAULT_PARSER_MEDIA_TYPE = "text/html";
   let transformCaseFunc = null;
-  let CONFIG = null;
+  let CONFIG2 = null;
   const formElement = document2.createElement("form");
   const isRegexOrFunction = function isRegexOrFunction2(testValue) {
     return testValue instanceof RegExp || testValue instanceof Function;
   };
   const _parseConfig = function _parseConfig2() {
     let cfg = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
-    if (CONFIG && CONFIG === cfg) {
+    if (CONFIG2 && CONFIG2 === cfg) {
       return;
     }
     if (!cfg || typeof cfg !== "object") {
@@ -8376,9 +8376,9 @@ function createDOMPurify() {
       trustedTypesPolicy = cfg.TRUSTED_TYPES_POLICY;
       try {
         emptyHTML = _createTrustedHTML("");
-      } catch (error) {
+      } catch (error2) {
         trustedTypesPolicy = previousTrustedTypesPolicy;
-        throw error;
+        throw error2;
       }
     } else if (cfg.TRUSTED_TYPES_POLICY === null) {
       trustedTypesPolicy = void 0;
@@ -8394,7 +8394,7 @@ function createDOMPurify() {
     if (freeze) {
       freeze(cfg);
     }
-    CONFIG = cfg;
+    CONFIG2 = cfg;
   };
   const ALL_SVG_TAGS = addToSet({}, [...svg$1, ...svgFilters, ...svgDisallowed]);
   const ALL_MATHML_TAGS = addToSet({}, [...mathMl$1, ...mathMlDisallowed]);
@@ -8724,7 +8724,7 @@ function createDOMPurify() {
       return;
     }
     arrayForEach(hooks2, (hook) => {
-      hook.call(DOMPurify, currentNode, data, CONFIG);
+      hook.call(DOMPurify, currentNode, data, CONFIG2);
     });
   }
   const _isUnsafeNode = function _isUnsafeNode2(currentNode, tagName) {
@@ -9082,9 +9082,9 @@ function createDOMPurify() {
       }
       try {
         _sanitizeAttachedShadowRoots(dirty);
-      } catch (error) {
+      } catch (error2) {
         _neutralizeRoot(dirty);
-        throw error;
+        throw error2;
       }
     } else if (_isNode(dirty)) {
       body = _initDocument("<!---->");
@@ -9120,7 +9120,7 @@ function createDOMPurify() {
           _sanitizeShadowDOM2(currentNode.content);
         }
       }
-    } catch (error) {
+    } catch (error2) {
       if (inPlace) {
         _neutralizeRoot(dirty);
         arrayForEach(DOMPurify.removed, (entry) => {
@@ -9129,7 +9129,7 @@ function createDOMPurify() {
           }
         });
       }
-      throw error;
+      throw error2;
     }
     if (inPlace) {
       arrayForEach(DOMPurify.removed, (entry) => {
@@ -9176,7 +9176,7 @@ function createDOMPurify() {
     SET_CONFIG_ALLOWED_ATTR = ALLOWED_ATTR;
   };
   DOMPurify.clearConfig = function() {
-    CONFIG = null;
+    CONFIG2 = null;
     SET_CONFIG = false;
     SET_CONFIG_ALLOWED_TAGS = null;
     SET_CONFIG_ALLOWED_ATTR = null;
@@ -9184,7 +9184,7 @@ function createDOMPurify() {
     emptyHTML = "";
   };
   DOMPurify.isValidAttribute = function(tag, attr, value) {
-    if (!CONFIG) {
+    if (!CONFIG2) {
       _parseConfig({});
     }
     const lcTag = transformCaseFunc(tag);
@@ -9399,7 +9399,7 @@ var require_fails = __commonJS({
     module.exports = function(exec) {
       try {
         return !!exec();
-      } catch (error) {
+      } catch (error2) {
         return true;
       }
     };
@@ -9691,7 +9691,7 @@ var require_try_to_string = __commonJS({
     module.exports = function(argument) {
       try {
         return $String(argument);
-      } catch (error) {
+      } catch (error2) {
         return "Object";
       }
     };
@@ -9760,7 +9760,7 @@ var require_define_global_property = __commonJS({
     module.exports = function(key, value) {
       try {
         defineProperty(globalThis2, key, { value, configurable: true, writable: true });
-      } catch (error) {
+      } catch (error2) {
         globalThis2[key] = value;
       }
       return value;
@@ -9950,7 +9950,7 @@ var require_object_get_own_property_descriptor = __commonJS({
       P2 = toPropertyKey2(P2);
       if (IE8_DOM_DEFINE) try {
         return $getOwnPropertyDescriptor(O3, P2);
-      } catch (error) {
+      } catch (error2) {
       }
       if (hasOwn(O3, P2)) return createPropertyDescriptor(!call(propertyIsEnumerableModule.f, O3, P2), O3[P2]);
     };
@@ -10024,7 +10024,7 @@ var require_object_define_property = __commonJS({
       anObject(Attributes);
       if (IE8_DOM_DEFINE) try {
         return $defineProperty(O3, P2, Attributes);
-      } catch (error) {
+      } catch (error2) {
       }
       if ("get" in Attributes || "set" in Attributes) throw new $TypeError("Accessors not supported");
       if ("value" in Attributes) O3[P2] = Attributes.value;
@@ -10134,15 +10134,15 @@ var require_internal_state = __commonJS({
     var TypeError2 = globalThis2.TypeError;
     var WeakMap = globalThis2.WeakMap;
     var set;
-    var get;
+    var get2;
     var has;
     var enforce = function(it2) {
-      return has(it2) ? get(it2) : set(it2, {});
+      return has(it2) ? get2(it2) : set(it2, {});
     };
     var getterFor = function(TYPE2) {
       return function(it2) {
         var state;
-        if (!isObject(it2) || (state = get(it2)).type !== TYPE2) {
+        if (!isObject(it2) || (state = get2(it2)).type !== TYPE2) {
           throw new TypeError2("Incompatible receiver, " + TYPE2 + " required");
         }
         return state;
@@ -10159,7 +10159,7 @@ var require_internal_state = __commonJS({
         store.set(it2, metadata);
         return metadata;
       };
-      get = function(it2) {
+      get2 = function(it2) {
         return store.get(it2) || {};
       };
       has = function(it2) {
@@ -10174,7 +10174,7 @@ var require_internal_state = __commonJS({
         createNonEnumerableProperty(it2, STATE, metadata);
         return metadata;
       };
-      get = function(it2) {
+      get2 = function(it2) {
         return hasOwn(it2, STATE) ? it2[STATE] : {};
       };
       has = function(it2) {
@@ -10185,7 +10185,7 @@ var require_internal_state = __commonJS({
     var STATE;
     module.exports = {
       set,
-      get,
+      get: get2,
       has,
       enforce,
       getterFor
@@ -10234,7 +10234,7 @@ var require_make_built_in = __commonJS({
         if (options && hasOwn(options, "constructor") && options.constructor) {
           if (DESCRIPTORS) defineProperty(value, "prototype", { writable: false });
         } else if (value.prototype) value.prototype = void 0;
-      } catch (error) {
+      } catch (error2) {
       }
       var state = enforceInternalState(value);
       if (!hasOwn(state, "source")) {
@@ -10268,7 +10268,7 @@ var require_define_built_in = __commonJS({
         try {
           if (!options.unsafe) delete O3[key];
           else if (O3[key]) simple = true;
-        } catch (error) {
+        } catch (error2) {
         }
         if (simple) O3[key] = value;
         else definePropertyModule.f(O3, key, {
@@ -10354,18 +10354,18 @@ var require_array_includes = __commonJS({
     var toAbsoluteIndex = require_to_absolute_index();
     var lengthOfArrayLike = require_length_of_array_like();
     var createMethod = function(IS_INCLUDES) {
-      return function($this, el, fromIndex) {
+      return function($this, el2, fromIndex) {
         var O3 = toIndexedObject($this);
         var length = lengthOfArrayLike(O3);
         if (length === 0) return !IS_INCLUDES && -1;
         var index2 = toAbsoluteIndex(fromIndex, length);
         var value;
-        if (IS_INCLUDES && el !== el) while (length > index2) {
+        if (IS_INCLUDES && el2 !== el2) while (length > index2) {
           value = O3[index2++];
           if (value !== value) return true;
         }
         else for (; length > index2; index2++) {
-          if ((IS_INCLUDES || index2 in O3) && O3[index2] === el) return IS_INCLUDES || index2 || 0;
+          if ((IS_INCLUDES || index2 in O3) && O3[index2] === el2) return IS_INCLUDES || index2 || 0;
         }
         return !IS_INCLUDES && -1;
       };
@@ -10597,7 +10597,7 @@ var require_function_uncurry_this_accessor = __commonJS({
     module.exports = function(object, key, method) {
       try {
         return uncurryThis(aCallable(Object.getOwnPropertyDescriptor(object, key)[method]));
-      } catch (error) {
+      } catch (error2) {
       }
     };
   }
@@ -10644,7 +10644,7 @@ var require_object_set_prototype_of = __commonJS({
         setter = uncurryThisAccessor(Object.prototype, "__proto__", "set");
         setter(test, []);
         CORRECT_SETTER = test instanceof Array;
-      } catch (error) {
+      } catch (error2) {
       }
       return function setPrototypeOf2(O3, proto) {
         requireObjectCoercible(O3);
@@ -10753,7 +10753,7 @@ var require_classof = __commonJS({
     var tryGet = function(it2, key) {
       try {
         return it2[key];
-      } catch (error) {
+      } catch (error2) {
       }
     };
     module.exports = TO_STRING_TAG_SUPPORT ? classofRaw : function(it2) {
@@ -10784,7 +10784,7 @@ var require_is_constructor = __commonJS({
       try {
         construct2(noop2, [], argument);
         return true;
-      } catch (error) {
+      } catch (error2) {
         return false;
       }
     };
@@ -10798,7 +10798,7 @@ var require_is_constructor = __commonJS({
       }
       try {
         return INCORRECT_TO_STRING || !!exec(constructorRegExp, inspectSource(argument));
-      } catch (error) {
+      } catch (error2) {
         return true;
       }
     };
@@ -11118,9 +11118,9 @@ var require_microtask = __commonJS({
         if (IS_NODE && (parent = process2.domain)) parent.exit();
         while (fn = queue.get()) try {
           fn();
-        } catch (error) {
+        } catch (error2) {
           if (queue.head) notify();
-          throw error;
+          throw error2;
         }
         if (parent) parent.enter();
       };
@@ -11166,7 +11166,7 @@ var require_host_report_errors = __commonJS({
     module.exports = function(a3, b2) {
       try {
         arguments.length === 1 ? console.error(a3) : console.error(a3, b2);
-      } catch (error) {
+      } catch (error2) {
       }
     };
   }
@@ -11179,8 +11179,8 @@ var require_perform = __commonJS({
     module.exports = function(exec) {
       try {
         return { error: false, value: exec() };
-      } catch (error) {
-        return { error: true, value: error };
+      } catch (error2) {
+        return { error: true, value: error2 };
       }
     };
   }
@@ -11351,9 +11351,9 @@ var require_es_promise_constructor = __commonJS({
             call(then, result, resolve, reject);
           } else resolve(result);
         } else reject(value);
-      } catch (error) {
+      } catch (error2) {
         if (domain && !exited) domain.exit();
-        reject(error);
+        reject(error2);
       }
     };
     var notify = function(state, isReject) {
@@ -11439,8 +11439,8 @@ var require_es_promise_constructor = __commonJS({
                 bind(internalResolve, wrapper, state),
                 bind(internalReject, wrapper, state)
               );
-            } catch (error) {
-              internalReject(wrapper, error, state);
+            } catch (error2) {
+              internalReject(wrapper, error2, state);
             }
           });
         } else {
@@ -11448,8 +11448,8 @@ var require_es_promise_constructor = __commonJS({
           state.state = FULFILLED;
           notify(state, false);
         }
-      } catch (error) {
-        internalReject({ done: false }, error, state);
+      } catch (error2) {
+        internalReject({ done: false }, error2, state);
       }
     };
     if (FORCED_PROMISE_CONSTRUCTOR) {
@@ -11460,8 +11460,8 @@ var require_es_promise_constructor = __commonJS({
         var state = getInternalPromiseState(this);
         try {
           executor(bind(internalResolve, state), bind(internalReject, state));
-        } catch (error) {
-          internalReject(state, error);
+        } catch (error2) {
+          internalReject(state, error2);
         }
       };
       PromisePrototype = PromiseConstructor.prototype;
@@ -11512,7 +11512,7 @@ var require_es_promise_constructor = __commonJS({
         }
         try {
           delete NativePromisePrototype.constructor;
-        } catch (error) {
+        } catch (error2) {
         }
         if (setPrototypeOf2) {
           setPrototypeOf2(NativePromisePrototype, PromisePrototype);
@@ -11601,9 +11601,9 @@ var require_iterator_close = __commonJS({
           return value;
         }
         innerResult = call(innerResult, iterator);
-      } catch (error) {
+      } catch (error2) {
         innerError = true;
-        innerResult = error;
+        innerResult = error2;
       }
       if (kind === "throw") throw value;
       if (innerError) throw innerResult;
@@ -11675,9 +11675,9 @@ var require_iterate = __commonJS({
         var value = step.value;
         try {
           result = callFn(value);
-        } catch (error) {
-          if (iterator) iteratorClose(iterator, "throw", error);
-          else throw error;
+        } catch (error2) {
+          if (iterator) iteratorClose(iterator, "throw", error2);
+          else throw error2;
         }
         if (typeof result == "object" && result && isPrototypeOf(ResultPrototype, result)) return result;
       }
@@ -11709,14 +11709,14 @@ var require_check_correctness_of_iteration = __commonJS({
       Array.from(iteratorWithReturn, function() {
         throw 2;
       });
-    } catch (error) {
+    } catch (error2) {
     }
     var called;
     var iteratorWithReturn;
     module.exports = function(exec, SKIP_CLOSING) {
       try {
         if (!SKIP_CLOSING && !SAFE_CLOSING) return false;
-      } catch (error) {
+      } catch (error2) {
         return false;
       }
       var ITERATION_SUPPORT = false;
@@ -11730,7 +11730,7 @@ var require_check_correctness_of_iteration = __commonJS({
           };
         };
         exec(object);
-      } catch (error) {
+      } catch (error2) {
       }
       return ITERATION_SUPPORT;
     };
@@ -12089,7 +12089,7 @@ var require_object_create = __commonJS({
     var NullProtoObject = function() {
       try {
         activeXDocument = new ActiveXObject("htmlfile");
-      } catch (error) {
+      } catch (error2) {
       }
       NullProtoObject = typeof document != "undefined" ? document.domain && activeXDocument ? NullProtoObjectViaActiveX(activeXDocument) : NullProtoObjectViaIFrame() : NullProtoObjectViaActiveX(activeXDocument);
       var length = enumBugKeys.length;
@@ -12367,7 +12367,7 @@ var require_regexp_flags_detection = __commonJS({
       var INDICES_SUPPORT = true;
       try {
         RegExp2(".", "d");
-      } catch (error) {
+      } catch (error2) {
         INDICES_SUPPORT = false;
       }
       var O3 = {};
@@ -12857,8 +12857,8 @@ var require_iterator_create_constructor = __commonJS({
     var returnThis = function() {
       return this;
     };
-    module.exports = function(IteratorConstructor, NAME2, next, ENUMERABLE_NEXT) {
-      var TO_STRING_TAG = NAME2 + " Iterator";
+    module.exports = function(IteratorConstructor, NAME3, next, ENUMERABLE_NEXT) {
+      var TO_STRING_TAG = NAME3 + " Iterator";
       IteratorConstructor.prototype = create2(IteratorPrototype, { next: createPropertyDescriptor(+!ENUMERABLE_NEXT, next) });
       setToStringTag(IteratorConstructor, TO_STRING_TAG, false, true);
       Iterators[TO_STRING_TAG] = returnThis;
@@ -12896,8 +12896,8 @@ var require_iterator_define = __commonJS({
     var returnThis = function() {
       return this;
     };
-    module.exports = function(Iterable, NAME2, IteratorConstructor, next, DEFAULT, IS_SET, FORCED) {
-      createIteratorConstructor(IteratorConstructor, NAME2, next);
+    module.exports = function(Iterable, NAME3, IteratorConstructor, next, DEFAULT, IS_SET, FORCED) {
+      createIteratorConstructor(IteratorConstructor, NAME3, next);
       var getIterationMethod = function(KIND) {
         if (KIND === DEFAULT && defaultIterator) return defaultIterator;
         if (!BUGGY_SAFARI_ITERATORS && KIND && KIND in IterablePrototype) return IterablePrototype[KIND];
@@ -12919,12 +12919,12 @@ var require_iterator_define = __commonJS({
           return new IteratorConstructor(this);
         };
       };
-      var TO_STRING_TAG = NAME2 + " Iterator";
+      var TO_STRING_TAG = NAME3 + " Iterator";
       var INCORRECT_VALUES_NAME = false;
       var IterablePrototype = Iterable.prototype;
       var nativeIterator = IterablePrototype[ITERATOR] || IterablePrototype["@@iterator"] || DEFAULT && IterablePrototype[DEFAULT];
       var defaultIterator = !BUGGY_SAFARI_ITERATORS && nativeIterator || getIterationMethod(DEFAULT);
-      var anyNativeIterator = NAME2 === "Array" ? IterablePrototype.entries || nativeIterator : nativeIterator;
+      var anyNativeIterator = NAME3 === "Array" ? IterablePrototype.entries || nativeIterator : nativeIterator;
       var CurrentIteratorPrototype, methods, KEY;
       if (anyNativeIterator) {
         CurrentIteratorPrototype = getPrototypeOf2(anyNativeIterator.call(new Iterable()));
@@ -12961,12 +12961,12 @@ var require_iterator_define = __commonJS({
             defineBuiltIn(IterablePrototype, KEY, methods[KEY]);
           }
         }
-        else $2({ target: NAME2, proto: true, forced: BUGGY_SAFARI_ITERATORS || INCORRECT_VALUES_NAME }, methods);
+        else $2({ target: NAME3, proto: true, forced: BUGGY_SAFARI_ITERATORS || INCORRECT_VALUES_NAME }, methods);
       }
       if ((!IS_PURE || FORCED) && IterablePrototype[ITERATOR] !== defaultIterator) {
         defineBuiltIn(IterablePrototype, ITERATOR, defaultIterator, { name: DEFAULT });
       }
-      Iterators[NAME2] = defaultIterator;
+      Iterators[NAME3] = defaultIterator;
       return methods;
     };
   }
@@ -13030,7 +13030,7 @@ var require_es_array_iterator = __commonJS({
     addToUnscopables("entries");
     if (!IS_PURE && DESCRIPTORS && values.name !== "values") try {
       defineProperty(values, "name", { value: "values" });
-    } catch (error) {
+    } catch (error2) {
     }
   }
 });
@@ -13103,14 +13103,14 @@ var require_web_dom_collections_iterator = __commonJS({
       if (CollectionPrototype) {
         if (CollectionPrototype[ITERATOR] !== ArrayValues) try {
           createNonEnumerableProperty(CollectionPrototype, ITERATOR, ArrayValues);
-        } catch (error) {
+        } catch (error2) {
           CollectionPrototype[ITERATOR] = ArrayValues;
         }
         setToStringTag(CollectionPrototype, COLLECTION_NAME2, true);
         if (DOMIterables[COLLECTION_NAME2]) for (var METHOD_NAME in ArrayIteratorMethods) {
           if (CollectionPrototype[METHOD_NAME] !== ArrayIteratorMethods[METHOD_NAME]) try {
             createNonEnumerableProperty(CollectionPrototype, METHOD_NAME, ArrayIteratorMethods[METHOD_NAME]);
-          } catch (error) {
+          } catch (error2) {
             CollectionPrototype[METHOD_NAME] = ArrayIteratorMethods[METHOD_NAME];
           }
         }
@@ -14912,8 +14912,8 @@ function _createImage() {
       image.onload = () => {
         resolve(image);
       };
-      image.onerror = (_event, _source, _lineno, _colno, error) => {
-        reject(error);
+      image.onerror = (_event, _source, _lineno, _colno, error2) => {
+        reject(error2);
       };
       image.src = src;
     });
@@ -19894,12 +19894,12 @@ var init_index_es = __esm({
 });
 
 // document_builder/dist/dom/document-utils.js
-function formatPrintHistoryBytes(bytes) {
-  if (bytes < 1024)
-    return `${bytes} B`;
-  if (bytes < 1024 * 1024)
-    return `${(bytes / 1024).toFixed(1)} KiB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+function formatPrintHistoryBytes(bytes2) {
+  if (bytes2 < 1024)
+    return `${bytes2} B`;
+  if (bytes2 < 1024 * 1024)
+    return `${(bytes2 / 1024).toFixed(1)} KiB`;
+  return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
 }
 function formatPrintHistoryDate(timestamp) {
   const date = new Date(timestamp);
@@ -19920,9 +19920,9 @@ function requireChild(parent, selector) {
   }
   return element;
 }
-function getErrorMessage(error) {
-  if (error instanceof Error && error.message) {
-    return error.message;
+function getErrorMessage(error2) {
+  if (error2 instanceof Error && error2.message) {
+    return error2.message;
   }
   return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
 }
@@ -20011,6 +20011,15 @@ function bindDocumentEvents(deps) {
   });
   printHistoryButton.addEventListener("click", () => {
     void deps.openPrintHistory();
+  });
+  const historyPasswordButton = document.getElementById("print-history-password-button");
+  historyPasswordButton?.addEventListener("click", () => {
+    if (historyPasswordButton.disabled)
+      return;
+    historyPasswordButton.disabled = true;
+    void deps.changeHistoryPassword().finally(() => {
+      historyPasswordButton.disabled = false;
+    });
   });
   printHistoryCloseButton.addEventListener("click", () => {
     printHistoryDialog.close();
@@ -20138,26 +20147,26 @@ function createDocumentPackage(template, values) {
 }
 function createInitialValues(template, suppliedValues = {}) {
   const values = {};
-  for (const field of template.fields) {
-    const suppliedValue = suppliedValues[field.id];
+  for (const field2 of template.fields) {
+    const suppliedValue = suppliedValues[field2.id];
     if (typeof suppliedValue === "string") {
-      values[field.id] = suppliedValue;
+      values[field2.id] = suppliedValue;
       continue;
     }
-    values[field.id] = resolveDefaultValue(field);
+    values[field2.id] = resolveDefaultValue(field2);
   }
   return values;
 }
 function normalizeValues(template, values) {
   const normalized = {};
-  for (const field of template.fields) {
-    normalized[field.id] = typeof values[field.id] === "string" ? values[field.id] : "";
+  for (const field2 of template.fields) {
+    normalized[field2.id] = typeof values[field2.id] === "string" ? values[field2.id] : "";
   }
   return normalized;
 }
 function getReferencedFields(template) {
   const referencedIds = getReferencedFieldIds(template);
-  return template.fields.filter((field) => referencedIds.has(field.id));
+  return template.fields.filter((field2) => referencedIds.has(field2.id));
 }
 function interpolateTemplateText(text2, values) {
   const normalizedText = text2.replace(/\\n/g, "\n");
@@ -20173,7 +20182,7 @@ function parseDocumentTemplate(value) {
   if (!Array.isArray(source.fields)) {
     throw new Error("template.fields \u306F\u914D\u5217\u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002");
   }
-  const fields = source.fields.map((field, index2) => parseField(field, index2));
+  const fields = source.fields.map((field2, index2) => parseField(field2, index2));
   validateUniqueFieldIds(fields);
   const documentLayout = parseDocumentLayout(source.document);
   const template = {
@@ -20193,7 +20202,7 @@ function parseField(value, index2) {
   }
   const label = requireNonEmptyString(source.label, `template.fields[${index2}].label`);
   const type = parseFieldType(source.type, index2);
-  const field = {
+  const field2 = {
     id,
     label,
     type
@@ -20202,15 +20211,15 @@ function parseField(value, index2) {
     if (typeof source.required !== "boolean") {
       throw new Error(`template.fields[${index2}].required \u306F boolean \u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002`);
     }
-    field.required = source.required;
+    field2.required = source.required;
   }
   if (source.defaultValue !== void 0) {
-    field.defaultValue = requireString(source.defaultValue, `template.fields[${index2}].defaultValue`);
+    field2.defaultValue = requireString(source.defaultValue, `template.fields[${index2}].defaultValue`);
   }
   if (source.placeholder !== void 0) {
-    field.placeholder = requireString(source.placeholder, `template.fields[${index2}].placeholder`);
+    field2.placeholder = requireString(source.placeholder, `template.fields[${index2}].placeholder`);
   }
-  return field;
+  return field2;
 }
 function parseFieldType(value, index2) {
   if (value === "text" || value === "textarea" || value === "date") {
@@ -20234,7 +20243,7 @@ function parseValues(value, template) {
     return void 0;
   }
   const source = requireRecord(value, "values \u306F\u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3067\u3042\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u3059\u3002");
-  const allowedIds = new Set(template.fields.map((field) => field.id));
+  const allowedIds = new Set(template.fields.map((field2) => field2.id));
   const values = {};
   for (const [key, item] of Object.entries(source)) {
     if (!allowedIds.has(key)) {
@@ -20249,15 +20258,15 @@ function parseValues(value, template) {
 }
 function validateUniqueFieldIds(fields) {
   const ids = /* @__PURE__ */ new Set();
-  for (const field of fields) {
-    if (ids.has(field.id)) {
-      throw new Error(`\u5165\u529B\u9805\u76EEID ${field.id} \u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002`);
+  for (const field2 of fields) {
+    if (ids.has(field2.id)) {
+      throw new Error(`\u5165\u529B\u9805\u76EEID ${field2.id} \u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002`);
     }
-    ids.add(field.id);
+    ids.add(field2.id);
   }
 }
 function validatePlaceholders(template) {
-  const fieldIds = new Set(template.fields.map((field) => field.id));
+  const fieldIds = new Set(template.fields.map((field2) => field2.id));
   for (const fieldId of getReferencedFieldIds(template)) {
     if (!fieldIds.has(fieldId)) {
       throw new Error(`{${fieldId}} \u306B\u5BFE\u5FDC\u3059\u308B\u5165\u529B\u9805\u76EE\u304C fields \u306B\u3042\u308A\u307E\u305B\u3093\u3002`);
@@ -20286,18 +20295,18 @@ function getReferencedFieldIds(template) {
   }
   return ids;
 }
-function resolveDefaultValue(field) {
-  if (field.type === "date" && field.defaultValue === "today") {
+function resolveDefaultValue(field2) {
+  if (field2.type === "date" && field2.defaultValue === "today") {
     return formatLocalDate(/* @__PURE__ */ new Date());
   }
-  return field.defaultValue ?? "";
+  return field2.defaultValue ?? "";
 }
 function cloneTemplate(template) {
   return {
     id: template.id,
     name: template.name,
-    fields: template.fields.map((field) => ({
-      ...field
+    fields: template.fields.map((field2) => ({
+      ...field2
     })),
     document: {
       ...template.document
@@ -20317,11 +20326,11 @@ function validateDocumentRequiredFields(activeTemplate2, activeValues2, showToas
   if (!activeTemplate2) {
     return false;
   }
-  const missingField = getReferencedFields(activeTemplate2).find((field) => {
-    if (!field.required) {
+  const missingField = getReferencedFields(activeTemplate2).find((field2) => {
+    if (!field2.required) {
       return false;
     }
-    const value = activeValues2[field.id] ?? "";
+    const value = activeValues2[field2.id] ?? "";
     return value.trim().length === 0;
   });
   if (!missingField) {
@@ -20346,24 +20355,24 @@ function resolveDocumentRecipientName(activeTemplate2, activeValues2) {
     "\u5B9B\u5148\u540D",
     "\u76F8\u624B\u540D"
   ];
-  const exactField = fields.find((field) => exactLabelCandidates.includes(field.label.trim()));
+  const exactField = fields.find((field2) => exactLabelCandidates.includes(field2.label.trim()));
   if (exactField) {
     return activeValues2[exactField.id] ?? "";
   }
-  const semanticField = fields.find((field) => {
-    const label = field.label.trim();
+  const semanticField = fields.find((field2) => {
+    const label = field2.label.trim();
     return label.includes("\u5B9B\u540D") || label.includes("\u5B9B\u5148") || label.includes("\u76F8\u624B") && (label.includes("\u540D\u524D") || label.includes("\u6C0F\u540D"));
   });
   if (semanticField) {
     return activeValues2[semanticField.id] ?? "";
   }
-  const genericNameFields = fields.filter((field) => {
-    const label = field.label.trim();
+  const genericNameFields = fields.filter((field2) => {
+    const label = field2.label.trim();
     return label === "\u540D\u524D" || label === "\u304A\u540D\u524D" || label === "\u6C0F\u540D";
   });
   if (genericNameFields.length === 1) {
-    const field = genericNameFields[0];
-    return activeValues2[field.id] ?? "";
+    const field2 = genericNameFields[0];
+    return activeValues2[field2.id] ?? "";
   }
   return "";
 }
@@ -20386,8 +20395,8 @@ var initialStorageError = null;
 try {
   openedGeneration = localValue(GENERATION_KEY);
   openedWithPendingRestore = Boolean(localValue(RESTORE_PENDING_KEY));
-} catch (error) {
-  initialStorageError = error;
+} catch (error2) {
+  initialStorageError = error2;
 }
 function ensureCurrentGeneration() {
   if (initialStorageError) {
@@ -20425,13 +20434,13 @@ function hasRecoveryJournal() {
       const db = open2.result;
       db.onversionchange = () => db.close();
       let done = false;
-      const finish = (result, error) => {
+      const finish = (result, error2) => {
         if (done)
           return;
         done = true;
         db.close();
-        if (error)
-          reject(error);
+        if (error2)
+          reject(error2);
         else
           resolve(result);
       };
@@ -20441,8 +20450,8 @@ function hasRecoveryJournal() {
         request.onsuccess = () => finish(Boolean(request.result));
         request.onerror = () => finish(false, request.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
         tx.onabort = () => finish(false, tx.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-      } catch (error) {
-        finish(false, error instanceof Error ? error : new Error(String(error)));
+      } catch (error2) {
+        finish(false, error2 instanceof Error ? error2 : new Error(String(error2)));
       }
     };
   });
@@ -20526,6 +20535,24 @@ async function getTemplate(id) {
   const template = await requestToPromise(request);
   await waitForTransaction(transaction);
   return template ?? null;
+}
+async function addTemplate(template) {
+  return withWorkbenchWriteLock(async () => {
+    const db = await openTemplateDatabase();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(tx);
+    try {
+      await requestToPromise(tx.objectStore(STORE_NAME).add(template));
+      await completion;
+    } catch (error2) {
+      await completion.catch(() => {
+      });
+      if (error2 instanceof Error && (error2.name === "ConstraintError" || error2.message.includes("ConstraintError"))) {
+        throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u65E2\u5B58\u306E\u8A2D\u5B9A\u306F\u4E0A\u66F8\u304D\u3055\u308C\u307E\u305B\u3093\u3002");
+      }
+      throw error2;
+    }
+  });
 }
 async function putTemplate(template) {
   return withWorkbenchWriteLock(async () => {
@@ -20648,80 +20675,88 @@ function sanitizeFileName(value) {
 // document_builder/dist/templates/template-workflow.js
 function createTemplateWorkflow(deps) {
   const { jsonImportInput: jsonImportInput2, templateAddInput: templateAddInput2, templateSelect: templateSelect2, refreshTemplateCollections: refreshTemplateCollections2, applyTemplate: applyTemplate2, clearActiveTemplate: clearActiveTemplate2, showToast: showToast2, getErrorMessage: getErrorMessage3 } = deps;
+  let selectionRequest = 0;
+  async function afterCommittedSave(template, message, values, activate = true) {
+    try {
+      await refreshTemplateCollections2();
+      if (activate)
+        applyTemplate2(template, values);
+      showToast2(message);
+    } catch (error2) {
+      console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u4FDD\u5B58\u5F8C\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+      showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u3092\u66F4\u65B0\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+  }
   async function handleDocumentImport2() {
     const file = jsonImportInput2.files?.[0];
-    if (!file) {
+    if (!file)
       return;
-    }
     try {
       const packageData = await readDocumentPackageFile(file);
-      await putTemplate(packageData.template);
-      await refreshTemplateCollections2();
-      applyTemplate2(packageData.template, packageData.values);
-      showToast2(packageData.values ? "\u6587\u66F8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002");
-    } catch (error) {
-      console.error("JSON\u30A4\u30F3\u30DD\u30FC\u30C8\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-      showToast2(getErrorMessage3(error));
+      const existing = await getTemplate(packageData.template.id);
+      if (existing) {
+        applyTemplate2(existing, packageData.values);
+        showToast2(packageData.values ? "\u6587\u66F8\u306E\u5165\u529B\u5185\u5BB9\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002\u65E2\u5B58\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u8A2D\u5B9A\u306F\u5909\u66F4\u3057\u3066\u3044\u307E\u305B\u3093\u3002" : "\u65E2\u5B58\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u9078\u629E\u3057\u307E\u3057\u305F\u3002\u8A2D\u5B9A\u306F\u5909\u66F4\u3057\u3066\u3044\u307E\u305B\u3093\u3002");
+        return;
+      }
+      await addTemplate(packageData.template);
+      await afterCommittedSave(packageData.template, packageData.values ? "\u6587\u66F8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002" : "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002", packageData.values);
+    } catch (error2) {
+      console.error("JSON\u30A4\u30F3\u30DD\u30FC\u30C8\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+      showToast2(getErrorMessage3(error2));
     } finally {
       jsonImportInput2.value = "";
     }
   }
   async function handleTemplateAddImport2() {
     const file = templateAddInput2.files?.[0];
-    if (!file) {
+    if (!file)
       return;
-    }
     try {
       const packageData = await readDocumentPackageFile(file);
-      const existing = await getTemplate(packageData.template.id);
-      if (existing) {
+      if (await getTemplate(packageData.template.id)) {
         throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u767B\u9332\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u65E2\u5B58\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u300C\u7DE8\u96C6\u300D\u3092\u4F7F\u7528\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       }
-      await putTemplate(packageData.template);
-      await refreshTemplateCollections2();
-      applyTemplate2(packageData.template);
-      showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002");
-    } catch (error) {
-      console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u8FFD\u52A0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-      showToast2(getErrorMessage3(error));
+      await addTemplate(packageData.template);
+      await afterCommittedSave(packageData.template, "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002");
+    } catch (error2) {
+      console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u8FFD\u52A0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+      showToast2(getErrorMessage3(error2));
     } finally {
       templateAddInput2.value = "";
     }
   }
   async function saveTemplateFromBuilder2(template, mode) {
     if (mode === "create") {
-      const existing2 = await getTemplate(template.id);
-      if (existing2) {
+      if (await getTemplate(template.id)) {
         throw new Error("\u540C\u3058ID\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3059\u3067\u306B\u5B58\u5728\u3057\u307E\u3059\u3002");
       }
-      await putTemplate(template);
-      await refreshTemplateCollections2();
-      applyTemplate2(template);
-      showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002");
+      await addTemplate(template);
+      await afterCommittedSave(template, "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u767B\u9332\u3057\u307E\u3057\u305F\u3002");
       return;
     }
-    const existing = await getTemplate(template.id);
-    if (!existing) {
+    if (!await getTemplate(template.id)) {
       throw new Error("\u7DE8\u96C6\u5BFE\u8C61\u306E\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
     }
     const editingActiveTemplate = deps.activeTemplate?.id === template.id;
     const preservedValues = editingActiveTemplate ? deps.activeValues : void 0;
     await putTemplate(template);
-    await refreshTemplateCollections2();
-    if (editingActiveTemplate) {
-      applyTemplate2(template, preservedValues);
-    }
-    showToast2("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002");
+    await afterCommittedSave(template, "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002", preservedValues, editingActiveTemplate);
   }
   async function handleTemplateSelection2() {
     const id = templateSelect2.value;
+    const request = ++selectionRequest;
     if (!id) {
       clearActiveTemplate2();
       return;
     }
     const template = await getTemplate(id);
+    if (request !== selectionRequest || templateSelect2.value !== id)
+      return;
     if (!template) {
       await refreshTemplateCollections2();
+      if (request !== selectionRequest)
+        return;
       clearActiveTemplate2();
       showToast2("\u9078\u629E\u3057\u305F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
       return;
@@ -20739,19 +20774,23 @@ function getSavedActiveTemplateId(storageKey) {
     return null;
   }
 }
-async function saveActiveTemplateId(storageKey, id) {
-  await withWorkbenchWriteLock(() => {
+var lastSelectionWrite = Promise.resolve();
+function saveActiveTemplateId(storageKey, id) {
+  const next = lastSelectionWrite.catch(() => {
+  }).then(() => withWorkbenchWriteLock(() => {
     try {
       if (id) {
         localStorage.setItem(storageKey, id);
         return;
       }
       localStorage.removeItem(storageKey);
-    } catch (error) {
-      console.warn("\u4F7F\u7528\u4E2D\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-      throw error;
+    } catch (error2) {
+      console.warn("\u4F7F\u7528\u4E2D\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+      throw error2;
     }
-  });
+  }));
+  lastSelectionWrite = next;
+  return next;
 }
 
 // document_builder/dist/pdf/pdf-internals.js
@@ -20781,8 +20820,8 @@ function waitForNextFrame() {
 function sanitizeFileNamePart(value) {
   return value.replace(/[\\/:*?"<>|]/g, "_").replace(/[. ]+$/g, "");
 }
-function isAbortError(error) {
-  return error instanceof DOMException && error.name === "AbortError";
+function isAbortError(error2) {
+  return error2 instanceof DOMException && error2.name === "AbortError";
 }
 
 // document_builder/dist/pdf/filename.js
@@ -21394,9 +21433,9 @@ function _slicedToArray(r2, e2) {
 }
 
 // node_modules/iobuffer/lib-esm/text.js
-function decode(bytes, encoding = "utf8") {
-  const decoder = new TextDecoder(encoding);
-  return decoder.decode(bytes);
+function decode(bytes2, encoding = "utf8") {
+  const decoder2 = new TextDecoder(encoding);
+  return decoder2.decode(bytes2);
 }
 var encoder = new TextEncoder();
 function encode(str) {
@@ -21672,19 +21711,19 @@ var IOBuffer = class _IOBuffer {
    * @returns The read array.
    */
   readArray(size, type) {
-    const bytes = typedArrays[type].BYTES_PER_ELEMENT * size;
+    const bytes2 = typedArrays[type].BYTES_PER_ELEMENT * size;
     const offset = this.byteOffset + this.offset;
-    const slice = this.buffer.slice(offset, offset + bytes);
+    const slice = this.buffer.slice(offset, offset + bytes2);
     if (this.littleEndian === hostBigEndian && type !== "uint8" && type !== "int8") {
-      const slice2 = new Uint8Array(this.buffer.slice(offset, offset + bytes));
+      const slice2 = new Uint8Array(this.buffer.slice(offset, offset + bytes2));
       slice2.reverse();
       const returnArray2 = new typedArrays[type](slice2.buffer);
-      this.offset += bytes;
+      this.offset += bytes2;
       returnArray2.reverse();
       return returnArray2;
     }
     const returnArray = new typedArrays[type](slice);
-    this.offset += bytes;
+    this.offset += bytes2;
     return returnArray;
   }
   /**
@@ -21845,10 +21884,10 @@ var IOBuffer = class _IOBuffer {
    * @param bytes - The array of bytes to write.
    * @returns This.
    */
-  writeBytes(bytes) {
-    this.ensureAvailable(bytes.length);
-    for (let i4 = 0; i4 < bytes.length; i4++) {
-      this._data.setUint8(this.offset++, bytes[i4]);
+  writeBytes(bytes2) {
+    this.ensureAvailable(bytes2.length);
+    for (let i4 = 0; i4 < bytes2.length; i4++) {
+      this._data.setUint8(this.offset++, bytes2[i4]);
     }
     this._updateLastWrittenByte();
     return this;
@@ -27045,8 +27084,8 @@ var ResolutionUnitSpecifier;
 
 // node_modules/fast-png/lib-esm/index.js
 function decodePng(data, options) {
-  const decoder = new PngDecoder(data, options);
-  return decoder.decode();
+  const decoder2 = new PngDecoder(data, options);
+  return decoder2.decode();
 }
 
 // node_modules/jspdf/dist/jspdf.es.min.js
@@ -34360,11 +34399,11 @@ async function savePdfBlob(blob, fileName) {
         fileName,
         method: "file-picker"
       };
-    } catch (error) {
-      if (isAbortError(error)) {
+    } catch (error2) {
+      if (isAbortError(error2)) {
         throw new PdfSaveCancelledError();
       }
-      console.warn("File System Access API\u306B\u3088\u308BPDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u901A\u5E38\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3078\u5207\u308A\u66FF\u3048\u307E\u3059\u3002", error);
+      console.warn("File System Access API\u306B\u3088\u308BPDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u901A\u5E38\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3078\u5207\u308A\u66FF\u3048\u307E\u3059\u3002", error2);
     }
   }
   downloadPdfBlob(blob, fileName);
@@ -34374,18 +34413,447 @@ async function savePdfBlob(blob, fileName) {
   };
 }
 
-// document_builder/dist/print-history-db.js
-var DATABASE_NAME2 = "workbench-document-print-history";
-var HISTORY_STORE = "history";
-var METADATA_STORE = "history-meta";
-var DATE_INDEX = "createdAtId";
-var DATABASE_VERSION2 = 3;
-var STATS_STORE = "history-stats";
-var STATS_KEY = "total";
-var MAX_PAGE_SIZE = 100;
-var MAX_ARCHIVE_ENTRY_BYTES = 64 * 1024 * 1024;
-var MAX_PRINT_HISTORY_RECORDS = 5e3;
+// shared/history-vault-ui.js
+var DELETE_PHRASE = "\u5C65\u6B74\u3092\u524A\u9664";
+function el(tag, className, text2) {
+  const node2 = document.createElement(tag);
+  if (className) node2.className = className;
+  if (text2 !== void 0) node2.textContent = text2;
+  return node2;
+}
+function makeDialog(title, description, dangerous = false) {
+  const dialog = el("dialog", "history-vault-dialog");
+  dialog.setAttribute("aria-label", title);
+  const surface = el("div", "history-vault-dialog__surface");
+  const eyebrow = el("p", "history-vault-dialog__eyebrow", dangerous ? "PDF HISTORY \xB7 RESET" : "PDF HISTORY \xB7 SECURITY");
+  const heading = el("h2", "history-vault-dialog__title", title);
+  const note = el("p", "history-vault-dialog__description", description);
+  const form = el("form", "history-vault-dialog__form");
+  form.noValidate = true;
+  const alert2 = el("p", "history-vault-dialog__error");
+  alert2.setAttribute("role", "alert");
+  alert2.setAttribute("aria-live", "polite");
+  const actions = el("div", "history-vault-dialog__actions");
+  surface.append(eyebrow, heading, note, form);
+  form.append(alert2, actions);
+  dialog.append(surface);
+  document.body.appendChild(dialog);
+  return { dialog, form, alert: alert2, actions };
+}
+function field(label, autocomplete, placeholder) {
+  const wrapper = el("label", "history-vault-dialog__field");
+  const title = el("span", "history-vault-dialog__label", label);
+  const input = el("input", "history-vault-dialog__input");
+  input.type = "password";
+  input.required = true;
+  input.autocomplete = autocomplete;
+  input.placeholder = placeholder;
+  wrapper.append(title, input);
+  return { wrapper, input };
+}
+function button(text2, kind = "secondary", type = "button") {
+  const node2 = el("button", `history-vault-dialog__button history-vault-dialog__button--${kind}`, text2);
+  node2.type = type;
+  return node2;
+}
+function showDialog(dialog, focus) {
+  try {
+    dialog.showModal();
+    focus?.focus();
+  } catch (cause) {
+    dialog.remove();
+    throw cause;
+  }
+}
+function finishDialog(dialog, fields) {
+  for (const input of fields) input.value = "";
+  if (dialog.open) dialog.close();
+  dialog.remove();
+}
+function promptVaultPassword(create2, errorMessage = "") {
+  if (typeof document === "undefined") return Promise.reject(new Error("\u30D6\u30E9\u30A6\u30B6\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u753B\u9762\u304C\u5FC5\u8981\u3067\u3059\u3002"));
+  return new Promise((resolve, reject) => {
+    const ui = makeDialog(
+      create2 ? "PDF\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A" : "PDF\u5C65\u6B74\u306E\u30ED\u30C3\u30AF\u3092\u89E3\u9664",
+      create2 ? "PDF\u5C65\u6B74\u306EPDF\u672C\u4F53\u30FB\u30D5\u30A1\u30A4\u30EB\u540D\u30FB\u5B9B\u5148\u540D\u3092\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3059\u300212\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u4FDD\u5B58\u3057\u305FPDF\u5C65\u6B74\u3092\u958B\u304F\u305F\u3081\u3001\u5C65\u6B74\u5C02\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
+    );
+    const pass = field(create2 ? "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9" : "\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9", create2 ? "new-password" : "current-password", "12\u6587\u5B57\u4EE5\u4E0A");
+    const confirm = field("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u3082\u3046\u4E00\u5EA6\u5165\u529B", "new-password", "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const hint = el("p", "history-vault-dialog__hint", "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u308B\u3068\u5C65\u6B74\u306E\u5FA9\u53F7\u306F\u3067\u304D\u307E\u305B\u3093\u3002");
+    ui.form.insertBefore(pass.wrapper, ui.alert);
+    if (create2) ui.form.insertBefore(confirm.wrapper, ui.alert);
+    ui.form.insertBefore(hint, ui.alert);
+    ui.alert.textContent = errorMessage;
+    const cancel = button("\u30AD\u30E3\u30F3\u30BB\u30EB");
+    const okay = button(create2 ? "\u8A2D\u5B9A\u3057\u3066\u7D9A\u884C" : "\u30ED\u30C3\u30AF\u89E3\u9664", "primary", "submit");
+    const forgot = create2 ? null : button("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408", "link");
+    if (forgot) {
+      const left = el("div", "history-vault-dialog__action-left");
+      left.append(forgot);
+      ui.actions.append(left);
+    }
+    ui.actions.append(cancel, okay);
+    let settled = false;
+    const close = (outcome) => {
+      if (settled) return;
+      settled = true;
+      finishDialog(ui.dialog, [pass.input, confirm.input]);
+      resolve(outcome);
+    };
+    cancel.addEventListener("click", () => close(null));
+    forgot?.addEventListener("click", () => close({ reset: true }));
+    ui.dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      close(null);
+    });
+    ui.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (create2 && pass.input.value.length < 12) {
+        ui.alert.textContent = "12\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        return;
+      }
+      if (create2 && pass.input.value !== confirm.input.value) {
+        ui.alert.textContent = "\u78BA\u8A8D\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      close(pass.input.value);
+    });
+    try {
+      showDialog(ui.dialog, pass.input);
+    } catch (cause) {
+      reject(cause);
+    }
+  });
+}
+function confirmVaultReset(count) {
+  return new Promise((resolve, reject) => {
+    const ui = makeDialog(
+      "\u5C65\u6B74\u3092\u521D\u671F\u5316\u3059\u308B",
+      `\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408\u3001\u6697\u53F7\u5316\u6E08\u307F\u306EPDF\u5C65\u6B74${count.toLocaleString("ja-JP")}\u4EF6\u306F\u5FA9\u53F7\u3067\u304D\u307E\u305B\u3093\u3002\u521D\u671F\u5316\u3059\u308B\u3068\u3001\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306EPDF\u5C65\u6B74\u3068\u6697\u53F7\u5316\u8A2D\u5B9A\u3092\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002WORKBENCH\u306E\u307B\u304B\u306E\u30C7\u30FC\u30BF\u306F\u524A\u9664\u3057\u307E\u305B\u3093\u3002`,
+      true
+    );
+    const warning = el(
+      "p",
+      "history-vault-dialog__warning",
+      "\u3053\u306E\u64CD\u4F5C\u306F\u53D6\u308A\u6D88\u305B\u307E\u305B\u3093\u3002\u904E\u53BB\u306B\u4FDD\u5B58\u3057\u305F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5C65\u6B74\u304C\u6B8B\u3063\u3066\u3044\u3066\u3082\u3001\u305D\u306E\u5C65\u6B74\u3092\u958B\u304F\u306B\u306F\u5143\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u5FC5\u8981\u3067\u3059\u3002"
+    );
+    const confirmation = el("label", "history-vault-dialog__field");
+    confirmation.append(el("span", "history-vault-dialog__label", `\u78BA\u8A8D\u306E\u305F\u3081\u300C${DELETE_PHRASE}\u300D\u3068\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044`));
+    const input = el("input", "history-vault-dialog__input");
+    input.type = "text";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    confirmation.append(input);
+    ui.form.insertBefore(warning, ui.alert);
+    ui.form.insertBefore(confirmation, ui.alert);
+    const cancel = button("\u30AD\u30E3\u30F3\u30BB\u30EB");
+    const remove = button("\u5C65\u6B74\u3092\u5B8C\u5168\u306B\u524A\u9664", "danger", "submit");
+    ui.actions.append(cancel, remove);
+    let settled = false;
+    const close = (value) => {
+      if (settled) return;
+      settled = true;
+      finishDialog(ui.dialog, [input]);
+      resolve(value);
+    };
+    cancel.addEventListener("click", () => close(false));
+    ui.dialog.addEventListener("cancel", (e2) => {
+      e2.preventDefault();
+      close(false);
+    });
+    ui.form.addEventListener("submit", (e2) => {
+      e2.preventDefault();
+      if (input.value !== DELETE_PHRASE) {
+        ui.alert.textContent = "\u78BA\u8A8D\u7528\u306E\u6587\u5B57\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      close(true);
+    });
+    try {
+      showDialog(ui.dialog, input);
+    } catch (e2) {
+      reject(e2);
+    }
+  });
+}
+function promptVaultPasswordChange(onChange) {
+  return new Promise((resolve, reject) => {
+    const ui = makeDialog(
+      "\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4",
+      "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u5C65\u6B74\u3092\u78BA\u8A8D\u3057\u3001\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3078\u6697\u53F7\u5316\u3057\u76F4\u3057\u307E\u3059\u3002\u5C65\u6B74\u304C\u591A\u3044\u5834\u5408\u306F\u7A7A\u304D\u5BB9\u91CF\u3068\u51E6\u7406\u6642\u9593\u304C\u5FC5\u8981\u3067\u3059\u3002\u5909\u66F4\u4E2D\u306F\u753B\u9762\u3084\u30BF\u30D6\u3092\u9589\u3058\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002\u4EE5\u524D\u306B\u4F5C\u6210\u3057\u305F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u3001\u305D\u306E\u5F53\u6642\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u958B\u304D\u307E\u3059\u3002"
+    );
+    const old = field("\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9", "current-password", "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const fresh = field("\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\uFF0812\u6587\u5B57\u4EE5\u4E0A\uFF09", "new-password", "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const again = field("\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u518D\u5165\u529B", "new-password", "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const status = el("p", "history-vault-dialog__progress");
+    status.setAttribute("aria-live", "polite");
+    for (const x3 of [old, fresh, again]) ui.form.insertBefore(x3.wrapper, ui.alert);
+    ui.form.insertBefore(status, ui.alert);
+    const cancel = button("\u30AD\u30E3\u30F3\u30BB\u30EB");
+    const submit = button("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4", "primary", "submit");
+    ui.actions.append(cancel, submit);
+    let settled = false;
+    let busy = false;
+    const close = (value) => {
+      if (settled) return;
+      settled = true;
+      finishDialog(ui.dialog, [old.input, fresh.input, again.input]);
+      resolve(value);
+    };
+    cancel.addEventListener("click", () => {
+      if (!busy) close(false);
+    });
+    ui.dialog.addEventListener("cancel", (e2) => {
+      e2.preventDefault();
+      if (!busy) close(false);
+    });
+    ui.form.addEventListener("submit", async (e2) => {
+      e2.preventDefault();
+      if (busy) return;
+      if (fresh.input.value.length < 12) {
+        ui.alert.textContent = "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u306F12\u6587\u5B57\u4EE5\u4E0A\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        return;
+      }
+      if (fresh.input.value !== again.input.value) {
+        ui.alert.textContent = "\u78BA\u8A8D\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      if (old.input.value === fresh.input.value) {
+        ui.alert.textContent = "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3068\u306F\u7570\u306A\u308B\u3082\u306E\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        return;
+      }
+      ui.alert.textContent = "";
+      busy = true;
+      cancel.disabled = true;
+      submit.disabled = true;
+      status.textContent = "\u5C65\u6B74\u3092\u518D\u6697\u53F7\u5316\u3057\u3066\u3044\u307E\u3059\u3002\u753B\u9762\u3092\u9589\u3058\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u2026";
+      try {
+        await onChange(old.input.value, fresh.input.value);
+        close(true);
+      } catch (err2) {
+        ui.alert.textContent = err2 instanceof Error ? err2.message : "\u5909\u66F4\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
+        status.textContent = "";
+      } finally {
+        busy = false;
+        cancel.disabled = false;
+        submit.disabled = false;
+      }
+    });
+    try {
+      showDialog(ui.dialog, old.input);
+    } catch (e2) {
+      reject(e2);
+    }
+  });
+}
+
+// dist/workbench-data-lock.js
+var LOCK_NAME2 = "workbench:data-integrity:v1";
+var GENERATION_KEY2 = "workbench:data-generation:v1";
+var RESTORE_PENDING_KEY2 = "workbench:restore-in-progress:v1";
+var RECOVERY_DATABASE2 = "workbench-restore-recovery";
+var RECOVERY_STORE2 = "snapshots";
+var isBrowser2 = typeof window !== "undefined" && typeof document !== "undefined";
+function localValue2(key) {
+  if (!isBrowser2)
+    return null;
+  return window.localStorage.getItem(key);
+}
+var openedGeneration2 = null;
+var openedWithPendingRestore2 = false;
+var initialStorageError2 = null;
+try {
+  openedGeneration2 = localValue2(GENERATION_KEY2);
+  openedWithPendingRestore2 = Boolean(localValue2(RESTORE_PENDING_KEY2));
+} catch (error2) {
+  initialStorageError2 = error2;
+}
+function ensureCurrentGeneration2() {
+  if (initialStorageError2) {
+    throw new Error("\u30D6\u30E9\u30A6\u30B6\u306E\u4FDD\u5B58\u9818\u57DF\u3092\u78BA\u8A8D\u3067\u304D\u306A\u3044\u305F\u3081\u3001\u5B89\u5168\u306A\u4FDD\u5B58\u3084\u5FA9\u5143\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002\u30D6\u30E9\u30A6\u30B6\u306E\u8A2D\u5B9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (openedWithPendingRestore2 || localValue2(GENERATION_KEY2) !== openedGeneration2) {
+    throw new Error("\u5225\u306E\u30BF\u30D6\u3067WORKBENCH\u306E\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u53E4\u3044\u753B\u9762\u304B\u3089\u306E\u4E0A\u66F8\u304D\u3092\u9632\u3050\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (localValue2(RESTORE_PENDING_KEY2)) {
+    throw new Error("WORKBENCH\u306E\u5FA9\u5143\u307E\u305F\u306F\u5FA9\u65E7\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5FA9\u65E7\u64CD\u4F5C\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+}
+function webLocks2() {
+  if (!isBrowser2)
+    return null;
+  const locks = navigator.locks;
+  if (!locks || typeof locks.request !== "function") {
+    throw new Error("\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306F\u30BF\u30D6\u9593\u306E\u30C7\u30FC\u30BF\u4FDD\u8B77\uFF08Web Locks\uFF09\u306B\u5BFE\u5FDC\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5BFE\u5FDC\u30D6\u30E9\u30A6\u30B6\u3067\u958B\u3044\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return locks;
+}
+function hasRecoveryJournal2() {
+  if (!isBrowser2)
+    return Promise.resolve(false);
+  return new Promise((resolve, reject) => {
+    const open2 = indexedDB.open(RECOVERY_DATABASE2, 1);
+    open2.onupgradeneeded = () => {
+      if (!open2.result.objectStoreNames.contains(RECOVERY_STORE2)) {
+        open2.result.createObjectStore(RECOVERY_STORE2, { keyPath: "id" });
+      }
+    };
+    open2.onerror = () => reject(open2.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+    open2.onblocked = () => reject(new Error("\u5225\u30BF\u30D6\u304C\u5FA9\u65E7\u8A18\u9332\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002"));
+    open2.onsuccess = () => {
+      const db = open2.result;
+      db.onversionchange = () => db.close();
+      let done = false;
+      const finish = (result, error2) => {
+        if (done)
+          return;
+        done = true;
+        db.close();
+        if (error2)
+          reject(error2);
+        else
+          resolve(result);
+      };
+      try {
+        const tx = db.transaction(RECOVERY_STORE2, "readonly");
+        const request = tx.objectStore(RECOVERY_STORE2).get("pending");
+        request.onsuccess = () => finish(Boolean(request.result));
+        request.onerror = () => finish(false, request.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+        tx.onabort = () => finish(false, tx.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+      } catch (error2) {
+        finish(false, error2 instanceof Error ? error2 : new Error(String(error2)));
+      }
+    };
+  });
+}
+async function ensureSafe2() {
+  ensureCurrentGeneration2();
+  if (await hasRecoveryJournal2()) {
+    throw new Error("\u5FA9\u65E7\u5F85\u3061\u306E\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u3059\u3002\u5148\u306BWORKBENCH\u30DB\u30FC\u30E0\u753B\u9762\u304B\u3089\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  ensureCurrentGeneration2();
+}
+async function withWorkbenchSnapshotLock(operation) {
+  const locks = webLocks2();
+  if (!locks)
+    return operation();
+  const requestedGeneration = localValue2(GENERATION_KEY2);
+  return locks.request(LOCK_NAME2, { mode: "exclusive" }, async () => {
+    if (requestedGeneration !== localValue2(GENERATION_KEY2)) {
+      throw new Error("\u5225\u306E\u30BF\u30D6\u3067\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304B\u3089\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    await ensureSafe2();
+    return operation();
+  });
+}
+
+// shared/print-history-vault.js
+var NAME2 = "workbench-document-print-history";
+var VERSION = 4;
+var HISTORY = "history";
+var META = "history-meta";
+var STATS = "history-stats";
+var CONFIG = "history-vault";
+var TOTAL = "total";
+var VAULT = "vault";
+var ROUNDS = 31e4;
+var LIMIT = 64 * 1024 * 1024;
+var COUNT_LIMIT = 5e3;
+var encoder2 = new TextEncoder();
+var decoder = new TextDecoder("utf-8", { fatal: true });
+var sessionKey = null;
+var sessionIdentity = null;
+var migrationCheckedIdentity = null;
+var passwordDialogPending = null;
+var HAS_BROWSER_LOCKS = typeof window !== "undefined" && typeof document !== "undefined";
+var START_GENERATION = null;
+var initialGenerationError = null;
+try {
+  if (HAS_BROWSER_LOCKS) START_GENERATION = window.localStorage.getItem("workbench:data-generation:v1");
+} catch (cause) {
+  initialGenerationError = cause;
+}
+async function migrateUnderGlobalLock(operation, alreadyLocked = false) {
+  if (initialGenerationError) throw error("\u30D6\u30E9\u30A6\u30B6\u306E\u4FDD\u5B58\u9818\u57DF\u3092\u78BA\u8A8D\u3067\u304D\u306A\u3044\u305F\u3081\u5C65\u6B74\u306E\u79FB\u884C\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002");
+  if (alreadyLocked || !HAS_BROWSER_LOCKS) return operation();
+  if (!navigator.locks || typeof navigator.locks.request !== "function") {
+    throw error("\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306F\u8907\u6570\u30BF\u30D6\u306E\u30C7\u30FC\u30BF\u4FDD\u8B77\u306B\u5BFE\u5FDC\u3057\u3066\u3044\u307E\u305B\u3093\u3002");
+  }
+  return navigator.locks.request("workbench:data-integrity:v1", { mode: "shared" }, async () => {
+    if (window.localStorage.getItem("workbench:data-generation:v1") !== START_GENERATION || window.localStorage.getItem("workbench:restore-in-progress:v1")) {
+      throw error("\u5225\u306E\u30BF\u30D6\u3067\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    return operation();
+  });
+}
+function error(message) {
+  return new Error(message);
+}
+function randomBytes(length) {
+  const result = new Uint8Array(length);
+  crypto.getRandomValues(result);
+  return result;
+}
+function toNumbers2(array) {
+  return Array.from(array);
+}
+function bytes(value, length, name) {
+  if (!Array.isArray(value) || value.length !== length || value.some((v3) => !Number.isInteger(v3) || v3 < 0 || v3 > 255)) {
+    throw error(`${name}\u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return new Uint8Array(value);
+}
+function bytesAny(value, name) {
+  if (!Array.isArray(value) || value.length < 16 || value.length > 65536 || value.some((v3) => !Number.isInteger(v3) || v3 < 0 || v3 > 255)) {
+    throw error(`${name}\u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return new Uint8Array(value);
+}
+function identity(config) {
+  return JSON.stringify([config.salt, config.checkIv, config.checkCipher]);
+}
+function requireKey(config) {
+  if (!config || !sessionKey || sessionIdentity !== identity(config)) {
+    sessionKey = null;
+    sessionIdentity = null;
+    throw error("PDF\u5C65\u6B74\u306F\u30ED\u30C3\u30AF\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u89E3\u9664\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return sessionKey;
+}
+function lockHistoryVault() {
+  sessionKey = null;
+  sessionIdentity = null;
+  migrationCheckedIdentity = null;
+}
+var HistoryVaultCancelledError = class extends Error {
+  constructor() {
+    super("\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u5165\u529B\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
+    this.name = "HistoryVaultCancelledError";
+  }
+};
+function waitTx(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || error("\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    tx.onabort = () => reject(tx.error || error("\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u51E6\u7406\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+  });
+}
+function waitRequest(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || error("\u5C65\u6B74\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+  });
+}
 function metadataOf(entry) {
+  if (isSealed(entry)) {
+    return {
+      id: entry.id,
+      createdAt: entry.createdAt,
+      pdfBytes: entry.pdfBytes,
+      metaIv: entry.metaIv,
+      encryptedMeta: entry.encryptedMeta
+    };
+  }
   return {
     id: entry.id,
     recipientName: entry.recipientName,
@@ -34394,217 +34862,534 @@ function metadataOf(entry) {
     pdfBytes: entry.pdfBlob.size
   };
 }
-function openDatabase() {
+async function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME2, DATABASE_VERSION2);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      const tx = request.transaction;
-      if (!tx)
-        throw new Error("\u5C65\u6B74DB\u306E\u66F4\u65B0\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-      if (!db.objectStoreNames.contains(HISTORY_STORE)) {
-        db.createObjectStore(HISTORY_STORE, { keyPath: "id" });
-      }
-      const metaMissing = !db.objectStoreNames.contains(METADATA_STORE);
+    const req = indexedDB.open(NAME2, VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const tx = req.transaction;
+      if (!tx) throw error("PDF\u5C65\u6B74\u306E\u66F4\u65B0\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002");
+      if (!db.objectStoreNames.contains(HISTORY)) db.createObjectStore(HISTORY, { keyPath: "id" });
+      const missingMeta = !db.objectStoreNames.contains(META);
       let meta;
-      if (metaMissing) {
-        meta = db.createObjectStore(METADATA_STORE, { keyPath: "id" });
-        meta.createIndex(DATE_INDEX, ["createdAt", "id"], { unique: true });
-      } else {
-        meta = tx.objectStore(METADATA_STORE);
-      }
-      if (!db.objectStoreNames.contains(STATS_STORE)) {
-        db.createObjectStore(STATS_STORE, { keyPath: "id" });
-      }
-      const stats = tx.objectStore(STATS_STORE);
-      let count = 0;
-      let totalBytes = 0;
-      const cursor = metaMissing ? tx.objectStore(HISTORY_STORE).openCursor() : meta.openCursor();
+      if (missingMeta) {
+        meta = db.createObjectStore(META, { keyPath: "id" });
+        meta.createIndex("createdAtId", ["createdAt", "id"], { unique: true });
+      } else meta = tx.objectStore(META);
+      if (!db.objectStoreNames.contains(STATS)) db.createObjectStore(STATS, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(CONFIG)) db.createObjectStore(CONFIG, { keyPath: "id" });
+      const stats = tx.objectStore(STATS);
+      let count = 0, totalBytes = 0;
+      const cursor = missingMeta ? tx.objectStore(HISTORY).openCursor() : meta.openCursor();
       cursor.onsuccess = () => {
         const row = cursor.result;
         if (!row) {
-          stats.put({ id: STATS_KEY, count, totalBytes });
+          stats.put({ id: TOTAL, count, totalBytes });
           return;
         }
-        const info = metaMissing ? metadataOf(row.value) : row.value;
-        if (metaMissing)
-          meta.put(info);
+        const info = missingMeta ? metadataOf(row.value) : row.value;
+        if (missingMeta) meta.put(info);
         count++;
         totalBytes += info.pdfBytes;
         row.continue();
       };
     };
     let blocked = false;
-    request.onsuccess = () => {
-      const db = request.result;
+    req.onsuccess = () => {
+      const db = req.result;
       db.onversionchange = () => db.close();
-      if (blocked)
-        db.close();
-      else
-        resolve(db);
+      if (blocked) db.close();
+      else resolve(db);
     };
-    request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
-    request.onblocked = () => {
+    req.onerror = () => reject(req.error || error("PDF\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3002"));
+    req.onblocked = () => {
       blocked = true;
-      reject(new Error("\u53E4\u3044WORKBENCH\u304C\u5225\u30BF\u30D6\u3067\u958B\u3044\u3066\u3044\u307E\u3059\u3002\u5225\u30BF\u30D6\u3092\u9589\u3058\u3066\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+      reject(error("\u53E4\u3044WORKBENCH\u306E\u30BF\u30D6\u3092\u9589\u3058\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
     };
   });
 }
-function transactionDone(transaction) {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("\u5C65\u6B74\u306E\u8AAD\u307F\u66F8\u304D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-    transaction.onabort = () => reject(transaction.error ?? new Error("\u5C65\u6B74\u306E\u4FDD\u5B58\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
-  });
+async function get(db, storeName, id) {
+  const tx = db.transaction(storeName, "readonly");
+  const done = waitTx(tx);
+  const value = await waitRequest(tx.objectStore(storeName).get(id));
+  await done;
+  return value || null;
 }
-function requestResult(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u306E\u53D6\u5F97\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-  });
+async function configFromDB() {
+  const db = await openDB();
+  try {
+    return await get(db, CONFIG, VAULT);
+  } finally {
+    db.close();
+  }
 }
-function updateStats(store, countDelta, bytesDelta) {
-  const request = store.get(STATS_KEY);
-  request.onsuccess = () => {
-    const old = request.result;
-    if (!old) {
-      store.transaction.abort();
+function isSealed(entry) {
+  return Boolean(entry && entry.encryptedPdfBlob instanceof Blob && Array.isArray(entry.pdfIv) && Array.isArray(entry.metaIv) && entry.encryptedMeta);
+}
+function validateVaultConfig(config) {
+  if (!config || config.id !== VAULT || config.version !== 1 || config.rounds !== ROUNDS) throw error("\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  bytes(config.salt, 16, "\u6697\u53F7\u5316\u30BD\u30EB\u30C8");
+  bytes(config.checkIv, 12, "\u8A8D\u8A3CIV");
+  bytesAny(config.checkCipher, "\u8A8D\u8A3C\u30C7\u30FC\u30BF");
+  return config;
+}
+function validateSealedHistoryRecord(entry) {
+  if (!isSealed(entry) || typeof entry.id !== "string" || !entry.id || entry.id.length > 256 || !Number.isSafeInteger(entry.createdAt) || entry.createdAt < 0 || !Number.isSafeInteger(entry.pdfBytes) || entry.pdfBytes < 0 || entry.pdfBytes > LIMIT || entry.encryptedPdfBlob.size !== entry.pdfBytes + 16 || !(entry.encryptedMeta instanceof Uint8Array) || entry.encryptedMeta.length < 16 || entry.encryptedMeta.length > 65536) {
+    throw error("\u6697\u53F7\u5316\u3055\u308C\u305FPDF\u5C65\u6B74\u306E\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  bytes(entry.pdfIv, 12, "PDF\u6697\u53F7\u5316IV");
+  bytes(entry.metaIv, 12, "\u30E1\u30BF\u30C7\u30FC\u30BFIV");
+  return entry;
+}
+async function derive(password, config) {
+  const keyMaterial = await crypto.subtle.importKey("raw", encoder2.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: bytes(config.salt, 16, "\u6697\u53F7\u5316\u30BD\u30EB\u30C8"), iterations: config.rounds, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+async function cipher(key, id, field2, input) {
+  const iv = randomBytes(12);
+  const payload = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder2.encode(`workbench:history:1:${field2}:${id}`) }, key, input);
+  return { iv: toNumbers2(iv), data: new Uint8Array(payload) };
+}
+async function decipher(key, id, field2, iv, data) {
+  try {
+    return await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(iv, 12, "\u5FA9\u53F7IV"), additionalData: encoder2.encode(`workbench:history:1:${field2}:${id}`) }, key, data);
+  } catch {
+    throw error("\u5C65\u6B74\u3092\u5FA9\u53F7\u3067\u304D\u307E\u305B\u3093\u3002\u30D1\u30B9\u30EF\u30FC\u30C9\u307E\u305F\u306F\u30D5\u30A1\u30A4\u30EB\u306E\u6574\u5408\u6027\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+}
+async function checkKey(key, config) {
+  try {
+    const clear = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(config.checkIv, 12, "\u8A8D\u8A3CIV"), additionalData: encoder2.encode("workbench:history:vault:v1") }, key, bytesAny(config.checkCipher, "\u8A8D\u8A3C\u30C7\u30FC\u30BF"));
+    if (decoder.decode(clear) !== "WORKBENCH HISTORY VAULT v1") throw Error("bad verifier");
+  } catch {
+    throw error("\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3046\u304B\u3001\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u7834\u640D\u3057\u3066\u3044\u307E\u3059\u3002");
+  }
+}
+async function createHistoryVault(password, migrate = true) {
+  if (typeof password !== "string" || password.length < 12) throw error("\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9\u306F12\u6587\u5B57\u4EE5\u4E0A\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  const config = { id: VAULT, version: 1, rounds: ROUNDS, salt: toNumbers2(randomBytes(16)) };
+  const key = await derive(password, config);
+  const iv = randomBytes(12);
+  const check = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder2.encode("workbench:history:vault:v1") }, key, encoder2.encode("WORKBENCH HISTORY VAULT v1"));
+  config.checkIv = toNumbers2(iv);
+  config.checkCipher = toNumbers2(new Uint8Array(check));
+  const db = await openDB();
+  try {
+    const tx = db.transaction(CONFIG, "readwrite");
+    const done = waitTx(tx);
+    tx.objectStore(CONFIG).add(config);
+    await done;
+  } finally {
+    db.close();
+  }
+  sessionKey = key;
+  sessionIdentity = identity(config);
+  migrationCheckedIdentity = null;
+  if (migrate) await migratePlainHistory();
+}
+async function unlockHistoryVault(password, migrate = true) {
+  const config = await configFromDB();
+  if (!config) throw error("\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u307E\u3060\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+  validateVaultConfig(config);
+  const key = await derive(password, config);
+  await checkKey(key, config);
+  sessionKey = key;
+  sessionIdentity = identity(config);
+  migrationCheckedIdentity = null;
+  if (migrate) await migratePlainHistory();
+}
+async function askPassword(create2, previousError = "") {
+  if (passwordDialogPending) return passwordDialogPending;
+  passwordDialogPending = promptVaultPassword(create2, previousError).finally(() => {
+    passwordDialogPending = null;
+  });
+  return passwordDialogPending;
+}
+async function ensureHistoryUnlocked(options = {}) {
+  const alreadyLocked = Boolean(options.alreadyLocked);
+  const config = await configFromDB();
+  if (config && sessionKey && sessionIdentity === identity(config)) {
+    if (migrationCheckedIdentity !== sessionIdentity) await migrateUnderGlobalLock(migratePlainHistory, alreadyLocked);
+    return;
+  }
+  if (!config) {
+    const pass = await askPassword(true);
+    if (pass === null) throw new HistoryVaultCancelledError();
+    try {
+      await migrateUnderGlobalLock(async () => {
+        await createHistoryVault(pass, false);
+        await migratePlainHistory();
+      }, alreadyLocked);
+      return;
+    } catch (err2) {
+      if (err2 && err2.name !== "ConstraintError") throw err2;
+    }
+  }
+  let lastError = "";
+  for (; ; ) {
+    const pass = await askPassword(false, lastError);
+    if (pass === null) throw new HistoryVaultCancelledError();
+    if (typeof pass === "object" && pass.reset) {
+      if (alreadyLocked) throw error("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408\u306F\u3001DOCUMENT BUILDER\u306E\u5C65\u6B74\u753B\u9762\u304B\u3089\u521D\u671F\u5316\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      const stats = await getSealedHistoryStats();
+      if (!await confirmVaultReset(stats.count)) throw new HistoryVaultCancelledError();
+      await resetHistoryVaultWithoutPassword();
+      const newPassword = await askPassword(true);
+      if (newPassword === null) throw new HistoryVaultCancelledError();
+      await migrateUnderGlobalLock(async () => {
+        await createHistoryVault(newPassword, false);
+        await migratePlainHistory();
+      }, alreadyLocked);
       return;
     }
-    store.put({
-      id: STATS_KEY,
-      count: old.count + countDelta,
-      totalBytes: old.totalBytes + bytesDelta
-    });
-  };
-}
-async function addPrintHistory(recipientName, fileName, pdfBlob) {
-  return withWorkbenchWriteLock(async () => {
-    if (pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
-      throw new Error("PDF\u5C65\u6B74\u306B\u4FDD\u5B58\u3067\u304D\u308B\u30D5\u30A1\u30A4\u30EB\u306F64MiB\u4EE5\u4E0B\u3067\u3059\u3002");
-    }
-    if ((await getPrintHistoryStats()).count >= MAX_PRINT_HISTORY_RECORDS) {
-      throw new Error(`PDF\u5C65\u6B74\u304C${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}\u4EF6\u306B\u9054\u3057\u3066\u3044\u307E\u3059\u3002\u4E0D\u8981\u306A\u5C65\u6B74\u3092\u524A\u9664\u3057\u3066\u304B\u3089\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
-    }
-    const entry = {
-      id: crypto.randomUUID(),
-      recipientName,
-      fileName,
-      createdAt: Date.now(),
-      pdfBlob
-    };
-    const db = await openDatabase();
     try {
-      const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-      const done = transactionDone(tx);
-      tx.objectStore(HISTORY_STORE).add(entry);
-      tx.objectStore(METADATA_STORE).add(metadataOf(entry));
-      const statsStore = tx.objectStore(STATS_STORE);
-      const countRequest = statsStore.get(STATS_KEY);
-      countRequest.onsuccess = () => {
-        const current = countRequest.result;
-        if (!current || current.count >= MAX_PRINT_HISTORY_RECORDS) {
-          tx.abort();
+      await unlockHistoryVault(pass, false);
+      await migrateUnderGlobalLock(migratePlainHistory, alreadyLocked);
+      return;
+    } catch (err2) {
+      lastError = err2 instanceof Error ? err2.message : "\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
+    }
+  }
+}
+async function sealRecord(plain, key) {
+  if (!(plain.pdfBlob instanceof Blob) || plain.pdfBlob.size > LIMIT || plain.pdfBlob.size === 0) throw error("PDF\u5C65\u6B74\u306E\u30D5\u30A1\u30A4\u30EB\u304C\u4E0D\u6B63\u3001\u307E\u305F\u306F64MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+  if (!plain.id || !Number.isSafeInteger(plain.createdAt)) throw error("\u5C65\u6B74\u306EID\u307E\u305F\u306F\u65E5\u6642\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const meta = { recipientName: plain.recipientName, fileName: plain.fileName, createdAt: plain.createdAt };
+  if (typeof meta.recipientName !== "string" || typeof meta.fileName !== "string" || !/\.pdf$/i.test(meta.fileName)) throw error("\u5C65\u6B74\u306E\u30D5\u30A1\u30A4\u30EB\u540D\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const [pdf, metadata] = await Promise.all([cipher(key, plain.id, "pdf", await plain.pdfBlob.arrayBuffer()), cipher(key, plain.id, "meta", encoder2.encode(JSON.stringify(meta)))]);
+  const entry = { id: plain.id, createdAt: plain.createdAt, pdfBytes: plain.pdfBlob.size, encryptedPdfBlob: new Blob([pdf.data], { type: "application/octet-stream" }), pdfIv: pdf.iv, encryptedMeta: metadata.data, metaIv: metadata.iv };
+  return validateSealedHistoryRecord(entry);
+}
+async function openMeta(entry, key) {
+  const decoded = decoder.decode(await decipher(key, entry.id, "meta", entry.metaIv, entry.encryptedMeta));
+  const meta = JSON.parse(decoded);
+  if (typeof meta.fileName !== "string" || typeof meta.recipientName !== "string" || meta.createdAt !== entry.createdAt) throw error("\u5C65\u6B74\u30E1\u30BF\u30C7\u30FC\u30BF\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  return { id: entry.id, createdAt: entry.createdAt, pdfBytes: entry.pdfBytes, fileName: meta.fileName, recipientName: meta.recipientName };
+}
+async function migratePlainHistory() {
+  const db = await openDB();
+  try {
+    const config = await get(db, CONFIG, VAULT);
+    const key = requireKey(config);
+    const tx = db.transaction(HISTORY, "readonly");
+    const done = waitTx(tx);
+    const legacyIds = await new Promise((resolve, reject) => {
+      const ids = [];
+      const req = tx.objectStore(HISTORY).openCursor();
+      req.onerror = () => reject(req.error || error("\u65E7\u5C65\u6B74\u3092\u691C\u67FB\u3067\u304D\u307E\u305B\u3093\u3002"));
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) {
+          resolve(ids);
           return;
         }
-        statsStore.put({
-          id: STATS_KEY,
-          count: current.count + 1,
-          totalBytes: current.totalBytes + pdfBlob.size
-        });
+        if (!isSealed(cursor.value)) ids.push(cursor.key);
+        cursor.continue();
       };
-      await done;
-    } finally {
-      db.close();
+    });
+    await done;
+    for (const id of legacyIds) {
+      const item = await get(db, HISTORY, id);
+      if (!item || isSealed(item)) continue;
+      const sealed = await sealRecord(item, key);
+      const update = db.transaction([HISTORY, META], "readwrite");
+      const complete = waitTx(update);
+      update.objectStore(HISTORY).put(sealed);
+      update.objectStore(META).put(metadataOf(sealed));
+      await complete;
     }
-  });
-}
-async function getPrintHistoryPage(before = null, pageSize = 50) {
-  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
-    throw new Error("\u5C65\u6B74\u306E\u8868\u793A\u4EF6\u6570\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+    migrationCheckedIdentity = sessionIdentity;
+  } finally {
+    db.close();
   }
-  const db = await openDatabase();
+}
+async function addSealedHistory(recipientName, fileName, pdfBlob) {
+  if (!(pdfBlob instanceof Blob) || pdfBlob.size > LIMIT) throw error("PDF\u5C65\u6B74\u306B\u4FDD\u5B58\u3067\u304D\u308B\u30D5\u30A1\u30A4\u30EB\u306F64MiB\u4EE5\u4E0B\u3067\u3059\u3002");
+  await ensureHistoryUnlocked();
+  if ((await getSealedHistoryStats()).count >= COUNT_LIMIT) throw error("PDF\u5C65\u6B74\u304C5,000\u4EF6\u306B\u9054\u3057\u3066\u3044\u307E\u3059\u3002\u4E0D\u8981\u306A\u5C65\u6B74\u3092\u524A\u9664\u3057\u3066\u304B\u3089\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  const db = await openDB();
   try {
-    const tx = db.transaction(METADATA_STORE, "readonly");
-    const done = transactionDone(tx);
-    const index2 = tx.objectStore(METADATA_STORE).index(DATE_INDEX);
+    const config = await get(db, CONFIG, VAULT);
+    const key = requireKey(config);
+    const plain = { id: crypto.randomUUID(), recipientName, fileName, createdAt: Date.now(), pdfBlob };
+    const sealed = await sealRecord(plain, key);
+    const tx = db.transaction([HISTORY, META, STATS], "readwrite");
+    const done = waitTx(tx);
+    tx.objectStore(HISTORY).add(sealed);
+    tx.objectStore(META).add(metadataOf(sealed));
+    const store = tx.objectStore(STATS);
+    const req = store.get(TOTAL);
+    req.onsuccess = () => {
+      const current = req.result;
+      if (!current || current.count >= COUNT_LIMIT) {
+        tx.abort();
+        return;
+      }
+      store.put({ id: TOTAL, count: current.count + 1, totalBytes: current.totalBytes + sealed.pdfBytes });
+    };
+    await done;
+  } finally {
+    db.close();
+  }
+}
+async function getSealedHistoryPage(before = null, pageSize = 50) {
+  await ensureHistoryUnlocked();
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) throw error("\u5C65\u6B74\u306E\u8868\u793A\u4EF6\u6570\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const db = await openDB();
+  try {
+    const config = await get(db, CONFIG, VAULT);
+    const key = requireKey(config);
+    const tx = db.transaction(META, "readonly");
+    const done = waitTx(tx);
+    const index2 = tx.objectStore(META).index("createdAtId");
     const range = before ? IDBKeyRange.upperBound([before.createdAt, before.id], true) : null;
     const entries2 = await new Promise((resolve, reject) => {
-      const result = [];
-      const request = index2.openCursor(range, "prev");
-      request.onerror = () => reject(request.error ?? new Error("\u5C65\u6B74\u4E00\u89A7\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
-      request.onsuccess = () => {
-        const cursor = request.result;
-        if (!cursor || result.length > pageSize) {
-          resolve(result);
+      const rows = [];
+      const req = index2.openCursor(range, "prev");
+      req.onerror = () => reject(req.error || error("\u5C65\u6B74\u4E00\u89A7\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3002"));
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor || rows.length > pageSize) {
+          resolve(rows);
           return;
         }
-        result.push(cursor.value);
-        if (result.length > pageSize) {
-          resolve(result);
-        } else {
-          cursor.continue();
-        }
+        rows.push(cursor.value);
+        if (rows.length > pageSize) resolve(rows);
+        else cursor.continue();
       };
     });
     await done;
     const hasMore = entries2.length > pageSize;
-    const pageEntries = entries2.slice(0, pageSize);
-    const last = pageEntries[pageEntries.length - 1];
-    return {
-      entries: pageEntries,
-      nextCursor: hasMore && last ? { createdAt: last.createdAt, id: last.id } : null
+    const relevant = entries2.slice(0, pageSize);
+    const opened = [];
+    for (const item of relevant) opened.push(await openMeta(item, key));
+    const last = relevant[relevant.length - 1];
+    return { entries: opened, nextCursor: hasMore && last ? { createdAt: last.createdAt, id: last.id } : null };
+  } finally {
+    db.close();
+  }
+}
+async function getSealedHistoryStats() {
+  const db = await openDB();
+  try {
+    const result = await get(db, STATS, TOTAL);
+    if (!result) throw error("\u5C65\u6B74\u96C6\u8A08\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    return { count: result.count, totalBytes: result.totalBytes };
+  } finally {
+    db.close();
+  }
+}
+async function getSealedHistoryEntry(id) {
+  await ensureHistoryUnlocked();
+  const db = await openDB();
+  try {
+    const config = await get(db, CONFIG, VAULT);
+    const key = requireKey(config);
+    const entry = await get(db, HISTORY, id);
+    if (!entry) return null;
+    validateSealedHistoryRecord(entry);
+    const meta = await openMeta(entry, key);
+    const pdfBuffer = await decipher(key, id, "pdf", entry.pdfIv, await entry.encryptedPdfBlob.arrayBuffer());
+    if (pdfBuffer.byteLength !== entry.pdfBytes) throw error("\u5FA9\u53F7\u3057\u305FPDF\u306E\u30B5\u30A4\u30BA\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+    return { id, recipientName: meta.recipientName, fileName: meta.fileName, createdAt: entry.createdAt, pdfBlob: new Blob([pdfBuffer], { type: "application/pdf" }) };
+  } finally {
+    db.close();
+  }
+}
+async function deleteSealedHistory(id) {
+  await ensureHistoryUnlocked();
+  const db = await openDB();
+  try {
+    const tx = db.transaction([HISTORY, META, STATS], "readwrite");
+    const done = waitTx(tx);
+    const metaStore = tx.objectStore(META);
+    const req = metaStore.get(id);
+    req.onsuccess = () => {
+      const found = req.result;
+      tx.objectStore(HISTORY).delete(id);
+      metaStore.delete(id);
+      if (found) {
+        const store = tx.objectStore(STATS);
+        const sr = store.get(TOTAL);
+        sr.onsuccess = () => {
+          const old = sr.result;
+          if (!old) {
+            tx.abort();
+            return;
+          }
+          store.put({ id: TOTAL, count: old.count - 1, totalBytes: old.totalBytes - found.pdfBytes });
+        };
+      }
     };
-  } finally {
-    db.close();
-  }
-}
-async function getPrintHistoryStats() {
-  const db = await openDatabase();
-  try {
-    const tx = db.transaction(STATS_STORE, "readonly");
-    const done = transactionDone(tx);
-    const stored = await requestResult(tx.objectStore(STATS_STORE).get(STATS_KEY));
     await done;
-    if (!stored)
-      throw new Error("\u5C65\u6B74\u96C6\u8A08\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-    return { count: stored.count, totalBytes: stored.totalBytes };
   } finally {
     db.close();
   }
 }
-async function getPrintHistory(id) {
-  const db = await openDatabase();
-  try {
-    const tx = db.transaction(HISTORY_STORE, "readonly");
-    const done = transactionDone(tx);
-    const entry = await requestResult(tx.objectStore(HISTORY_STORE).get(id));
-    await done;
-    return entry ?? null;
-  } finally {
-    db.close();
-  }
+var ROTATION_PREFIX = "rotate:";
+function isRotationKey(key) {
+  return typeof key === "string" && key.startsWith(ROTATION_PREFIX);
 }
-async function deletePrintHistory(id) {
-  return withWorkbenchWriteLock(async () => {
-    const db = await openDatabase();
+async function eraseStagedRecords(db) {
+  const tx = db.transaction(CONFIG, "readwrite");
+  const complete = waitTx(tx);
+  const store = tx.objectStore(CONFIG);
+  const req = store.openCursor();
+  req.onsuccess = () => {
+    const cursor = req.result;
+    if (!cursor) return;
+    if (isRotationKey(cursor.key)) store.delete(cursor.key);
+    cursor.continue();
+  };
+  await complete;
+}
+async function historyIDs(db) {
+  const tx = db.transaction(HISTORY, "readonly");
+  const complete = waitTx(tx);
+  const ids = [];
+  const req = tx.objectStore(HISTORY).openCursor();
+  req.onsuccess = () => {
+    const cursor = req.result;
+    if (!cursor) return;
+    ids.push(cursor.key);
+    cursor.continue();
+  };
+  await complete;
+  return ids;
+}
+async function createVaultConfig(password) {
+  const config = { id: VAULT, version: 1, rounds: ROUNDS, salt: toNumbers2(randomBytes(16)) };
+  const key = await derive(password, config);
+  const iv = randomBytes(12);
+  const check = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder2.encode("workbench:history:vault:v1") }, key, encoder2.encode("WORKBENCH HISTORY VAULT v1"));
+  config.checkIv = toNumbers2(iv);
+  config.checkCipher = toNumbers2(new Uint8Array(check));
+  return { config, key };
+}
+async function changeHistoryVaultPassword(oldPassword, newPassword) {
+  if (typeof oldPassword !== "string" || !oldPassword) throw error("\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (typeof newPassword !== "string" || newPassword.length < 12) throw error("\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u306F12\u6587\u5B57\u4EE5\u4E0A\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (oldPassword === newPassword) throw error("\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3068\u7570\u306A\u308B\u3082\u306E\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  return withWorkbenchSnapshotLock(async () => {
+    const db = await openDB();
     try {
-      const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-      const done = transactionDone(tx);
-      const meta = tx.objectStore(METADATA_STORE);
-      const request = meta.get(id);
-      request.onsuccess = () => {
-        const found = request.result;
-        tx.objectStore(HISTORY_STORE).delete(id);
-        meta.delete(id);
-        if (found)
-          updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
-      };
-      await done;
+      const oldConfig = await get(db, CONFIG, VAULT);
+      if (!oldConfig) throw error("\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u307E\u3060\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+      validateVaultConfig(oldConfig);
+      const oldKey = await derive(oldPassword, oldConfig);
+      await checkKey(oldKey, oldConfig);
+      sessionKey = oldKey;
+      sessionIdentity = identity(oldConfig);
+      migrationCheckedIdentity = null;
+      await migratePlainHistory();
+      const { config: newConfig, key: newKey } = await createVaultConfig(newPassword);
+      await eraseStagedRecords(db);
+      const ids = await historyIDs(db);
+      try {
+        for (let index2 = 0; index2 < ids.length; index2++) {
+          const entry = validateSealedHistoryRecord(await get(db, HISTORY, ids[index2]));
+          const meta2 = await openMeta(entry, oldKey);
+          const pdfBytes = await decipher(oldKey, entry.id, "pdf", entry.pdfIv, await entry.encryptedPdfBlob.arrayBuffer());
+          const updated = await sealRecord({
+            id: entry.id,
+            recipientName: meta2.recipientName,
+            fileName: meta2.fileName,
+            createdAt: entry.createdAt,
+            pdfBlob: new Blob([pdfBytes], { type: "application/pdf" })
+          }, newKey);
+          const tx2 = db.transaction(CONFIG, "readwrite");
+          const complete2 = waitTx(tx2);
+          tx2.objectStore(CONFIG).put({ id: ROTATION_PREFIX + String(index2).padStart(6, "0"), entry: updated });
+          await complete2;
+        }
+        const tx = db.transaction([CONFIG, HISTORY, META], "readwrite");
+        const complete = waitTx(tx);
+        const configStore = tx.objectStore(CONFIG);
+        const history = tx.objectStore(HISTORY), meta = tx.objectStore(META);
+        let count = 0;
+        const req = configStore.openCursor();
+        req.onsuccess = () => {
+          const cursor = req.result;
+          if (!cursor) {
+            if (count !== ids.length) {
+              tx.abort();
+              return;
+            }
+            configStore.put(newConfig);
+            return;
+          }
+          if (isRotationKey(cursor.key)) {
+            const next = cursor.value.entry;
+            history.put(next);
+            meta.put(metadataOf(next));
+            configStore.delete(cursor.key);
+            count++;
+          }
+          cursor.continue();
+        };
+        await complete;
+        sessionKey = newKey;
+        sessionIdentity = identity(newConfig);
+        migrationCheckedIdentity = sessionIdentity;
+        return ids.length;
+      } catch (err2) {
+        try {
+          await eraseStagedRecords(db);
+        } catch (cleanupError) {
+          console.warn("\u5C65\u6B74\u306E\u4E00\u6642\u518D\u6697\u53F7\u5316\u30C7\u30FC\u30BF\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", cleanupError);
+        }
+        throw err2;
+      }
     } finally {
       db.close();
     }
   });
+}
+async function resetHistoryVaultWithoutPassword() {
+  return withWorkbenchSnapshotLock(async () => {
+    const db = await openDB();
+    try {
+      const tx = db.transaction([CONFIG, HISTORY, META, STATS], "readwrite");
+      const complete = waitTx(tx);
+      tx.objectStore(HISTORY).clear();
+      tx.objectStore(META).clear();
+      tx.objectStore(CONFIG).clear();
+      tx.objectStore(STATS).put({ id: TOTAL, count: 0, totalBytes: 0 });
+      await complete;
+      lockHistoryVault();
+    } finally {
+      db.close();
+    }
+  });
+}
+async function openHistoryPasswordSettings() {
+  await ensureHistoryUnlocked();
+  return promptVaultPasswordChange(changeHistoryVaultPassword);
+}
+
+// document_builder/dist/print-history-db.js
+async function addPrintHistory(recipientName, fileName, pdfBlob) {
+  await ensureHistoryUnlocked();
+  return withWorkbenchWriteLock(() => addSealedHistory(recipientName, fileName, pdfBlob));
+}
+function getPrintHistoryPage(before = null, pageSize = 50) {
+  return getSealedHistoryPage(before, pageSize);
+}
+function getPrintHistoryStats() {
+  return getSealedHistoryStats();
+}
+function getPrintHistory(id) {
+  return getSealedHistoryEntry(id);
+}
+async function deletePrintHistory(id) {
+  await ensureHistoryUnlocked();
+  return withWorkbenchWriteLock(() => deleteSealedHistory(id));
 }
 
 // document_builder/dist/print/print-flow-controller.js
@@ -34649,11 +35434,14 @@ function createDocumentPrintFlow(deps) {
       const recipientName = getRecipientName2();
       const result = await saveDocumentPdf(documentPage2, recipientName);
       let historySaved = false;
+      let historyCancelled = false;
       try {
         await addPrintHistory(recipientName, result.fileName, result.pdfBlob);
         historySaved = true;
       } catch (historyError) {
-        console.error("PDF\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", historyError);
+        historyCancelled = historyError instanceof HistoryVaultCancelledError;
+        if (!historyCancelled)
+          console.error("PDF\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", historyError);
       }
       printStepOne2.classList.add("print-flow-step--complete");
       printStepTwo2.classList.remove("print-flow-step--disabled");
@@ -34666,17 +35454,20 @@ function createDocumentPrintFlow(deps) {
       }
       if (historySaved) {
         showToast2(`${result.fileName} \u3092\u4F5C\u6210\u3057\u3001\u5C65\u6B74\u306B\u3082\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002`);
+      } else if (historyCancelled) {
+        printStepOneStatus2.textContent += " \u5C65\u6B74\u3078\u306E\u6697\u53F7\u5316\u4FDD\u5B58\u306F\u30AD\u30E3\u30F3\u30BB\u30EB\u3055\u308C\u307E\u3057\u305F\u3002";
+        showToast2("PDF\u306E\u4FDD\u5B58\u30FB\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u306F\u958B\u59CB\u3057\u307E\u3057\u305F\u3002\u5C65\u6B74\u3078\u306E\u4FDD\u5B58\u306F\u30AD\u30E3\u30F3\u30BB\u30EB\u3055\u308C\u307E\u3057\u305F\u3002");
       } else {
-        printStepOneStatus2.textContent += " \u30D6\u30E9\u30A6\u30B6\u5185\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u306F\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u7A7A\u304D\u5BB9\u91CF\u3084\u4FDD\u5B58\u8A2D\u5B9A\u3092\u3054\u78BA\u8A8D\u304F\u3060\u3055\u3044\u3002";
-        showToast2("PDF\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u5C65\u6B74\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
+        printStepOneStatus2.textContent += " \u30D6\u30E9\u30A6\u30B6\u5185\u306E\u5C65\u6B74\u4FDD\u5B58\u306B\u306F\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5BB9\u91CF\u30FB\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9\u30FB\u4FDD\u5B58\u8A2D\u5B9A\u3092\u3054\u78BA\u8A8D\u304F\u3060\u3055\u3044\u3002";
+        showToast2("PDF\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u6697\u53F7\u5316\u5C65\u6B74\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002");
       }
-    } catch (error) {
-      if (error instanceof PdfSaveCancelledError) {
+    } catch (error2) {
+      if (error2 instanceof PdfSaveCancelledError) {
         showToast2("PDF\u4FDD\u5B58\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
         return;
       }
-      console.error("PDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-      showToast2(`PDF\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+      console.error("PDF\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+      showToast2(`PDF\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`);
     } finally {
       printSavePdfButton2.disabled = false;
       printSavePdfButton2.textContent = "PDF\u3092\u4FDD\u5B58";
@@ -34711,9 +35502,10 @@ function createPrintHistoryController(controls) {
     loading.className = "print-history-dialog__empty";
     loading.textContent = "\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3093\u3067\u3044\u307E\u3059...";
     printHistoryList2.appendChild(loading);
-    if (!printHistoryDialog2.open)
-      printHistoryDialog2.showModal();
     try {
+      await ensureHistoryUnlocked();
+      if (!printHistoryDialog2.open)
+        printHistoryDialog2.showModal();
       const [stats, page] = await Promise.all([
         getPrintHistoryStats(),
         getPrintHistoryPage(null, 50)
@@ -34736,11 +35528,17 @@ function createPrintHistoryController(controls) {
       appendPrintHistoryEntries2(list, page.entries);
       printHistoryNextCursor = page.nextCursor;
       printHistoryMoreButton2.hidden = !page.nextCursor;
-    } catch (error) {
-      if (generation !== printHistoryGeneration || !printHistoryDialog2.open)
+    } catch (error2) {
+      if (error2 instanceof HistoryVaultCancelledError)
         return;
+      if (generation !== printHistoryGeneration)
+        return;
+      if (!printHistoryDialog2.open) {
+        showToast2(`\u5C65\u6B74\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`);
+        return;
+      }
       printHistoryStats2.textContent = "";
-      printHistoryList2.textContent = `\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`;
+      printHistoryList2.textContent = `\u5C65\u6B74\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`;
     }
   }
   async function loadMorePrintHistory2() {
@@ -34760,9 +35558,9 @@ function createPrintHistoryController(controls) {
       appendPrintHistoryEntries2(list, page.entries);
       printHistoryNextCursor = page.nextCursor;
       printHistoryMoreButton2.hidden = !page.nextCursor;
-    } catch (error) {
+    } catch (error2) {
       if (generation === printHistoryGeneration) {
-        showToast2(`\u8FFD\u52A0\u306E\u5C65\u6B74\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+        showToast2(`\u8FFD\u52A0\u306E\u5C65\u6B74\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`);
       }
     } finally {
       printHistoryLoading = false;
@@ -34779,9 +35577,9 @@ function createPrintHistoryController(controls) {
 }
 
 // document_builder/dist/history/print-history-download.js
-async function downloadStoredHistoryPdf(id, button, callbacks) {
+async function downloadStoredHistoryPdf(id, button2, callbacks) {
   const { showToast: showToast2, getErrorMessage: getErrorMessage3 } = callbacks;
-  button.disabled = true;
+  button2.disabled = true;
   try {
     const entry = await getPrintHistory(id);
     if (!entry) {
@@ -34800,10 +35598,10 @@ async function downloadStoredHistoryPdf(id, button, callbacks) {
       window.setTimeout(() => URL.revokeObjectURL(url), 1e4);
     }
     showToast2(`${entry.fileName} \u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002`);
-  } catch (error) {
-    showToast2(`PDF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+  } catch (error2) {
+    showToast2(`PDF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`);
   } finally {
-    button.disabled = false;
+    button2.disabled = false;
   }
 }
 
@@ -34917,8 +35715,8 @@ function renderPrintHistoryEntries(list, entries2, deps) {
       void (async () => {
         try {
           await deletePrintHistory2(entry.id);
-        } catch (error) {
-          showToast2(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+        } catch (error2) {
+          showToast2(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error2)}`);
           deleteButton.disabled = false;
           return;
         }
@@ -34927,8 +35725,8 @@ function renderPrintHistoryEntries(list, entries2, deps) {
           if (printHistoryDialog2.open)
             await openPrintHistory2();
           showToast2("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
-        } catch (error) {
-          console.error("\u524A\u9664\u6E08\u307F\u5C65\u6B74\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+        } catch (error2) {
+          console.error("\u524A\u9664\u6E08\u307F\u5C65\u6B74\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
           showToast2("\u5C65\u6B74\u306F\u524A\u9664\u6E08\u307F\u3067\u3059\u3002\u4E00\u89A7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         } finally {
           deleteButton.disabled = false;
@@ -34953,13 +35751,13 @@ function renderDocumentFields(options) {
     container.appendChild(message);
     return;
   }
-  for (const field of fields) {
-    const fieldElement = createFieldElement(field, values[field.id] ?? "", onChange);
+  for (const field2 of fields) {
+    const fieldElement = createFieldElement(field2, values[field2.id] ?? "", onChange);
     container.appendChild(fieldElement);
   }
 }
-function createFieldElement(field, value, onChange) {
-  const htmlTemplate = getFieldTemplate(field);
+function createFieldElement(field2, value, onChange) {
+  const htmlTemplate = getFieldTemplate(field2);
   const fragment = htmlTemplate.content.cloneNode(true);
   const root = fragment.firstElementChild;
   if (!(root instanceof HTMLElement)) {
@@ -34970,24 +35768,24 @@ function createFieldElement(field, value, onChange) {
   if (!label || !control) {
     throw new Error("\u5165\u529B\u6B04\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u69CB\u9020\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093\u3002");
   }
-  const controlId = `document-field-${field.id}`;
-  label.textContent = field.label;
+  const controlId = `document-field-${field2.id}`;
+  label.textContent = field2.label;
   label.htmlFor = controlId;
-  if (field.required) {
+  if (field2.required) {
     label.dataset.required = "true";
   }
   control.id = controlId;
-  control.name = field.id;
-  control.required = field.required ?? false;
-  control.placeholder = field.placeholder ?? "";
+  control.name = field2.id;
+  control.required = field2.required ?? false;
+  control.placeholder = field2.placeholder ?? "";
   control.value = value;
   control.addEventListener("input", () => {
-    onChange(field.id, control.value);
+    onChange(field2.id, control.value);
   });
   return root;
 }
-function getFieldTemplate(field) {
-  switch (field.type) {
+function getFieldTemplate(field2) {
+  switch (field2.type) {
     case "text":
       return requireTemplate("text-field-template");
     case "textarea":
@@ -35042,9 +35840,9 @@ function requireChild2(parent, selector) {
   }
   return element;
 }
-function getErrorMessage2(error) {
-  if (error instanceof Error && error.message) {
-    return error.message;
+function getErrorMessage2(error2) {
+  if (error2 instanceof Error && error2.message) {
+    return error2.message;
   }
   return "\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
 }
@@ -35104,8 +35902,8 @@ function setupTemplateBuilder(options) {
     idInput.value = template.id;
     idDisplay.textContent = template.id;
     nameInput.value = template.name;
-    for (const field of template.fields) {
-      appendFieldRow(field);
+    for (const field2 of template.fields) {
+      appendFieldRow(field2);
     }
     topLeftInput.value = template.document.topLeft;
     topRightInput.value = template.document.topRight;
@@ -35144,13 +35942,13 @@ function setupTemplateBuilder(options) {
       type: "text"
     });
   }
-  function appendFieldRow(field) {
+  function appendFieldRow(field2) {
     const fragment = fieldTemplate.content.cloneNode(true);
     const row = fragment.firstElementChild;
     if (!(row instanceof HTMLElement)) {
       throw new Error("\u5165\u529B\u9805\u76EE\u7DE8\u96C6\u6B04\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
     }
-    row.dataset.fieldId = field.id;
+    row.dataset.fieldId = field2.id;
     const id = requireChild2(row, ".template-builder-field__id");
     const token = requireChild2(row, ".template-builder-field__token");
     const label = requireChild2(row, ".template-builder-field__label");
@@ -35159,13 +35957,13 @@ function setupTemplateBuilder(options) {
     const placeholder = requireChild2(row, ".template-builder-field__placeholder");
     const required = requireChild2(row, ".template-builder-field__required");
     const removeButton = requireChild2(row, ".template-builder-field__remove");
-    id.textContent = field.id;
-    token.textContent = `{${field.id}}`;
-    label.value = field.label;
-    type.value = field.type;
-    defaultValue.value = field.defaultValue ?? "";
-    placeholder.value = field.placeholder ?? "";
-    required.checked = field.required ?? false;
+    id.textContent = field2.id;
+    token.textContent = `{${field2.id}}`;
+    label.value = field2.label;
+    type.value = field2.type;
+    defaultValue.value = field2.defaultValue ?? "";
+    placeholder.value = field2.placeholder ?? "";
+    required.checked = field2.required ?? false;
     removeButton.addEventListener("click", () => {
       row.remove();
     });
@@ -35221,29 +36019,29 @@ function setupTemplateBuilder(options) {
       const defaultValue = requireChild2(row, ".template-builder-field__default").value;
       const placeholder = requireChild2(row, ".template-builder-field__placeholder").value;
       const required = requireChild2(row, ".template-builder-field__required").checked;
-      const field = {
+      const field2 = {
         id,
         label,
         type
       };
       if (defaultValue.length > 0) {
-        field.defaultValue = defaultValue;
+        field2.defaultValue = defaultValue;
       }
       if (placeholder.length > 0) {
-        field.placeholder = placeholder;
+        field2.placeholder = placeholder;
       }
       if (required) {
-        field.required = true;
+        field2.required = true;
       }
-      return field;
+      return field2;
     });
   }
   function handleExport() {
     try {
       const template = buildTemplateFromForm();
       downloadTemplateJson(template);
-    } catch (error) {
-      showError(getErrorMessage2(error));
+    } catch (error2) {
+      showError(getErrorMessage2(error2));
     }
   }
   async function handleSubmit(event) {
@@ -35252,20 +36050,27 @@ function setupTemplateBuilder(options) {
     let template;
     try {
       template = buildTemplateFromForm();
-    } catch (error) {
-      showError(getErrorMessage2(error));
+    } catch (error2) {
+      showError(getErrorMessage2(error2));
       return;
     }
     saveButton.disabled = true;
     const originalText = saveButton.textContent;
     saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
+    let committed = false;
     try {
       await options.onSave(template, mode);
+      committed = true;
       resetBuilder();
       showListView();
       options.onReturnToList();
-    } catch (error) {
-      showError(getErrorMessage2(error));
+    } catch (error2) {
+      if (committed) {
+        console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u4FDD\u5B58\u6E08\u307F\u3067\u3059\u304C\u3001\u753B\u9762\u306E\u5207\u308A\u66FF\u3048\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+        window.alert("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F\u304C\u753B\u9762\u3092\u66F4\u65B0\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      } else {
+        showError(getErrorMessage2(error2));
+      }
     } finally {
       saveButton.disabled = false;
       saveButton.textContent = originalText;
@@ -35380,9 +36185,9 @@ async function initialize() {
     await requestPersistentStorage();
     await refreshTemplateCollections();
     restoreInitialTemplate();
-  } catch (error) {
-    console.error("DOCUMENT BUILDER\u306E\u521D\u671F\u5316\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage(error));
+  } catch (error2) {
+    console.error("DOCUMENT BUILDER\u306E\u521D\u671F\u5316\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+    showToast(getErrorMessage(error2));
     clearActiveTemplate();
   }
 }
@@ -35407,7 +36212,20 @@ function wireEvents() {
     handleTemplateAddImport,
     confirmTemplateDelete,
     showToast,
-    invalidatePrintHistory: () => printHistoryController.invalidate(),
+    invalidatePrintHistory: () => {
+      printHistoryController.invalidate();
+      lockHistoryVault();
+    },
+    changeHistoryPassword: async () => {
+      try {
+        const changed = await openHistoryPasswordSettings();
+        if (changed)
+          showToast("PDF\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\u3002");
+      } catch (error2) {
+        if (!(error2 instanceof HistoryVaultCancelledError))
+          showToast(`\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage(error2)}`);
+      }
+    },
     clearPendingDeleteTemplate: () => {
       pendingDeleteTemplateId = null;
     }
@@ -35434,8 +36252,8 @@ async function loadMorePrintHistory() {
 function appendPrintHistoryEntries(list, entries2) {
   renderPrintHistoryEntries(list, entries2, { downloadHistoryPdf, deletePrintHistory, showToast, printHistoryDialog, openPrintHistory, getErrorMessage, formatPrintHistoryBytes, formatPrintHistoryDate });
 }
-async function downloadHistoryPdf(id, button) {
-  return downloadStoredHistoryPdf(id, button, { showToast, getErrorMessage });
+async function downloadHistoryPdf(id, button2) {
+  return downloadStoredHistoryPdf(id, button2, { showToast, getErrorMessage });
 }
 function runFinalPrint() {
   return printFlow.runFinalPrint();
@@ -35491,9 +36309,9 @@ async function confirmTemplateDelete() {
   const deletingActiveTemplate = activeTemplate?.id === id;
   try {
     await deleteTemplate(id);
-  } catch (error) {
-    console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(`\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage(error)}`);
+  } catch (error2) {
+    console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
+    showToast(`\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage(error2)}`);
     return;
   }
   try {
@@ -35509,8 +36327,8 @@ async function confirmTemplateDelete() {
         applyTemplate(nextTemplate);
     }
     showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
-  } catch (error) {
-    console.error("\u524A\u9664\u6E08\u307F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+  } catch (error2) {
+    console.error("\u524A\u9664\u6E08\u307F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
     showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u524A\u9664\u6E08\u307F\u3067\u3059\u3002\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   }
 }
@@ -35574,8 +36392,8 @@ function getStoredActiveTemplateId() {
   return getSavedActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY);
 }
 function storeActiveTemplateId(id) {
-  void saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id).catch((error) => {
-    console.warn("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u9078\u629E\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+  void saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id).catch((error2) => {
+    console.warn("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u9078\u629E\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error2);
     showToast("\u9078\u629E\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5225\u30BF\u30D6\u3067\u5FA9\u5143\u3057\u305F\u5834\u5408\u306F\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   });
 }

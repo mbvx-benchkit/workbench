@@ -40,6 +40,13 @@ export function bindDocumentEvents(deps) {
     printHistoryButton.addEventListener("click", () => {
         void deps.openPrintHistory();
     });
+    const historyPasswordButton = document.getElementById('print-history-password-button');
+    historyPasswordButton?.addEventListener('click', () => {
+        if (historyPasswordButton.disabled)
+            return;
+        historyPasswordButton.disabled = true;
+        void deps.changeHistoryPassword().finally(() => { historyPasswordButton.disabled = false; });
+    });
     printHistoryCloseButton.addEventListener("click", () => {
         printHistoryDialog.close();
     });

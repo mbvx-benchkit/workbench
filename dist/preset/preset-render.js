@@ -140,7 +140,7 @@ function createPresetContent(presetDocument) {
    PDF
    ========================================================= */
 function openPresetPdf(presetDocument) {
-    const objectUrl = URL.createObjectURL(presetDocument.pdfBlob);
+    const objectUrl = URL.createObjectURL(new Blob([presetDocument.pdfBlob], { type: "application/pdf" }));
     const link = document.createElement("a");
     link.href =
         objectUrl;

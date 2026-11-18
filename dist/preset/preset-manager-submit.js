@@ -65,6 +65,12 @@ export function createPresetEditorSubmit(deps) {
             if (selectedPreview && !selectedPreviewMime) {
                 throw new Error("プレビュー画像の内容がPNG、JPEG、WebPのいずれでもありません。");
             }
+            const existingPreviewMime = !selectedPreview && editingDocument?.previewBlob
+                ? await detectPresetPreviewMimeType(editingDocument.previewBlob) : null;
+            if (!selectedPreview && editingDocument?.previewBlob && !existingPreviewMime) {
+                throw new Error("既存のプレビュー画像が不正です。画像を選び直してください。");
+            }
+            const effectivePreviewMime = selectedPreviewMime ?? existingPreviewMime;
             const now = Date.now();
             let presetDocument;
             /* -------------------------------------------------
@@ -82,16 +88,15 @@ export function createPresetEditorSubmit(deps) {
                     pdfMimeType: selectedPdf
                         ? ("application/pdf")
                         : editingDocument.pdfMimeType,
-                    pdfBlob: selectedPdf ??
-                        editingDocument.pdfBlob,
+                    pdfBlob: new Blob([selectedPdf ?? editingDocument.pdfBlob], { type: "application/pdf" }),
                     previewFileName: selectedPreview
                         ? selectedPreview.name
                         : editingDocument.previewFileName,
-                    previewMimeType: selectedPreview
-                        ? (selectedPreviewMime)
-                        : editingDocument.previewMimeType,
-                    previewBlob: selectedPreview ??
-                        editingDocument.previewBlob,
+                    previewMimeType: effectivePreviewMime,
+                    previewBlob: (selectedPreview ?? editingDocument.previewBlob)
+                        ? new Blob([selectedPreview ?? editingDocument.previewBlob], {
+                            type: effectivePreviewMime ?? ""
+                        }) : null,
                     updatedAt: now
                 };
             }
@@ -110,14 +115,14 @@ export function createPresetEditorSubmit(deps) {
                     orientation,
                     pdfFileName: selectedPdf.name,
                     pdfMimeType: "application/pdf",
-                    pdfBlob: selectedPdf,
+                    pdfBlob: new Blob([selectedPdf], { type: "application/pdf" }),
                     previewFileName: selectedPreview
                         ? selectedPreview.name
                         : null,
                     previewMimeType: selectedPreview
                         ? (selectedPreviewMime)
                         : null,
-                    previewBlob: selectedPreview,
+                    previewBlob: selectedPreview ? new Blob([selectedPreview], { type: selectedPreviewMime }) : null,
                     sortOrder,
                     createdAt: now,
                     updatedAt: now

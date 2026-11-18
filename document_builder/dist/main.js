@@ -24,7 +24,7 @@ import { downloadDocumentJson } from "./template-import.js";
 import { renderDocumentFields } from "./form-render.js";
 import { clearBusinessDocument, renderBusinessDocument } from "./document-render.js";
 import { setupTemplateBuilder } from "./template-builder.js";
-import { deletePrintHistory } from "./print-history-db.js";
+import { deletePrintHistory, lockHistoryVault, openHistoryPasswordSettings, HistoryVaultCancelledError } from "./print-history-db.js";
 /* =========================================================
    Constants
    ========================================================= */
@@ -116,7 +116,18 @@ function wireEvents() {
         templateBuilder, downloadDocumentJson, handleDocumentImport, handleTemplateSelection,
         openTemplateSettings, openPrintFlow, openPrintHistory, loadMorePrintHistory,
         runPdfSaveStep, runFinalPrint, handleTemplateAddImport, confirmTemplateDelete, showToast,
-        invalidatePrintHistory: () => printHistoryController.invalidate(),
+        invalidatePrintHistory: () => { printHistoryController.invalidate(); lockHistoryVault(); },
+        changeHistoryPassword: async () => {
+            try {
+                const changed = await openHistoryPasswordSettings();
+                if (changed)
+                    showToast('PDF履歴のパスワードを変更しました。');
+            }
+            catch (error) {
+                if (!(error instanceof HistoryVaultCancelledError))
+                    showToast(`パスワードを変更できませんでした。${getErrorMessage(error)}`);
+            }
+        },
         clearPendingDeleteTemplate: () => { pendingDeleteTemplateId = null; }
     });
 }

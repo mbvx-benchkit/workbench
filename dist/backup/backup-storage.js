@@ -1,3 +1,4 @@
+import { readOpaqueHistorySnapshot, replaceOpaqueHistorySnapshot, sealLegacyHistorySnapshot, getSealedHistoryStats, isSealed } from "../../shared/print-history-vault.js";
 import { requestToPromise, waitForTransaction } from "./backup-storage-utils.js";
 /**
  * backup-storage.ts
@@ -19,7 +20,7 @@ import { requestToPromise, waitForTransaction } from "./backup-storage-utils.js"
  * バックアップ対象外。
  */
 import { getPresetDocuments, getPresetBackupFootprint, replaceAllPresetDocuments, requestPersistentStorage } from "../preset/preset-db.js";
-import { BackupSizeBudget, MAX_ARCHIVE_ENTRY_BYTES, MAX_ARCHIVE_ENTRIES, MAX_ARCHIVE_EXPANDED_BYTES } from "./backup-limits.js";
+import { BackupSizeBudget, MAX_ARCHIVE_ENTRIES, MAX_ARCHIVE_EXPANDED_BYTES } from "./backup-limits.js";
 import { parseDocumentTemplates, parseRedIndexData, MAX_PRINT_HISTORY_RECORDS } from "./backup-types.js";
 /* =========================================================
    DOCUMENT BUILDER Database
@@ -30,13 +31,6 @@ const DOCUMENT_STORE_NAME = "templates";
 /* =========================================================
    PDF HISTORY Database (separate from the template database)
    ========================================================= */
-const PRINT_HISTORY_DATABASE_NAME = "workbench-document-print-history";
-const PRINT_HISTORY_DATABASE_VERSION = 3;
-const PRINT_HISTORY_STATS_STORE_NAME = "history-stats";
-const PRINT_HISTORY_STATS_KEY = "total";
-const PRINT_HISTORY_METADATA_STORE_NAME = "history-meta";
-const PRINT_HISTORY_METADATA_INDEX_NAME = "createdAtId";
-const PRINT_HISTORY_STORE_NAME = "history";
 /* =========================================================
    RED INDEX
    ========================================================= */
@@ -48,7 +42,7 @@ const RED_INDEX_STORAGE_KEY = "workbench.red-index.v1";
  * 現在のWORKBENCH保存状態を取得する。
  */
 export async function readWorkbenchSnapshot() {
-    const [documentTemplates, presetDocuments, printHistory] = await Promise.all([
+    const [documentTemplates, presetDocuments, printHistorySnapshot] = await Promise.all([
         readDocumentTemplates(),
         getPresetDocuments(),
         readPrintHistory()
@@ -58,7 +52,8 @@ export async function readWorkbenchSnapshot() {
         documentTemplates,
         redIndex,
         presetDocuments,
-        printHistory
+        printHistory: printHistorySnapshot.entries,
+        historyVaultConfig: printHistorySnapshot.config
     };
 }
 /**
@@ -97,37 +92,7 @@ export async function estimateWorkbenchBackupFootprint() {
     }
 }
 async function readPrintHistoryFootprint() {
-    const db = await openPrintHistoryDatabase();
-    try {
-        const tx = db.transaction(PRINT_HISTORY_METADATA_STORE_NAME, "readonly");
-        const completion = waitForTransaction(tx);
-        const result = await new Promise((resolve, reject) => {
-            let count = 0;
-            let totalBytes = 0;
-            const req = tx.objectStore(PRINT_HISTORY_METADATA_STORE_NAME).openCursor();
-            req.onerror = () => reject(req.error ?? new Error("履歴容量を読み取れません。"));
-            req.onsuccess = () => {
-                const cursor = req.result;
-                if (!cursor) {
-                    resolve({ count, totalBytes });
-                    return;
-                }
-                const record = cursor.value;
-                if (record.pdfBytes > MAX_ARCHIVE_ENTRY_BYTES) {
-                    reject(new Error("出力履歴のPDFが64MiBを超えています。"));
-                    return;
-                }
-                count++;
-                totalBytes += record.pdfBytes;
-                cursor.continue();
-            };
-        });
-        await completion;
-        return result;
-    }
-    finally {
-        db.close();
-    }
+    return getSealedHistoryStats();
 }
 /**
  * 現在の保存内容を
@@ -139,7 +104,7 @@ async function readPrintHistoryFootprint() {
 export async function replaceWorkbenchSnapshot(snapshot) {
     await replaceDocumentTemplates(snapshot.documentTemplates);
     await replacePresetDocuments(snapshot.presetDocuments);
-    await replacePrintHistory(snapshot.printHistory);
+    await replacePrintHistory(snapshot.printHistory, snapshot.historyVaultConfig);
     replaceRedIndexData(snapshot.redIndex);
     /**
      * origin全体のストレージ永続化を
@@ -239,113 +204,18 @@ async function replacePresetDocuments(documents) {
 /* =========================================================
    DOCUMENT BUILDER PDF History
    ========================================================= */
-function openPrintHistoryDatabase() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(PRINT_HISTORY_DATABASE_NAME, PRINT_HISTORY_DATABASE_VERSION);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            const upgrade = request.transaction;
-            if (!upgrade)
-                throw new Error("PDF履歴DBの更新を開始できませんでした。");
-            if (!db.objectStoreNames.contains(PRINT_HISTORY_STORE_NAME)) {
-                db.createObjectStore(PRINT_HISTORY_STORE_NAME, { keyPath: "id" });
-            }
-            const metaMissing = !db.objectStoreNames.contains(PRINT_HISTORY_METADATA_STORE_NAME);
-            let meta;
-            if (metaMissing) {
-                meta = db.createObjectStore(PRINT_HISTORY_METADATA_STORE_NAME, { keyPath: "id" });
-                meta.createIndex(PRINT_HISTORY_METADATA_INDEX_NAME, ["createdAt", "id"], { unique: true });
-            }
-            else {
-                meta = upgrade.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
-            }
-            if (!db.objectStoreNames.contains(PRINT_HISTORY_STATS_STORE_NAME)) {
-                db.createObjectStore(PRINT_HISTORY_STATS_STORE_NAME, { keyPath: "id" });
-            }
-            const stats = upgrade.objectStore(PRINT_HISTORY_STATS_STORE_NAME);
-            let count = 0;
-            let totalBytes = 0;
-            const cursor = metaMissing ? upgrade.objectStore(PRINT_HISTORY_STORE_NAME).openCursor()
-                : meta.openCursor();
-            cursor.onsuccess = () => {
-                const row = cursor.result;
-                if (!row) {
-                    stats.put({ id: PRINT_HISTORY_STATS_KEY, count, totalBytes });
-                    return;
-                }
-                const record = row.value;
-                const info = metaMissing
-                    ? { id: record.id, recipientName: record.recipientName, fileName: record.fileName,
-                        createdAt: record.createdAt, pdfBytes: record.pdfBlob.size }
-                    : row.value;
-                if (metaMissing)
-                    meta.put(info);
-                count++;
-                totalBytes += info.pdfBytes;
-                row.continue();
-            };
-        };
-        let blocked = false;
-        request.onsuccess = () => {
-            request.result.onversionchange = () => request.result.close();
-            if (blocked)
-                request.result.close();
-            else
-                resolve(request.result);
-        };
-        request.onerror = () => reject(request.error ?? new Error("PDF履歴データベースを開けませんでした。"));
-        request.onblocked = () => {
-            blocked = true;
-            reject(new Error("古いWORKBENCHが別タブで開いています。別タブを閉じて再読み込みしてください。"));
-        };
-    });
-}
 async function readPrintHistory() {
-    const db = await openPrintHistoryDatabase();
-    try {
-        const transaction = db.transaction(PRINT_HISTORY_STORE_NAME, "readonly");
-        const completion = waitForTransaction(transaction);
-        const entries = await requestToPromise(transaction.objectStore(PRINT_HISTORY_STORE_NAME).getAll());
-        await completion;
-        return entries;
-    }
-    finally {
-        db.close();
-    }
+    return readOpaqueHistorySnapshot();
 }
-async function replacePrintHistory(entries) {
-    const db = await openPrintHistoryDatabase();
-    try {
-        // 履歴の全件置換は単一トランザクション。途中失敗時は自動abort。
-        const transaction = db.transaction([PRINT_HISTORY_STORE_NAME, PRINT_HISTORY_METADATA_STORE_NAME, PRINT_HISTORY_STATS_STORE_NAME], "readwrite");
-        const completion = waitForTransaction(transaction);
-        const store = transaction.objectStore(PRINT_HISTORY_STORE_NAME);
-        const metadataStore = transaction.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
-        try {
-            store.clear();
-            metadataStore.clear();
-            for (const entry of entries) {
-                store.put(entry);
-                metadataStore.put({ id: entry.id, recipientName: entry.recipientName,
-                    fileName: entry.fileName, createdAt: entry.createdAt,
-                    pdfBytes: entry.pdfBlob.size });
-            }
-            transaction.objectStore(PRINT_HISTORY_STATS_STORE_NAME).put({
-                id: PRINT_HISTORY_STATS_KEY,
-                count: entries.length,
-                totalBytes: entries.reduce((sum, entry) => sum + entry.pdfBlob.size, 0)
-            });
-        }
-        catch (error) {
-            transaction.abort();
-            void completion.catch(() => { });
-            throw error;
-        }
-        await completion;
+async function replacePrintHistory(entries, vaultConfig) {
+    if (entries.every(entry => isSealed(entry))) {
+        await replaceOpaqueHistorySnapshot({ config: vaultConfig ?? null, entries: entries });
+        return;
     }
-    finally {
-        db.close();
-    }
+    if (entries.some(entry => isSealed(entry)))
+        throw new Error("暗号化形式と旧形式のPDF履歴が混在しています。");
+    const sealed = await sealLegacyHistorySnapshot(entries);
+    await replaceOpaqueHistorySnapshot(sealed);
 }
 /* =========================================================
    DOCUMENT BUILDER Database Open

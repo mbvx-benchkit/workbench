@@ -1,5 +1,5 @@
 /** History pagination, generation safety and UI state. */
-import { getPrintHistoryPage, getPrintHistoryStats, type PrintHistoryCursor } from "../print-history-db.js";
+import { getPrintHistoryPage, getPrintHistoryStats, ensureHistoryUnlocked, HistoryVaultCancelledError, type PrintHistoryCursor } from "../print-history-db.js";
 export interface PrintHistoryControls {
     printHistoryDialog: HTMLDialogElement;
     printHistoryList: HTMLElement;
@@ -30,8 +30,9 @@ async function openPrintHistory(): Promise<void> {
     loading.className = "print-history-dialog__empty";
     loading.textContent = "履歴を読み込んでいます...";
     printHistoryList.appendChild(loading);
-    if (!printHistoryDialog.open) printHistoryDialog.showModal();
     try {
+        await ensureHistoryUnlocked();
+        if (!printHistoryDialog.open) printHistoryDialog.showModal();
         const [stats, page] = await Promise.all([
             getPrintHistoryStats(), getPrintHistoryPage(null, 50)
         ]);
@@ -54,7 +55,9 @@ async function openPrintHistory(): Promise<void> {
         printHistoryNextCursor = page.nextCursor;
         printHistoryMoreButton.hidden = !page.nextCursor;
     } catch (error) {
-        if (generation !== printHistoryGeneration || !printHistoryDialog.open) return;
+        if (error instanceof HistoryVaultCancelledError) return;
+        if (generation !== printHistoryGeneration) return;
+        if (!printHistoryDialog.open) { showToast(`履歴を開けませんでした。${getErrorMessage(error)}`); return; }
         printHistoryStats.textContent = "";
         printHistoryList.textContent = `履歴を読み込めませんでした。${getErrorMessage(error)}`;
     }

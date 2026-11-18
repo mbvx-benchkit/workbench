@@ -10,7 +10,7 @@ assert.equal(size.bytes,MAX_ARCHIVE_EXPANDED_BYTES);
 assert.throws(()=>size.add('one-more.pdf',1),/上限/);
 const empty = {documentTemplates:[],redIndex:null,presetDocuments:[],printHistory:[]};
 const archive = await createBackupArchive(empty);
-assert.equal((await readBackupArchive(new Uint8Array(await archive.arrayBuffer()))).sourceBackupVersion,2);
+assert.equal((await readBackupArchive(new Uint8Array(await archive.arrayBuffer()))).sourceBackupVersion,3);
 await assert.rejects(createBackupArchive({...empty,documentTemplates:[{payload:'x'.repeat(20_000_010)}]}),/大きすぎ/);
 console.log('PASS: export size limits and archive import limits match');
 

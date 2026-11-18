@@ -1,6 +1,7 @@
 import { getProductLabels, getLabelJan, getLabelImage } from "./export-utils.js";
 import { getLabelName } from "./export-utils.js";
 import { downloadJson } from "./export-utils.js";
+import { assertExportJsonFits } from "./json-file-policy.js";
 /**
  * export.ts
  *
@@ -108,6 +109,8 @@ export function stringifyExportData(data) {
 export function exportToJson(preview, imageModeToggle) {
     const data = createExportData(preview, imageModeToggle);
     const json = stringifyExportData(data);
+    // 出力できるものは、必ず同じアプリで再インポートできる容量に制限する。
+    assertExportJsonFits(json);
     const fileName = createExportFileName();
     downloadJson(json, fileName);
 }
@@ -127,6 +130,7 @@ export function initializeExport(elements) {
         }
         catch (error) {
             console.error("JSONの出力に失敗しました。", error);
+            window.alert(error instanceof Error ? error.message : "JSONを出力できませんでした。");
         }
     });
 }

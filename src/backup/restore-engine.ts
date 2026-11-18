@@ -49,20 +49,24 @@ export async function restoreWithRecovery(
         } catch (restoreError) {
             try {
                 await deps.replace(original);
-                await deps.clearRecovery();
+                // The marker is removed before the journal: on interruption,
+                // the surviving journal can still offer a recovery action.
                 session.finishReplacement();
+                await deps.clearRecovery();
             } catch (rollbackError) {
                 console.error("元データへの復旧に失敗しました。復旧コピーを保持しています。", rollbackError);
                 throw new Error("復元と自動復旧の両方に失敗しました。復旧コピーは残っています。画面の「元のデータを復旧」ボタンから戻してください。");
             }
             throw restoreError;
         }
+        // Keep the journal until after the marker is cleared. Both steps
+        // occur under the exclusive lock, so ordinary writes cannot interleave.
+        session.finishReplacement();
         try {
             await deps.clearRecovery();
         } catch {
             throw new Error("復元は完了しましたが、復旧コピーを削除できませんでした。復旧操作で状態を確認してください。");
         }
-        session.finishReplacement();
         return target;
     });
 }
@@ -80,8 +84,8 @@ export async function recoverPreviousState(
         }
         session.beginReplacement();
         await deps.replace(record.snapshot);
-        await deps.clearRecovery();
         session.finishReplacement();
+        await deps.clearRecovery();
         return true;
     }, true);
 }

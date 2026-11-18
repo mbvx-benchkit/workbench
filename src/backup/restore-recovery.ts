@@ -1,3 +1,4 @@
+import { isSealed, validateSealedHistoryRecord } from "../../shared/print-history-vault.js";
 import type { WorkbenchBackupSnapshot } from "./backup-types.js";
 
 /**
@@ -59,6 +60,13 @@ export async function readPendingRecovery(): Promise<RecoveryRecord | null> {
 }
 
 export async function savePendingRecovery(snapshot: WorkbenchBackupSnapshot): Promise<void> {
+    if (snapshot.printHistory.some(entry => !isSealed(entry))) {
+        throw new Error("暗号化されていないPDF履歴を復旧コピーへ保存できません。");
+    }
+    snapshot.printHistory.forEach(validateSealedHistoryRecord);
+    if (snapshot.printHistory.length && !snapshot.historyVaultConfig) {
+        throw new Error("履歴暗号化設定がないため復旧コピーを作成できません。");
+    }
     const db = await openDatabase();
     try {
         const tx = db.transaction(STORE_NAME, "readwrite");

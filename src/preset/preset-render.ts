@@ -373,7 +373,7 @@ function openPresetPdf(
 
     const objectUrl =
         URL.createObjectURL(
-            presetDocument.pdfBlob
+            new Blob([presetDocument.pdfBlob], {type: "application/pdf"})
         );
 
 

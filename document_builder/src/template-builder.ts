@@ -961,32 +961,22 @@ export function setupTemplateBuilder(
             "保存中...";
 
 
+        let committed = false;
         try {
+            await options.onSave(template, mode);
+            committed = true;
 
-            await options.onSave(
-                template,
-                mode
-            );
-
-
+            // This is presentation-only work. A failure here cannot undo the DB commit.
             resetBuilder();
-
-
             showListView();
-
-
             options.onReturnToList();
-
-        } catch (
-        error
-        ) {
-
-            showError(
-                getErrorMessage(
-                    error
-                )
-            );
-
+        } catch (error) {
+            if (committed) {
+                console.error("テンプレートは保存済みですが、画面の切り替えに失敗しました。", error);
+                window.alert("テンプレートは保存されましたが画面を更新できませんでした。再読み込みしてください。");
+            } else {
+                showError(getErrorMessage(error));
+            }
         } finally {
 
             saveButton.disabled =

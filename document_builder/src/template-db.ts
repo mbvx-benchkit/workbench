@@ -131,6 +131,27 @@ export async function getTemplate(
 }
 
 
+/** New templates must use add(), not read-then-put(), to prevent cross-tab overwrites. */
+export async function addTemplate(template: DocumentTemplate): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
+        const db = await openTemplateDatabase();
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const completion = waitForTransaction(tx);
+        try {
+            await requestToPromise(tx.objectStore(STORE_NAME).add(template));
+            await completion;
+        } catch (error) {
+            // A failed request aborts the transaction. Observe that rejection
+            // before converting the error to avoid an unhandled promise.
+            await completion.catch(() => {});
+            if (error instanceof Error && (error.name === "ConstraintError" || error.message.includes("ConstraintError"))) {
+                throw new Error("同じIDのテンプレートがすでに登録されています。既存の設定は上書きされません。");
+            }
+            throw error;
+        }
+    });
+}
+
 /**
  * テンプレートを追加 / 更新する。
  *

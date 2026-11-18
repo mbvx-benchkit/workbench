@@ -1,4 +1,4 @@
-import { withWorkbenchSnapshotLock } from "../workbench-data-lock.js";
+import { withWorkbenchSnapshotLock, hasWorkbenchRestoreMarker } from "../workbench-data-lock.js";
 /* WORKBENCH_EXTRACT_requestBackupPassword */
 import { requestBackupPasswordDialog } from "./backup-password-dialog.js";
 import type { WorkbenchBackupOptions } from "./backup-ui-utils.js";
@@ -111,7 +111,7 @@ export function setupWorkbenchBackup(
     // 復旧用データが残る間、次の復元を開始させない。
     // 読み取りに失敗した場合も、状態不明として復元操作を禁止する。
     let isBusy = true;
-    let recoveryState: "checking" | "clear" | "pending" | "unknown" = "checking";
+    let recoveryState: "checking" | "clear" | "pending" | "orphaned-marker" | "unknown" = "checking";
     setBusy(true);
     recoveryButton.hidden = true;
     recoveryButton.addEventListener("click", () => { void attemptRecovery(); });
@@ -120,10 +120,14 @@ export function setupWorkbenchBackup(
     async function refreshRecoveryState(announcePending = false): Promise<void> {
         try {
             const pending = await readPendingRecovery();
-            recoveryState = pending ? "pending" : "clear";
-            recoveryButton.hidden = !pending;
-            if (pending && announcePending) {
+            // The journal may already have been deleted when a crash leaves a marker.
+            const marker = hasWorkbenchRestoreMarker();
+            recoveryState = pending ? "pending" : marker ? "orphaned-marker" : "clear";
+            recoveryButton.hidden = recoveryState === "clear";
+            if (announcePending && recoveryState === "pending") {
                 showStatus("中断された復元の元データが残っています。復旧ボタンから元の状態へ戻してください。");
+            } else if (announcePending && recoveryState === "orphaned-marker") {
+                showStatus("前回の復元の終了処理が中断されています。復旧ボタンから保存ロックを解除してください。");
             }
         } catch (error) {
             recoveryState = "unknown";
@@ -142,12 +146,17 @@ export function setupWorkbenchBackup(
     }
 
     async function attemptRecovery(): Promise<void> {
-        if (isBusy || recoveryState !== "pending") return;
-        if (!window.confirm("前回の復元前に保存したデータへ戻します。現在のデータは置き換わります。よろしいですか？")) return;
+        if (isBusy || (recoveryState !== "pending" && recoveryState !== "orphaned-marker")) return;
+        const message = recoveryState === "orphaned-marker"
+            ? "復旧記録がないため現在のデータを維持し、残った保存ロックだけ解除します。よろしいですか？"
+            : "前回の復元前に保存したデータへ戻します。現在のデータは置き換わります。よろしいですか？";
+        if (!window.confirm(message)) return;
         setBusy(true);
         try {
-            await recoverPreviousState();
-            showStatus("中断した復元の前のデータへ戻しました。");
+            const restored = await recoverPreviousState();
+            showStatus(restored
+                ? "中断した復元の前のデータへ戻しました。"
+                : "復元の終了処理で残っていた保存ロックを解除しました。最新の状態を確認してください。");
             if (onRestored) await onRestored();
         } catch (error) {
             showStatus("元のデータへの復旧に失敗しました。復旧コピーは保持しています。" + formatErrorMessage(error));
@@ -456,7 +465,7 @@ export function setupWorkbenchBackup(
 
     function updateRecoveryControls(): void {
         importButton.disabled = isBusy || recoveryState !== "clear";
-        recoveryButton.hidden = recoveryState !== "pending";
+        recoveryButton.hidden = recoveryState !== "pending" && recoveryState !== "orphaned-marker";
         recoveryButton.disabled = isBusy;
     }
 
@@ -538,7 +547,7 @@ function confirmRestore(
             `プレビュー画像: ${previewCount}件`,
             snapshot.sourceBackupVersion === 1
                 ? "ビジネス文書のPDF履歴: 旧形式に含まれないため、現在の履歴を保持します。"
-                : `ビジネス文書のPDF履歴: ${snapshot.printHistory.length}件（置き換え）`,
+                : `ビジネス文書の暗号化PDF履歴: ${snapshot.printHistory.length}件（置き換え。履歴専用パスワードもバックアップ時点の設定に戻ります）`,
             "",
             "この操作を実行しますか？"
         ].join(

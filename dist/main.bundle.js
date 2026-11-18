@@ -2418,8 +2418,8 @@ var initialStorageError = null;
 try {
   openedGeneration = localValue(GENERATION_KEY);
   openedWithPendingRestore = Boolean(localValue(RESTORE_PENDING_KEY));
-} catch (error) {
-  initialStorageError = error;
+} catch (error2) {
+  initialStorageError = error2;
 }
 function ensureCurrentGeneration() {
   if (initialStorageError) {
@@ -2457,13 +2457,13 @@ function hasRecoveryJournal() {
       const db = open.result;
       db.onversionchange = () => db.close();
       let done2 = false;
-      const finish = (result, error) => {
+      const finish = (result, error2) => {
         if (done2)
           return;
         done2 = true;
         db.close();
-        if (error)
-          reject(error);
+        if (error2)
+          reject(error2);
         else
           resolve(result);
       };
@@ -2473,11 +2473,14 @@ function hasRecoveryJournal() {
         request.onsuccess = () => finish(Boolean(request.result));
         request.onerror = () => finish(false, request.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
         tx.onabort = () => finish(false, tx.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
-      } catch (error) {
-        finish(false, error instanceof Error ? error : new Error(String(error)));
+      } catch (error2) {
+        finish(false, error2 instanceof Error ? error2 : new Error(String(error2)));
       }
     };
   });
+}
+function hasWorkbenchRestoreMarker() {
+  return Boolean(localValue(RESTORE_PENDING_KEY));
 }
 async function ensureSafe() {
   ensureCurrentGeneration();
@@ -2532,9 +2535,9 @@ async function withWorkbenchRestoreLock(operation, recovery = false) {
         localStorage.setItem(RESTORE_PENDING_KEY, next);
         try {
           localStorage.setItem(GENERATION_KEY, next);
-        } catch (error) {
+        } catch (error2) {
           localStorage.removeItem(RESTORE_PENDING_KEY);
-          throw error;
+          throw error2;
         }
         openedGeneration = next;
       },
@@ -2593,7 +2596,7 @@ function assertBackupEntrySize(path, size) {
   if (!Number.isSafeInteger(size) || size < 0) {
     throw new Error(`\u30D5\u30A1\u30A4\u30EB\u5BB9\u91CF\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
-  const max = path.endsWith(".json") ? MAX_JSON_TEXT_LENGTH : /\.(?:png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES : MAX_ARCHIVE_ENTRY_BYTES;
+  const max = path.startsWith("document_builder/print-history/encrypted/") && path.endsWith(".bin") ? MAX_ARCHIVE_ENTRY_BYTES + 16 : path.endsWith(".json") ? MAX_JSON_TEXT_LENGTH : /\.(?:png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES : MAX_ARCHIVE_ENTRY_BYTES;
   if (size > max) {
     throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306E\u30D5\u30A1\u30A4\u30EB\u304C\u5927\u304D\u3059\u304E\u307E\u3059: ${path}`);
   }
@@ -2603,10 +2606,10 @@ var BackupSizeBudget = class {
     this.entries = 0;
     this.bytes = 0;
   }
-  add(path, bytes) {
-    assertBackupEntrySize(path, bytes);
+  add(path, bytes2) {
+    assertBackupEntrySize(path, bytes2);
     this.entries++;
-    this.bytes += bytes;
+    this.bytes += bytes2;
     if (this.entries > MAX_ARCHIVE_ENTRIES) {
       throw new Error("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30D5\u30A1\u30A4\u30EB\u4EF6\u6570\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
     }
@@ -2713,11 +2716,11 @@ async function replaceAllPresetDocuments(documents) {
     for (const document2 of documents) {
       store.put(document2);
     }
-  } catch (error) {
+  } catch (error2) {
     transaction.abort();
     void completion.catch(() => {
     });
-    throw error;
+    throw error2;
   }
   await completion;
 }
@@ -2855,10 +2858,10 @@ function renderPresetGrid(documents, container, handlers) {
 function renderPresetGridError(container, message) {
   revokePreviewObjectUrls();
   container.replaceChildren();
-  const error = document.createElement("p");
-  error.className = "preset-noscript";
-  error.textContent = message;
-  container.appendChild(error);
+  const error2 = document.createElement("p");
+  error2.className = "preset-noscript";
+  error2.textContent = message;
+  container.appendChild(error2);
   container.setAttribute("aria-busy", "false");
 }
 function createPresetCard(presetDocument) {
@@ -2924,7 +2927,7 @@ function createPresetContent(presetDocument) {
   return content;
 }
 function openPresetPdf(presetDocument) {
-  const objectUrl = URL.createObjectURL(presetDocument.pdfBlob);
+  const objectUrl = URL.createObjectURL(new Blob([presetDocument.pdfBlob], { type: "application/pdf" }));
   const link = document.createElement("a");
   link.href = objectUrl;
   link.target = "_blank";
@@ -2949,11 +2952,11 @@ function requireElement(selector) {
   }
   return element;
 }
-function formatBytes(bytes) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
+function formatBytes(bytes2) {
+  if (bytes2 < 1024) {
+    return `${bytes2} B`;
   }
-  const kilobytes = bytes / 1024;
+  const kilobytes = bytes2 / 1024;
   if (kilobytes < 1024) {
     return `${kilobytes.toFixed(1)} KB`;
   }
@@ -3019,8 +3022,8 @@ function bindPresetManagerEvents(elements, handlers) {
 }
 
 // dist/backup/archive-file-utils.js
-function createBlob(bytes, mimeType) {
-  const copy = new Uint8Array(bytes);
+function createBlob(bytes2, mimeType) {
+  const copy = new Uint8Array(bytes2);
   return new Blob([
     copy.buffer
   ], {
@@ -3042,7 +3045,7 @@ function getImageExtension(mimeType) {
       throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
   }
 }
-function isPng(bytes) {
+function isPng(bytes2) {
   const signature = [
     137,
     80,
@@ -3053,19 +3056,19 @@ function isPng(bytes) {
     26,
     10
   ];
-  if (bytes.length < signature.length) {
+  if (bytes2.length < signature.length) {
     return false;
   }
-  return signature.every((byte, index) => bytes[index] === byte);
+  return signature.every((byte, index) => bytes2[index] === byte);
 }
-function isJpeg(bytes) {
-  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+function isJpeg(bytes2) {
+  return bytes2.length >= 3 && bytes2[0] === 255 && bytes2[1] === 216 && bytes2[2] === 255;
 }
-function isWebp(bytes) {
-  if (bytes.length < 12) {
+function isWebp(bytes2) {
+  if (bytes2.length < 12) {
     return false;
   }
-  return bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
+  return bytes2[0] === 82 && bytes2[1] === 73 && bytes2[2] === 70 && bytes2[3] === 70 && bytes2[8] === 87 && bytes2[9] === 69 && bytes2[10] === 66 && bytes2[11] === 80;
 }
 function sanitizeFileName(value) {
   const normalized = value.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/\.+$/g, "");
@@ -3080,12 +3083,12 @@ async function detectPresetPreviewMimeType(blob) {
   if (blob.size === 0 || blob.size > MAX_ARCHIVE_IMAGE_BYTES) {
     throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306F32MiB\u4EE5\u4E0B\u306EPNG\u3001JPEG\u3001WebP\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   }
-  const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
-  if (isPng(bytes))
+  const bytes2 = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+  if (isPng(bytes2))
     return "image/png";
-  if (isJpeg(bytes))
+  if (isJpeg(bytes2))
     return "image/jpeg";
-  if (isWebp(bytes))
+  if (isWebp(bytes2))
     return "image/webp";
   return null;
 }
@@ -3117,8 +3120,8 @@ async function validateRestorablePresetFile(document2) {
     if (!format)
       throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306E\u5185\u5BB9\u304CPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u3067\u3082\u3042\u308A\u307E\u305B\u3093\u3002");
     return format;
-  } catch (error) {
-    throw new Error(`\u5B9A\u578B\u5370\u5237\u7269\u300C${document2.title}\u300D\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u305B\u3093: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (error2) {
+    throw new Error(`\u5B9A\u578B\u5370\u5237\u7269\u300C${document2.title}\u300D\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u305B\u3093: ${error2 instanceof Error ? error2.message : String(error2)}`);
   }
 }
 
@@ -3165,6 +3168,11 @@ function createPresetEditorSubmit(deps) {
       if (selectedPreview && !selectedPreviewMime) {
         throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306E\u5185\u5BB9\u304CPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u3067\u3082\u3042\u308A\u307E\u305B\u3093\u3002");
       }
+      const existingPreviewMime = !selectedPreview && editingDocument?.previewBlob ? await detectPresetPreviewMimeType(editingDocument.previewBlob) : null;
+      if (!selectedPreview && editingDocument?.previewBlob && !existingPreviewMime) {
+        throw new Error("\u65E2\u5B58\u306E\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u304C\u4E0D\u6B63\u3067\u3059\u3002\u753B\u50CF\u3092\u9078\u3073\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
+      const effectivePreviewMime = selectedPreviewMime ?? existingPreviewMime;
       const now = Date.now();
       let presetDocument;
       if (editingDocument) {
@@ -3175,10 +3183,12 @@ function createPresetEditorSubmit(deps) {
           orientation,
           pdfFileName: selectedPdf ? selectedPdf.name : editingDocument.pdfFileName,
           pdfMimeType: selectedPdf ? "application/pdf" : editingDocument.pdfMimeType,
-          pdfBlob: selectedPdf ?? editingDocument.pdfBlob,
+          pdfBlob: new Blob([selectedPdf ?? editingDocument.pdfBlob], { type: "application/pdf" }),
           previewFileName: selectedPreview ? selectedPreview.name : editingDocument.previewFileName,
-          previewMimeType: selectedPreview ? selectedPreviewMime : editingDocument.previewMimeType,
-          previewBlob: selectedPreview ?? editingDocument.previewBlob,
+          previewMimeType: effectivePreviewMime,
+          previewBlob: selectedPreview ?? editingDocument.previewBlob ? new Blob([selectedPreview ?? editingDocument.previewBlob], {
+            type: effectivePreviewMime ?? ""
+          }) : null,
           updatedAt: now
         };
       } else {
@@ -3193,10 +3203,10 @@ function createPresetEditorSubmit(deps) {
           orientation,
           pdfFileName: selectedPdf.name,
           pdfMimeType: "application/pdf",
-          pdfBlob: selectedPdf,
+          pdfBlob: new Blob([selectedPdf], { type: "application/pdf" }),
           previewFileName: selectedPreview ? selectedPreview.name : null,
           previewMimeType: selectedPreview ? selectedPreviewMime : null,
-          previewBlob: selectedPreview,
+          previewBlob: selectedPreview ? new Blob([selectedPreview], { type: selectedPreviewMime }) : null,
           sortOrder,
           createdAt: now,
           updatedAt: now
@@ -3215,9 +3225,9 @@ function createPresetEditorSubmit(deps) {
         dialog.close();
       }
       deps.editingDocument = null;
-    } catch (error) {
-      const message = storageCommitted ? "\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u518D\u5EA6\u4FDD\u5B58\u3059\u308B\u5FC5\u8981\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : `\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${error instanceof Error ? error.message : ""}`;
-      console.error(message, error);
+    } catch (error2) {
+      const message = storageCommitted ? "\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u518D\u5EA6\u4FDD\u5B58\u3059\u308B\u5FC5\u8981\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : `\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${error2 instanceof Error ? error2.message : ""}`;
+      console.error(message, error2);
       showEditorError(message);
     } finally {
       saveButton.disabled = false;
@@ -3240,10 +3250,10 @@ function createPresetManagerListView(deps) {
   function renderManagerListError() {
     revokeManagerPreviewObjectUrls();
     managerList.replaceChildren();
-    const error = document.createElement("div");
-    error.className = "preset-manager-empty";
-    error.textContent = "\u4FDD\u5B58\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
-    managerList.appendChild(error);
+    const error2 = document.createElement("div");
+    error2.className = "preset-manager-empty";
+    error2.textContent = "\u4FDD\u5B58\u30C7\u30FC\u30BF\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
+    managerList.appendChild(error2);
   }
   function createManagerItem(presetDocument) {
     const item = document.createElement("article");
@@ -3315,11 +3325,11 @@ function createPresetManagerListView(deps) {
   return { renderManagerEmpty, renderManagerListError, createManagerItem, createManagerPreview, createManagerBody, createManagerActions };
 }
 function createPresetActionButton(label) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "glass-button";
-  button.textContent = label;
-  return button;
+  const button2 = document.createElement("button");
+  button2.type = "button";
+  button2.className = "glass-button";
+  button2.textContent = label;
+  return button2;
 }
 
 // dist/preset/preset-manager.js
@@ -3355,8 +3365,8 @@ function setupPresetManager(options) {
     }
     try {
       await refreshManagerList();
-    } catch (error) {
-      console.error("\u5B9A\u578B\u5370\u5237\u7269\u306E\u7BA1\u7406\u4E00\u89A7\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+    } catch (error2) {
+      console.error("\u5B9A\u578B\u5370\u5237\u7269\u306E\u7BA1\u7406\u4E00\u89A7\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error2);
       renderManagerListError();
     }
   }
@@ -3484,23 +3494,23 @@ function setupPresetManager(options) {
     }
     try {
       await deletePresetDocument(presetDocument.id);
-    } catch (error) {
-      console.error("\u5B9A\u578B\u5370\u5237\u7269\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+    } catch (error2) {
+      console.error("\u5B9A\u578B\u5370\u5237\u7269\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
       window.alert("\u5B9A\u578B\u5370\u5237\u7269\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30C7\u30FC\u30BF\u306F\u5909\u66F4\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
       return;
     }
     let viewFailed = false;
     try {
       await notifyChanged();
-    } catch (error) {
+    } catch (error2) {
       viewFailed = true;
-      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u30E1\u30A4\u30F3\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u30E1\u30A4\u30F3\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
     }
     try {
       await refreshManagerList();
-    } catch (error) {
+    } catch (error2) {
       viewFailed = true;
-      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u7BA1\u7406\u4E00\u89A7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u7BA1\u7406\u4E00\u89A7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error2);
       renderManagerListError();
     }
     if (viewFailed) {
@@ -3662,11 +3672,618 @@ function createBackupFileName() {
     ".wbenc"
   ].join("");
 }
-function formatErrorMessage(error) {
-  if (error instanceof Error) {
-    return error.message;
+function formatErrorMessage(error2) {
+  if (error2 instanceof Error) {
+    return error2.message;
   }
   return "\u4E0D\u660E\u306A\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002";
+}
+
+// shared/history-vault-ui.js
+var DELETE_PHRASE = "\u5C65\u6B74\u3092\u524A\u9664";
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== void 0) node.textContent = text;
+  return node;
+}
+function makeDialog(title, description, dangerous = false) {
+  const dialog = el("dialog", "history-vault-dialog");
+  dialog.setAttribute("aria-label", title);
+  const surface = el("div", "history-vault-dialog__surface");
+  const eyebrow = el("p", "history-vault-dialog__eyebrow", dangerous ? "PDF HISTORY \xB7 RESET" : "PDF HISTORY \xB7 SECURITY");
+  const heading = el("h2", "history-vault-dialog__title", title);
+  const note = el("p", "history-vault-dialog__description", description);
+  const form = el("form", "history-vault-dialog__form");
+  form.noValidate = true;
+  const alert = el("p", "history-vault-dialog__error");
+  alert.setAttribute("role", "alert");
+  alert.setAttribute("aria-live", "polite");
+  const actions = el("div", "history-vault-dialog__actions");
+  surface.append(eyebrow, heading, note, form);
+  form.append(alert, actions);
+  dialog.append(surface);
+  document.body.appendChild(dialog);
+  return { dialog, form, alert, actions };
+}
+function field(label, autocomplete, placeholder) {
+  const wrapper = el("label", "history-vault-dialog__field");
+  const title = el("span", "history-vault-dialog__label", label);
+  const input = el("input", "history-vault-dialog__input");
+  input.type = "password";
+  input.required = true;
+  input.autocomplete = autocomplete;
+  input.placeholder = placeholder;
+  wrapper.append(title, input);
+  return { wrapper, input };
+}
+function button(text, kind = "secondary", type = "button") {
+  const node = el("button", `history-vault-dialog__button history-vault-dialog__button--${kind}`, text);
+  node.type = type;
+  return node;
+}
+function showDialog(dialog, focus) {
+  try {
+    dialog.showModal();
+    focus?.focus();
+  } catch (cause) {
+    dialog.remove();
+    throw cause;
+  }
+}
+function finishDialog(dialog, fields) {
+  for (const input of fields) input.value = "";
+  if (dialog.open) dialog.close();
+  dialog.remove();
+}
+function promptVaultPassword(create, errorMessage = "") {
+  if (typeof document === "undefined") return Promise.reject(new Error("\u30D6\u30E9\u30A6\u30B6\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u753B\u9762\u304C\u5FC5\u8981\u3067\u3059\u3002"));
+  return new Promise((resolve, reject) => {
+    const ui = makeDialog(
+      create ? "PDF\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A" : "PDF\u5C65\u6B74\u306E\u30ED\u30C3\u30AF\u3092\u89E3\u9664",
+      create ? "PDF\u5C65\u6B74\u306EPDF\u672C\u4F53\u30FB\u30D5\u30A1\u30A4\u30EB\u540D\u30FB\u5B9B\u5148\u540D\u3092\u6697\u53F7\u5316\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3059\u300212\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u4FDD\u5B58\u3057\u305FPDF\u5C65\u6B74\u3092\u958B\u304F\u305F\u3081\u3001\u5C65\u6B74\u5C02\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
+    );
+    const pass = field(create ? "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9" : "\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9", create ? "new-password" : "current-password", "12\u6587\u5B57\u4EE5\u4E0A");
+    const confirm = field("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u3082\u3046\u4E00\u5EA6\u5165\u529B", "new-password", "\u78BA\u8A8D\u7528\u30D1\u30B9\u30EF\u30FC\u30C9");
+    const hint = el("p", "history-vault-dialog__hint", "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u308B\u3068\u5C65\u6B74\u306E\u5FA9\u53F7\u306F\u3067\u304D\u307E\u305B\u3093\u3002");
+    ui.form.insertBefore(pass.wrapper, ui.alert);
+    if (create) ui.form.insertBefore(confirm.wrapper, ui.alert);
+    ui.form.insertBefore(hint, ui.alert);
+    ui.alert.textContent = errorMessage;
+    const cancel = button("\u30AD\u30E3\u30F3\u30BB\u30EB");
+    const okay = button(create ? "\u8A2D\u5B9A\u3057\u3066\u7D9A\u884C" : "\u30ED\u30C3\u30AF\u89E3\u9664", "primary", "submit");
+    const forgot = create ? null : button("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408", "link");
+    if (forgot) {
+      const left = el("div", "history-vault-dialog__action-left");
+      left.append(forgot);
+      ui.actions.append(left);
+    }
+    ui.actions.append(cancel, okay);
+    let settled = false;
+    const close = (outcome) => {
+      if (settled) return;
+      settled = true;
+      finishDialog(ui.dialog, [pass.input, confirm.input]);
+      resolve(outcome);
+    };
+    cancel.addEventListener("click", () => close(null));
+    forgot?.addEventListener("click", () => close({ reset: true }));
+    ui.dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      close(null);
+    });
+    ui.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (create && pass.input.value.length < 12) {
+        ui.alert.textContent = "12\u6587\u5B57\u4EE5\u4E0A\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+        return;
+      }
+      if (create && pass.input.value !== confirm.input.value) {
+        ui.alert.textContent = "\u78BA\u8A8D\u7528\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      close(pass.input.value);
+    });
+    try {
+      showDialog(ui.dialog, pass.input);
+    } catch (cause) {
+      reject(cause);
+    }
+  });
+}
+function confirmVaultReset(count) {
+  return new Promise((resolve, reject) => {
+    const ui = makeDialog(
+      "\u5C65\u6B74\u3092\u521D\u671F\u5316\u3059\u308B",
+      `\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408\u3001\u6697\u53F7\u5316\u6E08\u307F\u306EPDF\u5C65\u6B74${count.toLocaleString("ja-JP")}\u4EF6\u306F\u5FA9\u53F7\u3067\u304D\u307E\u305B\u3093\u3002\u521D\u671F\u5316\u3059\u308B\u3068\u3001\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306EPDF\u5C65\u6B74\u3068\u6697\u53F7\u5316\u8A2D\u5B9A\u3092\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002WORKBENCH\u306E\u307B\u304B\u306E\u30C7\u30FC\u30BF\u306F\u524A\u9664\u3057\u307E\u305B\u3093\u3002`,
+      true
+    );
+    const warning = el(
+      "p",
+      "history-vault-dialog__warning",
+      "\u3053\u306E\u64CD\u4F5C\u306F\u53D6\u308A\u6D88\u305B\u307E\u305B\u3093\u3002\u904E\u53BB\u306B\u4FDD\u5B58\u3057\u305F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5C65\u6B74\u304C\u6B8B\u3063\u3066\u3044\u3066\u3082\u3001\u305D\u306E\u5C65\u6B74\u3092\u958B\u304F\u306B\u306F\u5143\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u5FC5\u8981\u3067\u3059\u3002"
+    );
+    const confirmation = el("label", "history-vault-dialog__field");
+    confirmation.append(el("span", "history-vault-dialog__label", `\u78BA\u8A8D\u306E\u305F\u3081\u300C${DELETE_PHRASE}\u300D\u3068\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044`));
+    const input = el("input", "history-vault-dialog__input");
+    input.type = "text";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    confirmation.append(input);
+    ui.form.insertBefore(warning, ui.alert);
+    ui.form.insertBefore(confirmation, ui.alert);
+    const cancel = button("\u30AD\u30E3\u30F3\u30BB\u30EB");
+    const remove = button("\u5C65\u6B74\u3092\u5B8C\u5168\u306B\u524A\u9664", "danger", "submit");
+    ui.actions.append(cancel, remove);
+    let settled = false;
+    const close = (value) => {
+      if (settled) return;
+      settled = true;
+      finishDialog(ui.dialog, [input]);
+      resolve(value);
+    };
+    cancel.addEventListener("click", () => close(false));
+    ui.dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      close(false);
+    });
+    ui.form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (input.value !== DELETE_PHRASE) {
+        ui.alert.textContent = "\u78BA\u8A8D\u7528\u306E\u6587\u5B57\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002";
+        return;
+      }
+      close(true);
+    });
+    try {
+      showDialog(ui.dialog, input);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+// shared/print-history-vault.js
+var NAME = "workbench-document-print-history";
+var VERSION = 4;
+var HISTORY = "history";
+var META = "history-meta";
+var STATS = "history-stats";
+var CONFIG = "history-vault";
+var TOTAL = "total";
+var VAULT = "vault";
+var ROUNDS = 31e4;
+var LIMIT = 64 * 1024 * 1024;
+var encoder = new TextEncoder();
+var decoder = new TextDecoder("utf-8", { fatal: true });
+var sessionKey = null;
+var sessionIdentity = null;
+var migrationCheckedIdentity = null;
+var passwordDialogPending = null;
+var HAS_BROWSER_LOCKS = typeof window !== "undefined" && typeof document !== "undefined";
+var START_GENERATION = null;
+var initialGenerationError = null;
+try {
+  if (HAS_BROWSER_LOCKS) START_GENERATION = window.localStorage.getItem("workbench:data-generation:v1");
+} catch (cause) {
+  initialGenerationError = cause;
+}
+async function migrateUnderGlobalLock(operation, alreadyLocked = false) {
+  if (initialGenerationError) throw error("\u30D6\u30E9\u30A6\u30B6\u306E\u4FDD\u5B58\u9818\u57DF\u3092\u78BA\u8A8D\u3067\u304D\u306A\u3044\u305F\u3081\u5C65\u6B74\u306E\u79FB\u884C\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002");
+  if (alreadyLocked || !HAS_BROWSER_LOCKS) return operation();
+  if (!navigator.locks || typeof navigator.locks.request !== "function") {
+    throw error("\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306F\u8907\u6570\u30BF\u30D6\u306E\u30C7\u30FC\u30BF\u4FDD\u8B77\u306B\u5BFE\u5FDC\u3057\u3066\u3044\u307E\u305B\u3093\u3002");
+  }
+  return navigator.locks.request("workbench:data-integrity:v1", { mode: "shared" }, async () => {
+    if (window.localStorage.getItem("workbench:data-generation:v1") !== START_GENERATION || window.localStorage.getItem("workbench:restore-in-progress:v1")) {
+      throw error("\u5225\u306E\u30BF\u30D6\u3067\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    return operation();
+  });
+}
+function error(message) {
+  return new Error(message);
+}
+function randomBytes(length) {
+  const result = new Uint8Array(length);
+  crypto.getRandomValues(result);
+  return result;
+}
+function toNumbers(array) {
+  return Array.from(array);
+}
+function bytes(value, length, name) {
+  if (!Array.isArray(value) || value.length !== length || value.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+    throw error(`${name}\u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return new Uint8Array(value);
+}
+function bytesAny(value, name) {
+  if (!Array.isArray(value) || value.length < 16 || value.length > 65536 || value.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+    throw error(`${name}\u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+  }
+  return new Uint8Array(value);
+}
+function identity(config) {
+  return JSON.stringify([config.salt, config.checkIv, config.checkCipher]);
+}
+function requireKey(config) {
+  if (!config || !sessionKey || sessionIdentity !== identity(config)) {
+    sessionKey = null;
+    sessionIdentity = null;
+    throw error("PDF\u5C65\u6B74\u306F\u30ED\u30C3\u30AF\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u89E3\u9664\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return sessionKey;
+}
+function lockHistoryVault() {
+  sessionKey = null;
+  sessionIdentity = null;
+  migrationCheckedIdentity = null;
+}
+var HistoryVaultCancelledError = class extends Error {
+  constructor() {
+    super("\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u5165\u529B\u3092\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002");
+    this.name = "HistoryVaultCancelledError";
+  }
+};
+function waitTx(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || error("\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u51E6\u7406\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+    tx.onabort = () => reject(tx.error || error("\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u51E6\u7406\u304C\u4E2D\u65AD\u3055\u308C\u307E\u3057\u305F\u3002"));
+  });
+}
+function waitRequest(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || error("\u5C65\u6B74\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
+  });
+}
+function metadataOf(entry) {
+  if (isSealed(entry)) {
+    return {
+      id: entry.id,
+      createdAt: entry.createdAt,
+      pdfBytes: entry.pdfBytes,
+      metaIv: entry.metaIv,
+      encryptedMeta: entry.encryptedMeta
+    };
+  }
+  return {
+    id: entry.id,
+    recipientName: entry.recipientName,
+    fileName: entry.fileName,
+    createdAt: entry.createdAt,
+    pdfBytes: entry.pdfBlob.size
+  };
+}
+async function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(NAME, VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const tx = req.transaction;
+      if (!tx) throw error("PDF\u5C65\u6B74\u306E\u66F4\u65B0\u30C8\u30E9\u30F3\u30B6\u30AF\u30B7\u30E7\u30F3\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002");
+      if (!db.objectStoreNames.contains(HISTORY)) db.createObjectStore(HISTORY, { keyPath: "id" });
+      const missingMeta = !db.objectStoreNames.contains(META);
+      let meta;
+      if (missingMeta) {
+        meta = db.createObjectStore(META, { keyPath: "id" });
+        meta.createIndex("createdAtId", ["createdAt", "id"], { unique: true });
+      } else meta = tx.objectStore(META);
+      if (!db.objectStoreNames.contains(STATS)) db.createObjectStore(STATS, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(CONFIG)) db.createObjectStore(CONFIG, { keyPath: "id" });
+      const stats = tx.objectStore(STATS);
+      let count = 0, totalBytes = 0;
+      const cursor = missingMeta ? tx.objectStore(HISTORY).openCursor() : meta.openCursor();
+      cursor.onsuccess = () => {
+        const row = cursor.result;
+        if (!row) {
+          stats.put({ id: TOTAL, count, totalBytes });
+          return;
+        }
+        const info = missingMeta ? metadataOf(row.value) : row.value;
+        if (missingMeta) meta.put(info);
+        count++;
+        totalBytes += info.pdfBytes;
+        row.continue();
+      };
+    };
+    let blocked = false;
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => db.close();
+      if (blocked) db.close();
+      else resolve(db);
+    };
+    req.onerror = () => reject(req.error || error("PDF\u5C65\u6B74\u306E\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3002"));
+    req.onblocked = () => {
+      blocked = true;
+      reject(error("\u53E4\u3044WORKBENCH\u306E\u30BF\u30D6\u3092\u9589\u3058\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
+    };
+  });
+}
+async function get(db, storeName, id) {
+  const tx = db.transaction(storeName, "readonly");
+  const done2 = waitTx(tx);
+  const value = await waitRequest(tx.objectStore(storeName).get(id));
+  await done2;
+  return value || null;
+}
+async function getAll(db, storeName) {
+  const tx = db.transaction(storeName, "readonly");
+  const done2 = waitTx(tx);
+  const result = await waitRequest(tx.objectStore(storeName).getAll());
+  await done2;
+  return result;
+}
+async function configFromDB() {
+  const db = await openDB();
+  try {
+    return await get(db, CONFIG, VAULT);
+  } finally {
+    db.close();
+  }
+}
+function isSealed(entry) {
+  return Boolean(entry && entry.encryptedPdfBlob instanceof Blob && Array.isArray(entry.pdfIv) && Array.isArray(entry.metaIv) && entry.encryptedMeta);
+}
+function validateVaultConfig(config) {
+  if (!config || config.id !== VAULT || config.version !== 1 || config.rounds !== ROUNDS) throw error("\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  bytes(config.salt, 16, "\u6697\u53F7\u5316\u30BD\u30EB\u30C8");
+  bytes(config.checkIv, 12, "\u8A8D\u8A3CIV");
+  bytesAny(config.checkCipher, "\u8A8D\u8A3C\u30C7\u30FC\u30BF");
+  return config;
+}
+function validateSealedHistoryRecord(entry) {
+  if (!isSealed(entry) || typeof entry.id !== "string" || !entry.id || entry.id.length > 256 || !Number.isSafeInteger(entry.createdAt) || entry.createdAt < 0 || !Number.isSafeInteger(entry.pdfBytes) || entry.pdfBytes < 0 || entry.pdfBytes > LIMIT || entry.encryptedPdfBlob.size !== entry.pdfBytes + 16 || !(entry.encryptedMeta instanceof Uint8Array) || entry.encryptedMeta.length < 16 || entry.encryptedMeta.length > 65536) {
+    throw error("\u6697\u53F7\u5316\u3055\u308C\u305FPDF\u5C65\u6B74\u306E\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  bytes(entry.pdfIv, 12, "PDF\u6697\u53F7\u5316IV");
+  bytes(entry.metaIv, 12, "\u30E1\u30BF\u30C7\u30FC\u30BFIV");
+  return entry;
+}
+async function derive(password, config) {
+  const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: bytes(config.salt, 16, "\u6697\u53F7\u5316\u30BD\u30EB\u30C8"), iterations: config.rounds, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+async function cipher(key, id, field2, input) {
+  const iv = randomBytes(12);
+  const payload = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder.encode(`workbench:history:1:${field2}:${id}`) }, key, input);
+  return { iv: toNumbers(iv), data: new Uint8Array(payload) };
+}
+async function checkKey(key, config) {
+  try {
+    const clear = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(config.checkIv, 12, "\u8A8D\u8A3CIV"), additionalData: encoder.encode("workbench:history:vault:v1") }, key, bytesAny(config.checkCipher, "\u8A8D\u8A3C\u30C7\u30FC\u30BF"));
+    if (decoder.decode(clear) !== "WORKBENCH HISTORY VAULT v1") throw Error("bad verifier");
+  } catch {
+    throw error("\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3046\u304B\u3001\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u7834\u640D\u3057\u3066\u3044\u307E\u3059\u3002");
+  }
+}
+async function createHistoryVault(password, migrate = true) {
+  if (typeof password !== "string" || password.length < 12) throw error("\u5C65\u6B74\u30D1\u30B9\u30EF\u30FC\u30C9\u306F12\u6587\u5B57\u4EE5\u4E0A\u3067\u8A2D\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  const config = { id: VAULT, version: 1, rounds: ROUNDS, salt: toNumbers(randomBytes(16)) };
+  const key = await derive(password, config);
+  const iv = randomBytes(12);
+  const check = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: encoder.encode("workbench:history:vault:v1") }, key, encoder.encode("WORKBENCH HISTORY VAULT v1"));
+  config.checkIv = toNumbers(iv);
+  config.checkCipher = toNumbers(new Uint8Array(check));
+  const db = await openDB();
+  try {
+    const tx = db.transaction(CONFIG, "readwrite");
+    const done2 = waitTx(tx);
+    tx.objectStore(CONFIG).add(config);
+    await done2;
+  } finally {
+    db.close();
+  }
+  sessionKey = key;
+  sessionIdentity = identity(config);
+  migrationCheckedIdentity = null;
+  if (migrate) await migratePlainHistory();
+}
+async function unlockHistoryVault(password, migrate = true) {
+  const config = await configFromDB();
+  if (!config) throw error("\u5C65\u6B74\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u307E\u3060\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+  validateVaultConfig(config);
+  const key = await derive(password, config);
+  await checkKey(key, config);
+  sessionKey = key;
+  sessionIdentity = identity(config);
+  migrationCheckedIdentity = null;
+  if (migrate) await migratePlainHistory();
+}
+async function askPassword(create, previousError = "") {
+  if (passwordDialogPending) return passwordDialogPending;
+  passwordDialogPending = promptVaultPassword(create, previousError).finally(() => {
+    passwordDialogPending = null;
+  });
+  return passwordDialogPending;
+}
+async function ensureHistoryUnlocked(options = {}) {
+  const alreadyLocked = Boolean(options.alreadyLocked);
+  const config = await configFromDB();
+  if (config && sessionKey && sessionIdentity === identity(config)) {
+    if (migrationCheckedIdentity !== sessionIdentity) await migrateUnderGlobalLock(migratePlainHistory, alreadyLocked);
+    return;
+  }
+  if (!config) {
+    const pass = await askPassword(true);
+    if (pass === null) throw new HistoryVaultCancelledError();
+    try {
+      await migrateUnderGlobalLock(async () => {
+        await createHistoryVault(pass, false);
+        await migratePlainHistory();
+      }, alreadyLocked);
+      return;
+    } catch (err) {
+      if (err && err.name !== "ConstraintError") throw err;
+    }
+  }
+  let lastError = "";
+  for (; ; ) {
+    const pass = await askPassword(false, lastError);
+    if (pass === null) throw new HistoryVaultCancelledError();
+    if (typeof pass === "object" && pass.reset) {
+      if (alreadyLocked) throw error("\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5FD8\u308C\u305F\u5834\u5408\u306F\u3001DOCUMENT BUILDER\u306E\u5C65\u6B74\u753B\u9762\u304B\u3089\u521D\u671F\u5316\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      const stats = await getSealedHistoryStats();
+      if (!await confirmVaultReset(stats.count)) throw new HistoryVaultCancelledError();
+      await resetHistoryVaultWithoutPassword();
+      const newPassword = await askPassword(true);
+      if (newPassword === null) throw new HistoryVaultCancelledError();
+      await migrateUnderGlobalLock(async () => {
+        await createHistoryVault(newPassword, false);
+        await migratePlainHistory();
+      }, alreadyLocked);
+      return;
+    }
+    try {
+      await unlockHistoryVault(pass, false);
+      await migrateUnderGlobalLock(migratePlainHistory, alreadyLocked);
+      return;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002";
+    }
+  }
+}
+async function sealRecord(plain, key) {
+  if (!(plain.pdfBlob instanceof Blob) || plain.pdfBlob.size > LIMIT || plain.pdfBlob.size === 0) throw error("PDF\u5C65\u6B74\u306E\u30D5\u30A1\u30A4\u30EB\u304C\u4E0D\u6B63\u3001\u307E\u305F\u306F64MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+  if (!plain.id || !Number.isSafeInteger(plain.createdAt)) throw error("\u5C65\u6B74\u306EID\u307E\u305F\u306F\u65E5\u6642\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const meta = { recipientName: plain.recipientName, fileName: plain.fileName, createdAt: plain.createdAt };
+  if (typeof meta.recipientName !== "string" || typeof meta.fileName !== "string" || !/\.pdf$/i.test(meta.fileName)) throw error("\u5C65\u6B74\u306E\u30D5\u30A1\u30A4\u30EB\u540D\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const [pdf, metadata] = await Promise.all([cipher(key, plain.id, "pdf", await plain.pdfBlob.arrayBuffer()), cipher(key, plain.id, "meta", encoder.encode(JSON.stringify(meta)))]);
+  const entry = { id: plain.id, createdAt: plain.createdAt, pdfBytes: plain.pdfBlob.size, encryptedPdfBlob: new Blob([pdf.data], { type: "application/octet-stream" }), pdfIv: pdf.iv, encryptedMeta: metadata.data, metaIv: metadata.iv };
+  return validateSealedHistoryRecord(entry);
+}
+async function migratePlainHistory() {
+  const db = await openDB();
+  try {
+    const config = await get(db, CONFIG, VAULT);
+    const key = requireKey(config);
+    const tx = db.transaction(HISTORY, "readonly");
+    const done2 = waitTx(tx);
+    const legacyIds = await new Promise((resolve, reject) => {
+      const ids = [];
+      const req = tx.objectStore(HISTORY).openCursor();
+      req.onerror = () => reject(req.error || error("\u65E7\u5C65\u6B74\u3092\u691C\u67FB\u3067\u304D\u307E\u305B\u3093\u3002"));
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) {
+          resolve(ids);
+          return;
+        }
+        if (!isSealed(cursor.value)) ids.push(cursor.key);
+        cursor.continue();
+      };
+    });
+    await done2;
+    for (const id of legacyIds) {
+      const item = await get(db, HISTORY, id);
+      if (!item || isSealed(item)) continue;
+      const sealed = await sealRecord(item, key);
+      const update = db.transaction([HISTORY, META], "readwrite");
+      const complete = waitTx(update);
+      update.objectStore(HISTORY).put(sealed);
+      update.objectStore(META).put(metadataOf(sealed));
+      await complete;
+    }
+    migrationCheckedIdentity = sessionIdentity;
+  } finally {
+    db.close();
+  }
+}
+async function getSealedHistoryStats() {
+  const db = await openDB();
+  try {
+    const result = await get(db, STATS, TOTAL);
+    if (!result) throw error("\u5C65\u6B74\u96C6\u8A08\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002");
+    return { count: result.count, totalBytes: result.totalBytes };
+  } finally {
+    db.close();
+  }
+}
+async function resetHistoryVaultWithoutPassword() {
+  return withWorkbenchSnapshotLock(async () => {
+    const db = await openDB();
+    try {
+      const tx = db.transaction([CONFIG, HISTORY, META, STATS], "readwrite");
+      const complete = waitTx(tx);
+      tx.objectStore(HISTORY).clear();
+      tx.objectStore(META).clear();
+      tx.objectStore(CONFIG).clear();
+      tx.objectStore(STATS).put({ id: TOTAL, count: 0, totalBytes: 0 });
+      await complete;
+      lockHistoryVault();
+    } finally {
+      db.close();
+    }
+  });
+}
+async function readOpaqueHistorySnapshot() {
+  const db = await openDB();
+  try {
+    let config = await get(db, CONFIG, VAULT);
+    let entries = await getAll(db, HISTORY);
+    if (entries.some((item) => !isSealed(item))) {
+      db.close();
+      await ensureHistoryUnlocked({ alreadyLocked: true });
+      return readOpaqueHistorySnapshot();
+    }
+    if (entries.length && !config) throw error("\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u3042\u308A\u307E\u305B\u3093\u3002");
+    if (config) validateVaultConfig(config);
+    entries.forEach(validateSealedHistoryRecord);
+    return { config: config || null, entries };
+  } finally {
+    try {
+      db.close();
+    } catch {
+    }
+  }
+}
+async function replaceOpaqueHistorySnapshot(snapshot) {
+  let config = snapshot.config || null;
+  let entries = snapshot.entries || [];
+  if (entries.length && !config) throw error("\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u3042\u308A\u307E\u305B\u3093\u3002");
+  if (config) validateVaultConfig(config);
+  entries.forEach(validateSealedHistoryRecord);
+  const db = await openDB();
+  try {
+    const tx = db.transaction([HISTORY, META, STATS, CONFIG], "readwrite");
+    const done2 = waitTx(tx);
+    const history = tx.objectStore(HISTORY), meta = tx.objectStore(META), conf = tx.objectStore(CONFIG);
+    history.clear();
+    meta.clear();
+    conf.clear();
+    if (config) conf.put(config);
+    for (const entry of entries) {
+      history.put(entry);
+      meta.put(metadataOf(entry));
+    }
+    tx.objectStore(STATS).put({ id: TOTAL, count: entries.length, totalBytes: entries.reduce((n, item) => n + item.pdfBytes, 0) });
+    await done2;
+    lockHistoryVault();
+  } finally {
+    db.close();
+  }
+}
+async function sealLegacyHistorySnapshot(plainEntries) {
+  if (!Array.isArray(plainEntries)) throw error("\u5C65\u6B74\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  if (plainEntries.length === 0) {
+    const config2 = await configFromDB();
+    return { config: config2, entries: [] };
+  }
+  await ensureHistoryUnlocked({ alreadyLocked: true });
+  const config = await configFromDB();
+  const key = requireKey(config);
+  const entries = [];
+  for (const entry of plainEntries) entries.push(await sealRecord(entry, key));
+  return { config, entries };
 }
 
 // dist/backup/backup-zip.js
@@ -3719,7 +4336,7 @@ function requireSafeArchivePath(path, requiredPrefix) {
 }
 
 // dist/backup/backup-types.js
-var WORKBENCH_BACKUP_VERSION = 2;
+var WORKBENCH_BACKUP_VERSION = 3;
 var DOCUMENT_TEMPLATES_VERSION = 1;
 var PRINT_HISTORY_ARCHIVE_VERSION = 1;
 var MAX_PRINT_HISTORY_RECORDS = 5e3;
@@ -3763,12 +4380,52 @@ function parsePrintHistoryArchive(value) {
   }
   return { version: PRINT_HISTORY_ARCHIVE_VERSION, documents };
 }
+function parseSealedHistoryArchive(value) {
+  const record = requireRecord(value, "document_builder/print-history/history.json");
+  if (record.version !== 2 || !Array.isArray(record.documents) || record.documents.length > MAX_PRINT_HISTORY_RECORDS) {
+    throw new Error("\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  const config = record.config === null ? null : validateVaultConfig(record.config);
+  if (record.documents.length && !config)
+    throw new Error("PDF\u5C65\u6B74\u306E\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u3042\u308A\u307E\u305B\u3093\u3002");
+  const result = record.documents.map((value2, index) => {
+    const item = requireRecord(value2, `sealedHistory.documents[${index}]`);
+    const id = requireString(item.id, `sealedHistory.documents[${index}].id`, 256, true);
+    const pdfPath = requireString(item.pdfPath, `sealedHistory.documents[${index}].pdfPath`, 2048, true);
+    requireSafeArchivePath(pdfPath, "document_builder/print-history/encrypted/");
+    requireNonNegativeInteger(item.createdAt, "createdAt");
+    requireNonNegativeInteger(item.pdfBytes, "pdfBytes");
+    if (item.pdfBytes > 64 * 1024 * 1024)
+      throw new Error("\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E\u30B5\u30A4\u30BA\u304C\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");
+    for (const [value3, name, length] of [[item.pdfIv, "pdfIv", 12], [item.metaIv, "metaIv", 12]]) {
+      if (!Array.isArray(value3) || value3.length !== length || value3.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+        throw new Error(`\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E${name}\u304C\u4E0D\u6B63\u3067\u3059\u3002`);
+      }
+    }
+    if (!Array.isArray(item.encryptedMeta) || item.encryptedMeta.length < 16 || item.encryptedMeta.length > 65536 || item.encryptedMeta.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+      throw new Error("\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E\u30E1\u30BF\u30C7\u30FC\u30BF\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+    }
+    return {
+      id,
+      createdAt: item.createdAt,
+      pdfBytes: item.pdfBytes,
+      pdfPath,
+      pdfIv: item.pdfIv,
+      metaIv: item.metaIv,
+      encryptedMeta: item.encryptedMeta
+    };
+  });
+  requireUniqueIds(result, "\u6697\u53F7\u5316PDF\u5C65\u6B74");
+  if (new Set(result.map((entry) => entry.pdfPath)).size !== result.length)
+    throw new Error("\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E\u30D1\u30B9\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002");
+  return { version: 2, config, documents: result };
+}
 function parseWorkbenchBackupManifest(value) {
   const record = requireRecord(value, "manifest.json");
   if (record.format !== "workbench-backup") {
     throw new Error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002");
   }
-  if (record.version !== 1 && record.version !== WORKBENCH_BACKUP_VERSION) {
+  if (record.version !== 1 && record.version !== 2 && record.version !== WORKBENCH_BACKUP_VERSION) {
     throw new Error("\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30D0\u30FC\u30B8\u30E7\u30F3\u3067\u3059\u3002");
   }
   requireString(record.createdAt, "manifest.createdAt", 128);
@@ -3783,7 +4440,7 @@ function parseWorkbenchBackupManifest(value) {
   requireNonNegativeInteger(presetDocuments.documentCount, "manifest.contents.presetDocuments.documentCount");
   requireNonNegativeInteger(presetDocuments.pdfCount, "manifest.contents.presetDocuments.pdfCount");
   requireNonNegativeInteger(presetDocuments.previewImageCount, "manifest.contents.presetDocuments.previewImageCount");
-  if (record.version === WORKBENCH_BACKUP_VERSION) {
+  if (record.version >= 2) {
     const history = requireRecord(contents.printHistory, "manifest.contents.printHistory");
     requireNonNegativeInteger(history.documentCount, "manifest.contents.printHistory.documentCount");
     requireNonNegativeInteger(history.pdfCount, "manifest.contents.printHistory.pdfCount");
@@ -3822,8 +4479,8 @@ function parseDocumentTemplate(value, index) {
   if (record.fields.length > 1e3) {
     throw new Error(`templates[${index}].fields \u306E\u4EF6\u6570\u304C\u591A\u3059\u304E\u307E\u3059\u3002`);
   }
-  record.fields.forEach((field, fieldIndex) => {
-    parseDocumentTemplateField(field, index, fieldIndex);
+  record.fields.forEach((field2, fieldIndex) => {
+    parseDocumentTemplateField(field2, index, fieldIndex);
   });
   const document2 = requireRecord(record.document, `templates[${index}].document`);
   const documentKeys = [
@@ -4031,21 +4688,28 @@ async function createBackupArchive(snapshot) {
   const historyMetadata = [];
   for (let index = 0; index < snapshot.printHistory.length; index += 1) {
     const entry = snapshot.printHistory[index];
-    const pdfPath = `document_builder/print-history/pdf/${String(index + 1).padStart(5, "0")}.pdf`;
-    addBinary(pdfPath, entry.pdfBlob);
+    if (!isSealed(entry))
+      throw new Error("\u6697\u53F7\u5316\u3057\u3066\u3044\u306A\u3044PDF\u5C65\u6B74\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u305B\u3093\u3002\u5C65\u6B74\u3092\u79FB\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    validateSealedHistoryRecord(entry);
+    const pdfPath = `document_builder/print-history/encrypted/${String(index + 1).padStart(5, "0")}.bin`;
+    budget.add(pdfPath, entry.encryptedPdfBlob.size);
+    zip.file(pdfPath, new Uint8Array(await entry.encryptedPdfBlob.arrayBuffer()));
     historyMetadata.push({
       id: entry.id,
-      recipientName: entry.recipientName,
-      fileName: entry.fileName,
       createdAt: entry.createdAt,
-      pdfMimeType: "application/pdf",
-      pdfPath
+      pdfBytes: entry.pdfBytes,
+      pdfPath,
+      pdfIv: entry.pdfIv,
+      metaIv: entry.metaIv,
+      encryptedMeta: Array.from(entry.encryptedMeta)
     });
   }
   const historyArchive = {
-    version: PRINT_HISTORY_ARCHIVE_VERSION,
+    version: 2,
+    config: snapshot.historyVaultConfig ?? null,
     documents: historyMetadata
   };
+  parseSealedHistoryArchive(historyArchive);
   addJson(PRINT_HISTORY_PATH, historyArchive);
   const manifest = {
     format: "workbench-backup",
@@ -4090,12 +4754,9 @@ async function readBackupArchive(file) {
   const redIndexRaw = await readJsonFile(zip, RED_INDEX_PATH, readBudget);
   const redIndex = redIndexRaw === null ? null : parseRedIndexData(redIndexRaw);
   const presetArchive = parsePresetDocumentsArchive(await readJsonFile(zip, PRESET_DOCUMENTS_PATH, readBudget));
-  const historyArchive = manifest.version === WORKBENCH_BACKUP_VERSION ? parsePrintHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget)) : null;
-  if (historyArchive) {
-    if (manifest.contents.printHistory?.documentCount !== historyArchive.documents.length || manifest.contents.printHistory?.pdfCount !== historyArchive.documents.length) {
-      throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306E\u4EF6\u6570\u304Cmanifest\u3068\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002");
-    }
-  }
+  const historyArchive = manifest.version === 3 ? parseSealedHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget)) : manifest.version === 2 ? parsePrintHistoryArchive(await readJsonFile(zip, PRINT_HISTORY_PATH, readBudget)) : null;
+  if (historyArchive && (manifest.contents.printHistory?.documentCount !== historyArchive.documents.length || manifest.contents.printHistory?.pdfCount !== historyArchive.documents.length))
+    throw new Error("PDF\u51FA\u529B\u5C65\u6B74\u306E\u4EF6\u6570\u304Cmanifest\u3068\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002");
   if (manifest.contents.documentBuilder.templateCount !== documentArchive.templates.length) {
     throw new Error("\u6587\u66F8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u4EF6\u6570\u304Cmanifest\u3068\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002");
   }
@@ -4140,7 +4801,8 @@ async function readBackupArchive(file) {
     });
   }
   const printHistory = [];
-  if (historyArchive) {
+  let historyVaultConfig = null;
+  if (historyArchive?.version === 1) {
     for (const metadata of historyArchive.documents) {
       const pdfBytes = await readBinaryFile(zip, metadata.pdfPath, readBudget);
       validatePdfBytes(pdfBytes, metadata.pdfPath);
@@ -4152,12 +4814,31 @@ async function readBackupArchive(file) {
         pdfBlob: createBlob(pdfBytes, "application/pdf")
       });
     }
+  } else if (historyArchive?.version === 2) {
+    historyVaultConfig = historyArchive.config;
+    for (const metadata of historyArchive.documents) {
+      const encryptedPdf = await readEntryWithLimit(zip, metadata.pdfPath, MAX_ARCHIVE_ENTRY_BYTES + 16, readBudget);
+      if (encryptedPdf.byteLength !== metadata.pdfBytes + 16)
+        throw new Error("\u6697\u53F7\u5316PDF\u5C65\u6B74\u306E\u5BB9\u91CF\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+      const entry = {
+        id: metadata.id,
+        createdAt: metadata.createdAt,
+        pdfBytes: metadata.pdfBytes,
+        encryptedPdfBlob: new Blob([new Uint8Array(encryptedPdf)], { type: "application/octet-stream" }),
+        pdfIv: metadata.pdfIv,
+        metaIv: metadata.metaIv,
+        encryptedMeta: new Uint8Array(metadata.encryptedMeta)
+      };
+      validateSealedHistoryRecord(entry);
+      printHistory.push(entry);
+    }
   }
   return {
     documentTemplates: documentArchive.templates,
     redIndex,
     presetDocuments,
     printHistory,
+    historyVaultConfig,
     sourceBackupVersion: manifest.version
   };
 }
@@ -4207,10 +4888,10 @@ function readEntryWithLimit(zip, path, maxSize, budget) {
       }
       buffers.push(chunk);
     });
-    stream.on("error", (error) => {
+    stream.on("error", (error2) => {
       if (!settled) {
         settled = true;
-        reject(error);
+        reject(error2);
       }
     });
     stream.on("end", () => {
@@ -4229,10 +4910,10 @@ function readEntryWithLimit(zip, path, maxSize, budget) {
   });
 }
 async function readJsonFile(zip, path, budget) {
-  const bytes = await readEntryWithLimit(zip, path, MAX_JSON_TEXT_LENGTH, budget);
+  const bytes2 = await readEntryWithLimit(zip, path, MAX_JSON_TEXT_LENGTH, budget);
   let text;
   try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
     return JSON.parse(text);
   } catch {
     throw new Error(`\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u5185\u306EJSON\u3092\u89E3\u6790\u3067\u304D\u307E\u305B\u3093: ${path}`);
@@ -4242,39 +4923,39 @@ async function readBinaryFile(zip, path, budget) {
   const maxSize = /\.(png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES : MAX_ARCHIVE_ENTRY_BYTES;
   return readEntryWithLimit(zip, path, maxSize, budget);
 }
-function validatePdfBytes(bytes, path) {
-  if (bytes.length < 128 || bytes.length > MAX_ARCHIVE_ENTRY_BYTES) {
+function validatePdfBytes(bytes2, path) {
+  if (bytes2.length < 128 || bytes2.length > MAX_ARCHIVE_ENTRY_BYTES) {
     throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u30B5\u30A4\u30BA\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
-  const header = String.fromCharCode(...bytes.subarray(0, 8));
+  const header = String.fromCharCode(...bytes2.subarray(0, 8));
   if (!/^%PDF-(?:1\.[0-7]|2\.0)/.test(header)) {
     throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u30D8\u30C3\u30C0\u30FC\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
-  const tail = new TextDecoder("latin1").decode(bytes.subarray(Math.max(0, bytes.length - 8192)));
+  const tail = new TextDecoder("latin1").decode(bytes2.subarray(Math.max(0, bytes2.length - 8192)));
   const matches = [...tail.matchAll(/startxref\s+(\d+)\s+%%EOF/g)];
   const last = matches[matches.length - 1];
   if (!last) {
     throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u7D42\u7AEF\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093: ${path}`);
   }
   const xrefOffset = Number(last[1]);
-  if (!Number.isSafeInteger(xrefOffset) || xrefOffset <= 0 || xrefOffset >= bytes.length) {
+  if (!Number.isSafeInteger(xrefOffset) || xrefOffset <= 0 || xrefOffset >= bytes2.length) {
     throw new Error(`PDF\u30D5\u30A1\u30A4\u30EB\u306E\u53C2\u7167\u4F4D\u7F6E\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
   }
 }
-function validatePreviewBytes(bytes, mimeType, path) {
+function validatePreviewBytes(bytes2, mimeType, path) {
   switch (mimeType) {
     case "image/png":
-      if (!isPng(bytes)) {
+      if (!isPng(bytes2)) {
         throw new Error(`PNG\u753B\u50CF\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
       }
       return;
     case "image/jpeg":
-      if (!isJpeg(bytes)) {
+      if (!isJpeg(bytes2)) {
         throw new Error(`JPEG\u753B\u50CF\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
       }
       return;
     case "image/webp":
-      if (!isWebp(bytes)) {
+      if (!isWebp(bytes2)) {
         throw new Error(`WebP\u753B\u50CF\u304C\u4E0D\u6B63\u3067\u3059: ${path}`);
       }
       return;
@@ -4312,16 +4993,9 @@ function waitForTransaction2(transaction) {
 var DOCUMENT_DATABASE_NAME = "workbench-document-builder";
 var DOCUMENT_DATABASE_VERSION = 1;
 var DOCUMENT_STORE_NAME = "templates";
-var PRINT_HISTORY_DATABASE_NAME = "workbench-document-print-history";
-var PRINT_HISTORY_DATABASE_VERSION = 3;
-var PRINT_HISTORY_STATS_STORE_NAME = "history-stats";
-var PRINT_HISTORY_STATS_KEY = "total";
-var PRINT_HISTORY_METADATA_STORE_NAME = "history-meta";
-var PRINT_HISTORY_METADATA_INDEX_NAME = "createdAtId";
-var PRINT_HISTORY_STORE_NAME = "history";
 var RED_INDEX_STORAGE_KEY = "workbench.red-index.v1";
 async function readWorkbenchSnapshot() {
-  const [documentTemplates, presetDocuments, printHistory] = await Promise.all([
+  const [documentTemplates, presetDocuments, printHistorySnapshot] = await Promise.all([
     readDocumentTemplates(),
     getPresetDocuments(),
     readPrintHistory()
@@ -4331,7 +5005,8 @@ async function readWorkbenchSnapshot() {
     documentTemplates,
     redIndex,
     presetDocuments,
-    printHistory
+    printHistory: printHistorySnapshot.entries,
+    historyVaultConfig: printHistorySnapshot.config
   };
 }
 async function estimateWorkbenchBackupFootprint() {
@@ -4366,41 +5041,12 @@ async function estimateWorkbenchBackupFootprint() {
   }
 }
 async function readPrintHistoryFootprint() {
-  const db = await openPrintHistoryDatabase();
-  try {
-    const tx = db.transaction(PRINT_HISTORY_METADATA_STORE_NAME, "readonly");
-    const completion = waitForTransaction2(tx);
-    const result = await new Promise((resolve, reject) => {
-      let count = 0;
-      let totalBytes = 0;
-      const req = tx.objectStore(PRINT_HISTORY_METADATA_STORE_NAME).openCursor();
-      req.onerror = () => reject(req.error ?? new Error("\u5C65\u6B74\u5BB9\u91CF\u3092\u8AAD\u307F\u53D6\u308C\u307E\u305B\u3093\u3002"));
-      req.onsuccess = () => {
-        const cursor = req.result;
-        if (!cursor) {
-          resolve({ count, totalBytes });
-          return;
-        }
-        const record = cursor.value;
-        if (record.pdfBytes > MAX_ARCHIVE_ENTRY_BYTES) {
-          reject(new Error("\u51FA\u529B\u5C65\u6B74\u306EPDF\u304C64MiB\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002"));
-          return;
-        }
-        count++;
-        totalBytes += record.pdfBytes;
-        cursor.continue();
-      };
-    });
-    await completion;
-    return result;
-  } finally {
-    db.close();
-  }
+  return getSealedHistoryStats();
 }
 async function replaceWorkbenchSnapshot(snapshot) {
   await replaceDocumentTemplates(snapshot.documentTemplates);
   await replacePresetDocuments(snapshot.presetDocuments);
-  await replacePrintHistory(snapshot.printHistory);
+  await replacePrintHistory(snapshot.printHistory, snapshot.historyVaultConfig);
   replaceRedIndexData(snapshot.redIndex);
   void requestPersistentStorage();
 }
@@ -4430,11 +5076,11 @@ async function replaceDocumentTemplates(templates) {
       for (const template of validatedTemplates) {
         store.put(template);
       }
-    } catch (error) {
+    } catch (error2) {
       transaction.abort();
       void completion.catch(() => {
       });
-      throw error;
+      throw error2;
     }
     await completion;
   } finally {
@@ -4465,115 +5111,18 @@ function replaceRedIndexData(data) {
 async function replacePresetDocuments(documents) {
   await replaceAllPresetDocuments(documents);
 }
-function openPrintHistoryDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(PRINT_HISTORY_DATABASE_NAME, PRINT_HISTORY_DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      const upgrade = request.transaction;
-      if (!upgrade)
-        throw new Error("PDF\u5C65\u6B74DB\u306E\u66F4\u65B0\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
-      if (!db.objectStoreNames.contains(PRINT_HISTORY_STORE_NAME)) {
-        db.createObjectStore(PRINT_HISTORY_STORE_NAME, { keyPath: "id" });
-      }
-      const metaMissing = !db.objectStoreNames.contains(PRINT_HISTORY_METADATA_STORE_NAME);
-      let meta;
-      if (metaMissing) {
-        meta = db.createObjectStore(PRINT_HISTORY_METADATA_STORE_NAME, { keyPath: "id" });
-        meta.createIndex(PRINT_HISTORY_METADATA_INDEX_NAME, ["createdAt", "id"], { unique: true });
-      } else {
-        meta = upgrade.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
-      }
-      if (!db.objectStoreNames.contains(PRINT_HISTORY_STATS_STORE_NAME)) {
-        db.createObjectStore(PRINT_HISTORY_STATS_STORE_NAME, { keyPath: "id" });
-      }
-      const stats = upgrade.objectStore(PRINT_HISTORY_STATS_STORE_NAME);
-      let count = 0;
-      let totalBytes = 0;
-      const cursor = metaMissing ? upgrade.objectStore(PRINT_HISTORY_STORE_NAME).openCursor() : meta.openCursor();
-      cursor.onsuccess = () => {
-        const row = cursor.result;
-        if (!row) {
-          stats.put({ id: PRINT_HISTORY_STATS_KEY, count, totalBytes });
-          return;
-        }
-        const record = row.value;
-        const info = metaMissing ? {
-          id: record.id,
-          recipientName: record.recipientName,
-          fileName: record.fileName,
-          createdAt: record.createdAt,
-          pdfBytes: record.pdfBlob.size
-        } : row.value;
-        if (metaMissing)
-          meta.put(info);
-        count++;
-        totalBytes += info.pdfBytes;
-        row.continue();
-      };
-    };
-    let blocked = false;
-    request.onsuccess = () => {
-      request.result.onversionchange = () => request.result.close();
-      if (blocked)
-        request.result.close();
-      else
-        resolve(request.result);
-    };
-    request.onerror = () => reject(request.error ?? new Error("PDF\u5C65\u6B74\u30C7\u30FC\u30BF\u30D9\u30FC\u30B9\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F\u3002"));
-    request.onblocked = () => {
-      blocked = true;
-      reject(new Error("\u53E4\u3044WORKBENCH\u304C\u5225\u30BF\u30D6\u3067\u958B\u3044\u3066\u3044\u307E\u3059\u3002\u5225\u30BF\u30D6\u3092\u9589\u3058\u3066\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002"));
-    };
-  });
-}
 async function readPrintHistory() {
-  const db = await openPrintHistoryDatabase();
-  try {
-    const transaction = db.transaction(PRINT_HISTORY_STORE_NAME, "readonly");
-    const completion = waitForTransaction2(transaction);
-    const entries = await requestToPromise2(transaction.objectStore(PRINT_HISTORY_STORE_NAME).getAll());
-    await completion;
-    return entries;
-  } finally {
-    db.close();
-  }
+  return readOpaqueHistorySnapshot();
 }
-async function replacePrintHistory(entries) {
-  const db = await openPrintHistoryDatabase();
-  try {
-    const transaction = db.transaction([PRINT_HISTORY_STORE_NAME, PRINT_HISTORY_METADATA_STORE_NAME, PRINT_HISTORY_STATS_STORE_NAME], "readwrite");
-    const completion = waitForTransaction2(transaction);
-    const store = transaction.objectStore(PRINT_HISTORY_STORE_NAME);
-    const metadataStore = transaction.objectStore(PRINT_HISTORY_METADATA_STORE_NAME);
-    try {
-      store.clear();
-      metadataStore.clear();
-      for (const entry of entries) {
-        store.put(entry);
-        metadataStore.put({
-          id: entry.id,
-          recipientName: entry.recipientName,
-          fileName: entry.fileName,
-          createdAt: entry.createdAt,
-          pdfBytes: entry.pdfBlob.size
-        });
-      }
-      transaction.objectStore(PRINT_HISTORY_STATS_STORE_NAME).put({
-        id: PRINT_HISTORY_STATS_KEY,
-        count: entries.length,
-        totalBytes: entries.reduce((sum, entry) => sum + entry.pdfBlob.size, 0)
-      });
-    } catch (error) {
-      transaction.abort();
-      void completion.catch(() => {
-      });
-      throw error;
-    }
-    await completion;
-  } finally {
-    db.close();
+async function replacePrintHistory(entries, vaultConfig) {
+  if (entries.every((entry) => isSealed(entry))) {
+    await replaceOpaqueHistorySnapshot({ config: vaultConfig ?? null, entries });
+    return;
   }
+  if (entries.some((entry) => isSealed(entry)))
+    throw new Error("\u6697\u53F7\u5316\u5F62\u5F0F\u3068\u65E7\u5F62\u5F0F\u306EPDF\u5C65\u6B74\u304C\u6DF7\u5728\u3057\u3066\u3044\u307E\u3059\u3002");
+  const sealed = await sealLegacyHistorySnapshot(entries);
+  await replaceOpaqueHistorySnapshot(sealed);
 }
 function openDocumentDatabase() {
   return new Promise((resolve, reject) => {
@@ -4605,7 +5154,8 @@ function createRestoredSnapshot(imported, current) {
     documentTemplates: imported.documentTemplates,
     redIndex: imported.redIndex,
     presetDocuments: imported.presetDocuments,
-    printHistory: imported.sourceBackupVersion === 1 ? current.printHistory : imported.printHistory
+    printHistory: imported.sourceBackupVersion === 1 ? current.printHistory : imported.printHistory,
+    historyVaultConfig: imported.sourceBackupVersion === 1 ? current.historyVaultConfig : imported.historyVaultConfig
   };
 }
 
@@ -4654,6 +5204,13 @@ async function readPendingRecovery() {
   }
 }
 async function savePendingRecovery(snapshot) {
+  if (snapshot.printHistory.some((entry) => !isSealed(entry))) {
+    throw new Error("\u6697\u53F7\u5316\u3055\u308C\u3066\u3044\u306A\u3044PDF\u5C65\u6B74\u3092\u5FA9\u65E7\u30B3\u30D4\u30FC\u3078\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3002");
+  }
+  snapshot.printHistory.forEach(validateSealedHistoryRecord);
+  if (snapshot.printHistory.length && !snapshot.historyVaultConfig) {
+    throw new Error("\u5C65\u6B74\u6697\u53F7\u5316\u8A2D\u5B9A\u304C\u306A\u3044\u305F\u3081\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3002");
+  }
   const db = await openDatabase();
   try {
     const tx = db.transaction(STORE_NAME2, "readwrite");
@@ -4694,29 +5251,29 @@ async function restoreWithRecovery(imported, deps = defaultRestoreDependencies) 
     await deps.saveRecovery(original);
     try {
       session.beginReplacement();
-    } catch (error) {
+    } catch (error2) {
       await deps.clearRecovery();
-      throw error;
+      throw error2;
     }
     try {
       await deps.replace(target);
     } catch (restoreError) {
       try {
         await deps.replace(original);
-        await deps.clearRecovery();
         session.finishReplacement();
+        await deps.clearRecovery();
       } catch (rollbackError) {
         console.error("\u5143\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002", rollbackError);
         throw new Error("\u5FA9\u5143\u3068\u81EA\u52D5\u5FA9\u65E7\u306E\u4E21\u65B9\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u753B\u9762\u306E\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u30DC\u30BF\u30F3\u304B\u3089\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       }
       throw restoreError;
     }
+    session.finishReplacement();
     try {
       await deps.clearRecovery();
     } catch {
       throw new Error("\u5FA9\u5143\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5FA9\u65E7\u64CD\u4F5C\u3067\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
     }
-    session.finishReplacement();
     return target;
   });
 }
@@ -4729,8 +5286,8 @@ async function recoverPreviousState(deps = defaultRestoreDependencies) {
     }
     session.beginReplacement();
     await deps.replace(record.snapshot);
-    await deps.clearRecovery();
     session.finishReplacement();
+    await deps.clearRecovery();
     return true;
   }, true);
 }
@@ -4761,8 +5318,8 @@ async function deriveKey(password, salt, iterations, usage) {
   const secret = await subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
   return subtle.deriveKey({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, secret, { name: "AES-GCM", length: 256 }, false, [usage]);
 }
-function hasMagic(bytes) {
-  return bytes.length >= MAGIC.length && MAGIC.every((value, index) => bytes[index] === value);
+function hasMagic(bytes2) {
+  return bytes2.length >= MAGIC.length && MAGIC.every((value, index) => bytes2[index] === value);
 }
 async function isEncryptedBackup(file) {
   return hasMagic(new Uint8Array(await file.slice(0, MAGIC.length).arrayBuffer()));
@@ -4823,15 +5380,18 @@ function setupWorkbenchBackup(options) {
   async function refreshRecoveryState(announcePending = false) {
     try {
       const pending = await readPendingRecovery();
-      recoveryState = pending ? "pending" : "clear";
-      recoveryButton.hidden = !pending;
-      if (pending && announcePending) {
+      const marker = hasWorkbenchRestoreMarker();
+      recoveryState = pending ? "pending" : marker ? "orphaned-marker" : "clear";
+      recoveryButton.hidden = recoveryState === "clear";
+      if (announcePending && recoveryState === "pending") {
         showStatus("\u4E2D\u65AD\u3055\u308C\u305F\u5FA9\u5143\u306E\u5143\u30C7\u30FC\u30BF\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5FA9\u65E7\u30DC\u30BF\u30F3\u304B\u3089\u5143\u306E\u72B6\u614B\u3078\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      } else if (announcePending && recoveryState === "orphaned-marker") {
+        showStatus("\u524D\u56DE\u306E\u5FA9\u5143\u306E\u7D42\u4E86\u51E6\u7406\u304C\u4E2D\u65AD\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u5FA9\u65E7\u30DC\u30BF\u30F3\u304B\u3089\u4FDD\u5B58\u30ED\u30C3\u30AF\u3092\u89E3\u9664\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       }
-    } catch (error) {
+    } catch (error2) {
       recoveryState = "unknown";
       recoveryButton.hidden = true;
-      showStatus("\u5FA9\u65E7\u30C7\u30FC\u30BF\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002" + formatErrorMessage(error));
+      showStatus("\u5FA9\u65E7\u30C7\u30FC\u30BF\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002" + formatErrorMessage(error2));
     }
     updateRecoveryControls();
   }
@@ -4843,18 +5403,19 @@ function setupWorkbenchBackup(options) {
     }
   }
   async function attemptRecovery() {
-    if (isBusy || recoveryState !== "pending")
+    if (isBusy || recoveryState !== "pending" && recoveryState !== "orphaned-marker")
       return;
-    if (!window.confirm("\u524D\u56DE\u306E\u5FA9\u5143\u524D\u306B\u4FDD\u5B58\u3057\u305F\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3059\u3002\u73FE\u5728\u306E\u30C7\u30FC\u30BF\u306F\u7F6E\u304D\u63DB\u308F\u308A\u307E\u3059\u3002\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F"))
+    const message = recoveryState === "orphaned-marker" ? "\u5FA9\u65E7\u8A18\u9332\u304C\u306A\u3044\u305F\u3081\u73FE\u5728\u306E\u30C7\u30FC\u30BF\u3092\u7DAD\u6301\u3057\u3001\u6B8B\u3063\u305F\u4FDD\u5B58\u30ED\u30C3\u30AF\u3060\u3051\u89E3\u9664\u3057\u307E\u3059\u3002\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F" : "\u524D\u56DE\u306E\u5FA9\u5143\u524D\u306B\u4FDD\u5B58\u3057\u305F\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3059\u3002\u73FE\u5728\u306E\u30C7\u30FC\u30BF\u306F\u7F6E\u304D\u63DB\u308F\u308A\u307E\u3059\u3002\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F";
+    if (!window.confirm(message))
       return;
     setBusy(true);
     try {
-      await recoverPreviousState();
-      showStatus("\u4E2D\u65AD\u3057\u305F\u5FA9\u5143\u306E\u524D\u306E\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3057\u305F\u3002");
+      const restored = await recoverPreviousState();
+      showStatus(restored ? "\u4E2D\u65AD\u3057\u305F\u5FA9\u5143\u306E\u524D\u306E\u30C7\u30FC\u30BF\u3078\u623B\u3057\u307E\u3057\u305F\u3002" : "\u5FA9\u5143\u306E\u7D42\u4E86\u51E6\u7406\u3067\u6B8B\u3063\u3066\u3044\u305F\u4FDD\u5B58\u30ED\u30C3\u30AF\u3092\u89E3\u9664\u3057\u307E\u3057\u305F\u3002\u6700\u65B0\u306E\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       if (onRestored)
         await onRestored();
-    } catch (error) {
-      showStatus("\u5143\u306E\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002" + formatErrorMessage(error));
+    } catch (error2) {
+      showStatus("\u5143\u306E\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002" + formatErrorMessage(error2));
     } finally {
       await refreshRecoveryState();
       setBusy(false);
@@ -4881,11 +5442,11 @@ function setupWorkbenchBackup(options) {
       const encrypted = await encryptBackupZip(archive, password);
       downloadBlob(encrypted, createBackupFileName());
       showStatus(createExportSuccessMessage(snapshot));
-    } catch (error) {
-      console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+    } catch (error2) {
+      console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error2);
       showStatus([
         "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
-        formatErrorMessage(error)
+        formatErrorMessage(error2)
       ].join(" "));
     } finally {
       setBusy(false);
@@ -4944,11 +5505,11 @@ function setupWorkbenchBackup(options) {
         await onRestored();
       }
       showStatus(createImportSuccessMessage(restoredSnapshot));
-    } catch (error) {
-      console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+    } catch (error2) {
+      console.error("WORKBENCH\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error2);
       showStatus([
         "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
-        formatErrorMessage(error)
+        formatErrorMessage(error2)
       ].join(" "));
     } finally {
       importInput.value = "";
@@ -4967,7 +5528,7 @@ function setupWorkbenchBackup(options) {
   }
   function updateRecoveryControls() {
     importButton.disabled = isBusy || recoveryState !== "clear";
-    recoveryButton.hidden = recoveryState !== "pending";
+    recoveryButton.hidden = recoveryState !== "pending" && recoveryState !== "orphaned-marker";
     recoveryButton.disabled = isBusy;
   }
   function setBusy(busy) {
@@ -4993,7 +5554,7 @@ function confirmRestore(snapshot) {
     `RED INDEX: ${snapshot.redIndex ? "\u3042\u308A" : "\u306A\u3057"}`,
     `\u5B9A\u578B\u5370\u5237\u7269: ${snapshot.presetDocuments.length}\u4EF6`,
     `\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF: ${previewCount}\u4EF6`,
-    snapshot.sourceBackupVersion === 1 ? "\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306EPDF\u5C65\u6B74: \u65E7\u5F62\u5F0F\u306B\u542B\u307E\u308C\u306A\u3044\u305F\u3081\u3001\u73FE\u5728\u306E\u5C65\u6B74\u3092\u4FDD\u6301\u3057\u307E\u3059\u3002" : `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306EPDF\u5C65\u6B74: ${snapshot.printHistory.length}\u4EF6\uFF08\u7F6E\u304D\u63DB\u3048\uFF09`,
+    snapshot.sourceBackupVersion === 1 ? "\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306EPDF\u5C65\u6B74: \u65E7\u5F62\u5F0F\u306B\u542B\u307E\u308C\u306A\u3044\u305F\u3081\u3001\u73FE\u5728\u306E\u5C65\u6B74\u3092\u4FDD\u6301\u3057\u307E\u3059\u3002" : `\u30D3\u30B8\u30CD\u30B9\u6587\u66F8\u306E\u6697\u53F7\u5316PDF\u5C65\u6B74: ${snapshot.printHistory.length}\u4EF6\uFF08\u7F6E\u304D\u63DB\u3048\u3002\u5C65\u6B74\u5C02\u7528\u30D1\u30B9\u30EF\u30FC\u30C9\u3082\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u6642\u70B9\u306E\u8A2D\u5B9A\u306B\u623B\u308A\u307E\u3059\uFF09`,
     "",
     "\u3053\u306E\u64CD\u4F5C\u3092\u5B9F\u884C\u3057\u307E\u3059\u304B\uFF1F"
   ].join("\n"));
@@ -5060,8 +5621,8 @@ async function refreshPresetGrid() {
         presetManager.openCreateEditor();
       }
     });
-  } catch (error) {
-    console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+  } catch (error2) {
+    console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error2);
     renderPresetGridError(presetGrid, "\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306B\u4FDD\u5B58\u3055\u308C\u3066\u3044\u308B\u5B9A\u578B\u5370\u5237\u7269\u3092\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
   } finally {
     presetGrid.setAttribute("aria-busy", "false");

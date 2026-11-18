@@ -42,4 +42,9 @@ export function saveRedIndexData(data) {
     lastWrite = next;
     return next;
 }
+/** Import must not replace the live editing model until the new state is durable. */
+export async function commitImportedRedIndexData(imported, activate) {
+    await saveRedIndexData(imported);
+    activate(imported);
+}
 //# sourceMappingURL=storage.js.map

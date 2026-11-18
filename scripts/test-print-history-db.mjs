@@ -6,6 +6,8 @@ globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: 
 const history = await import('../document_builder/dist/print-history-db.js');
 const { replaceWorkbenchSnapshot, readWorkbenchSnapshot } = await import('../dist/backup/backup-storage.js');
 const pdf = new Blob(['%PDF-1.7 demo'], {type:'application/pdf'});
+const vault = await import('../shared/print-history-vault.js');
+const testPassword = 'history test password long 2026!';
 
 function seed(version) {
   return new Promise((resolve, reject) => {
@@ -27,7 +29,9 @@ function seed(version) {
 
 for (const version of [1,2]) {
   indexedDB.reset();
+  vault.lockHistoryVault();
   await seed(version);
+  await vault.createHistoryVault(testPassword);
   assert.deepEqual(await history.getPrintHistoryStats(), {count:1,totalBytes:pdf.size}, `v${version} migrated`);
   let page = await history.getPrintHistoryPage(null, 50);
   assert.equal(page.entries.length,1);

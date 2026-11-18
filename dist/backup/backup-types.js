@@ -1,8 +1,9 @@
+import { validateVaultConfig } from "../../shared/print-history-vault.js";
 import { requireRecord, requireString, requireNonNegativeInteger, requireFiniteNumber, requireUniqueIds, requireSafeArchivePath } from "./archive-validation.js";
 /* =========================================================
    Constants
    ========================================================= */
-export const WORKBENCH_BACKUP_VERSION = 2;
+export const WORKBENCH_BACKUP_VERSION = 3;
 export const DOCUMENT_TEMPLATES_VERSION = 1;
 export const PRINT_HISTORY_ARCHIVE_VERSION = 1;
 // 出力側と復元側で共通の履歴件数上限。上限超過のバックアップは生成しない。
@@ -47,6 +48,41 @@ export function parsePrintHistoryArchive(value) {
     }
     return { version: PRINT_HISTORY_ARCHIVE_VERSION, documents };
 }
+/** Validate the sealed history manifest before trusting any file path. */
+export function parseSealedHistoryArchive(value) {
+    const record = requireRecord(value, "document_builder/print-history/history.json");
+    if (record.version !== 2 || !Array.isArray(record.documents) || record.documents.length > MAX_PRINT_HISTORY_RECORDS) {
+        throw new Error("暗号化PDF履歴のバックアップ形式が不正です。");
+    }
+    const config = record.config === null ? null : validateVaultConfig(record.config);
+    if (record.documents.length && !config)
+        throw new Error("PDF履歴の暗号化設定がありません。");
+    const result = record.documents.map((value, index) => {
+        const item = requireRecord(value, `sealedHistory.documents[${index}]`);
+        const id = requireString(item.id, `sealedHistory.documents[${index}].id`, 256, true);
+        const pdfPath = requireString(item.pdfPath, `sealedHistory.documents[${index}].pdfPath`, 2048, true);
+        requireSafeArchivePath(pdfPath, "document_builder/print-history/encrypted/");
+        requireNonNegativeInteger(item.createdAt, "createdAt");
+        requireNonNegativeInteger(item.pdfBytes, "pdfBytes");
+        if (item.pdfBytes > 64 * 1024 * 1024)
+            throw new Error("暗号化PDF履歴のサイズが上限を超えています。");
+        for (const [value, name, length] of [[item.pdfIv, "pdfIv", 12], [item.metaIv, "metaIv", 12]]) {
+            if (!Array.isArray(value) || value.length !== length || value.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+                throw new Error(`暗号化PDF履歴の${name}が不正です。`);
+            }
+        }
+        if (!Array.isArray(item.encryptedMeta) || item.encryptedMeta.length < 16 || item.encryptedMeta.length > 65536 ||
+            item.encryptedMeta.some((v) => !Number.isInteger(v) || v < 0 || v > 255)) {
+            throw new Error("暗号化PDF履歴のメタデータが不正です。");
+        }
+        return { id, createdAt: item.createdAt, pdfBytes: item.pdfBytes, pdfPath,
+            pdfIv: item.pdfIv, metaIv: item.metaIv, encryptedMeta: item.encryptedMeta };
+    });
+    requireUniqueIds(result, "暗号化PDF履歴");
+    if (new Set(result.map(entry => entry.pdfPath)).size !== result.length)
+        throw new Error("暗号化PDF履歴のパスが重複しています。");
+    return { version: 2, config, documents: result };
+}
 /* =========================================================
    Manifest Parser
    ========================================================= */
@@ -57,6 +93,7 @@ export function parseWorkbenchBackupManifest(value) {
         throw new Error("WORKBENCHバックアップではありません。");
     }
     if (record.version !== 1 &&
+        record.version !== 2 &&
         record.version !== WORKBENCH_BACKUP_VERSION) {
         throw new Error("対応していないバックアップバージョンです。");
     }
@@ -73,7 +110,7 @@ export function parseWorkbenchBackupManifest(value) {
     requireNonNegativeInteger(presetDocuments.documentCount, "manifest.contents.presetDocuments.documentCount");
     requireNonNegativeInteger(presetDocuments.pdfCount, "manifest.contents.presetDocuments.pdfCount");
     requireNonNegativeInteger(presetDocuments.previewImageCount, "manifest.contents.presetDocuments.previewImageCount");
-    if (record.version === WORKBENCH_BACKUP_VERSION) {
+    if (record.version >= 2) {
         const history = requireRecord(contents.printHistory, "manifest.contents.printHistory");
         requireNonNegativeInteger(history.documentCount, "manifest.contents.printHistory.documentCount");
         requireNonNegativeInteger(history.pdfCount, "manifest.contents.printHistory.pdfCount");

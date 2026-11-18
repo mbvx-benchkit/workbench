@@ -1,6 +1,6 @@
 import { getErrorMessage } from "./ui-utils.js";
 import { createEmptyCategory } from "./model.js";
-import { loadRedIndexData, saveRedIndexData } from "./storage.js";
+import { loadRedIndexData, saveRedIndexData, commitImportedRedIndexData } from "./storage.js";
 import { exportRedIndexJson, importRedIndexJson } from "./json.js";
 import { renderEditor, renderPreview } from "./render.js";
 /* =========================================================
@@ -92,13 +92,13 @@ jsonImportInput.addEventListener("change", async () => {
     }
     try {
         const importedData = await importRedIndexJson(file);
-        data =
-            importedData;
         /*
-         * インポートした内容も
-         * 即座にデフォルト状態として保存。
+         * 保存成功後にライブ状態を切り替える。
+         * 保存できなければ編集画面と内部状態を一切変更しない。
          */
-        await saveRedIndexData(data);
+        await commitImportedRedIndexData(importedData, persisted => {
+            data = persisted;
+        });
         renderAll();
         window.alert("JSONを読み込みました。");
     }

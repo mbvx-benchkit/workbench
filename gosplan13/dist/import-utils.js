@@ -1,3 +1,4 @@
+import { MAX_GOSPLAN13_JSON_BYTES, GOSPLAN13_JSON_LIMIT_LABEL } from "./json-file-policy.js";
 /**
  * GOSPLAN13: JSON import parsing, validation and related types.
  * Consolidated from Stage-1 mechanical helper splits.
@@ -87,10 +88,9 @@ export function createFileInput() {
    JSONファイル読込
    ========================================================= */
 export async function readJsonFile(file) {
-    // Base64画像を含むJSONを想定した余裕のある上限。読込前に拒否する。
-    const maxBytes = 10 * 1024 * 1024;
-    if (file.size > maxBytes) {
-        throw new Error("JSONファイルは10MiB以下を選択してください。");
+    // 出力側も同じ制限。48面のBase64画像を失わず復元できる。
+    if (file.size > MAX_GOSPLAN13_JSON_BYTES) {
+        throw new Error(`JSONファイルは${GOSPLAN13_JSON_LIMIT_LABEL}以下を選択してください。`);
     }
     const text = await file.text();
     try {

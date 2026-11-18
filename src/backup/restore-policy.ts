@@ -14,6 +14,9 @@ export function createRestoredSnapshot(
         presetDocuments: imported.presetDocuments,
         printHistory: imported.sourceBackupVersion === 1
             ? current.printHistory
-            : imported.printHistory
+            : imported.printHistory,
+        historyVaultConfig: imported.sourceBackupVersion === 1
+            ? current.historyVaultConfig
+            : imported.historyVaultConfig
     };
 }

@@ -73,7 +73,10 @@ import {
     getPrintHistoryPage,
     getPrintHistoryStats,
     deletePrintHistory,
-    type PrintHistoryCursor
+    type PrintHistoryCursor,
+    lockHistoryVault,
+    openHistoryPasswordSettings,
+    HistoryVaultCancelledError
 } from "./print-history-db.js";
 
 
@@ -369,7 +372,15 @@ function wireEvents():
       templateBuilder, downloadDocumentJson, handleDocumentImport, handleTemplateSelection,
       openTemplateSettings, openPrintFlow, openPrintHistory, loadMorePrintHistory,
       runPdfSaveStep, runFinalPrint, handleTemplateAddImport, confirmTemplateDelete, showToast,
-      invalidatePrintHistory: () => printHistoryController.invalidate(),
+      invalidatePrintHistory: () => { printHistoryController.invalidate(); lockHistoryVault(); },
+      changeHistoryPassword: async () => {
+        try {
+          const changed=await openHistoryPasswordSettings();
+          if(changed)showToast('PDF履歴のパスワードを変更しました。');
+        } catch(error) {
+          if(!(error instanceof HistoryVaultCancelledError))showToast(`パスワードを変更できませんでした。${getErrorMessage(error)}`);
+        }
+      },
       clearPendingDeleteTemplate: () => { pendingDeleteTemplateId = null; }
     });
 }

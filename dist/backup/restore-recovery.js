@@ -1,3 +1,4 @@
+import { isSealed, validateSealedHistoryRecord } from "../../shared/print-history-vault.js";
 /**
  * ブラウザ強制終了などに備える復元前の永続的な退避場所。
  * 異なるIndexedDB/LocalStorage間で原子的に書き換えることはできないため、
@@ -48,6 +49,13 @@ export async function readPendingRecovery() {
     }
 }
 export async function savePendingRecovery(snapshot) {
+    if (snapshot.printHistory.some(entry => !isSealed(entry))) {
+        throw new Error("暗号化されていないPDF履歴を復旧コピーへ保存できません。");
+    }
+    snapshot.printHistory.forEach(validateSealedHistoryRecord);
+    if (snapshot.printHistory.length && !snapshot.historyVaultConfig) {
+        throw new Error("履歴暗号化設定がないため復旧コピーを作成できません。");
+    }
     const db = await openDatabase();
     try {
         const tx = db.transaction(STORE_NAME, "readwrite");

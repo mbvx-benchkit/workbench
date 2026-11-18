@@ -1,6 +1,6 @@
 /** Document PDF save/print flow. Events and template state remain owned by main.ts. */
 import { createDocumentPdfFileName, saveDocumentPdf, PdfSaveCancelledError } from "../pdf.js";
-import { addPrintHistory } from "../print-history-db.js";
+import { addPrintHistory, HistoryVaultCancelledError } from "../print-history-db.js";
 import type { DocumentTemplate } from "../template.js";
 export interface DocumentPrintFlowDeps {
     readonly activeTemplate: DocumentTemplate | null;
@@ -142,6 +142,7 @@ async function runPdfSaveStep():
         // ブラウザの容量不足などで保存できなくても、PDFの手動保存と
         // 印刷への移行自体は妨げず、利用者に失敗を知らせる。
         let historySaved = false;
+        let historyCancelled = false;
         try {
             await addPrintHistory(
                 recipientName,
@@ -150,7 +151,8 @@ async function runPdfSaveStep():
             );
             historySaved = true;
         } catch (historyError) {
-            console.error("PDFの履歴保存に失敗しました。", historyError);
+            historyCancelled = historyError instanceof HistoryVaultCancelledError;
+            if (!historyCancelled) console.error("PDFの履歴保存に失敗しました。", historyError);
         }
 
 
@@ -189,10 +191,13 @@ async function runPdfSaveStep():
 
         if (historySaved) {
             showToast(`${result.fileName} を作成し、履歴にも保存しました。`);
+        } else if (historyCancelled) {
+            printStepOneStatus.textContent += " 履歴への暗号化保存はキャンセルされました。";
+            showToast("PDFの保存・ダウンロードは開始しました。履歴への保存はキャンセルされました。");
         } else {
             printStepOneStatus.textContent +=
-                " ブラウザ内の履歴保存には失敗しました。空き容量や保存設定をご確認ください。";
-            showToast("PDFは保存されましたが、履歴の保存に失敗しました。");
+                " ブラウザ内の履歴保存には失敗しました。容量・履歴パスワード・保存設定をご確認ください。";
+            showToast("PDFは保存されましたが、暗号化履歴の保存に失敗しました。");
         }
 
     } catch (

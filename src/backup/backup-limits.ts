@@ -10,7 +10,8 @@ export function assertBackupEntrySize(path: string, size: number): void {
     if (!Number.isSafeInteger(size) || size < 0) {
         throw new Error(`ファイル容量が不正です: ${path}`);
     }
-    const max = path.endsWith(".json") ? MAX_JSON_TEXT_LENGTH
+    const max = path.startsWith("document_builder/print-history/encrypted/") && path.endsWith(".bin") ? MAX_ARCHIVE_ENTRY_BYTES + 16
+        : path.endsWith(".json") ? MAX_JSON_TEXT_LENGTH
         : /\.(?:png|jpg|jpeg|webp)$/i.test(path) ? MAX_ARCHIVE_IMAGE_BYTES
         : MAX_ARCHIVE_ENTRY_BYTES;
     if (size > max) {

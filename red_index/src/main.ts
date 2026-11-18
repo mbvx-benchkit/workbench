@@ -11,7 +11,8 @@ import type {
 
 import {
     loadRedIndexData,
-    saveRedIndexData
+    saveRedIndexData,
+    commitImportedRedIndexData
 } from "./storage.js";
 
 import {
@@ -229,16 +230,13 @@ jsonImportInput.addEventListener(
                 );
 
 
-            data =
-                importedData;
-
-
             /*
-             * インポートした内容も
-             * 即座にデフォルト状態として保存。
+             * 保存成功後にライブ状態を切り替える。
+             * 保存できなければ編集画面と内部状態を一切変更しない。
              */
-            await saveRedIndexData(data);
-
+            await commitImportedRedIndexData(importedData, persisted => {
+                data = persisted;
+            });
 
             renderAll();
 

@@ -108,13 +108,17 @@ export type PresetDocumentArchiveMetadata = {
    DOCUMENT BUILDER PDF History
    ========================================================= */
 
-export type PrintHistoryRecord = {
+export type PlainHistoryRecord = {
     id: string;
     recipientName: string;
     fileName: string;
     createdAt: number;
     pdfBlob: Blob;
 };
+
+export type SealedHistoryRecord = import("../../shared/print-history-vault.js").SealedHistory;
+export type PrintHistoryRecord = PlainHistoryRecord | SealedHistoryRecord;
+export type HistoryVaultConfig = import("../../shared/print-history-vault.js").VaultConfig;
 
 export type PrintHistoryArchiveMetadata = {
     id: string;

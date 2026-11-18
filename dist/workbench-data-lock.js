@@ -92,6 +92,10 @@ function hasRecoveryJournal() {
         };
     });
 }
+/** UI recovery state must include the marker, even if the journal was already cleared. */
+export function hasWorkbenchRestoreMarker() {
+    return Boolean(localValue(RESTORE_PENDING_KEY));
+}
 async function ensureSafe() {
     ensureCurrentGeneration();
     if (await hasRecoveryJournal()) {

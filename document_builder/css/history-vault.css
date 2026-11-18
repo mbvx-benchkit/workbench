@@ -1,0 +1,101 @@
+/* DOCUMENT BUILDER: password-protected PDF history, isolated from other tools. */
+.history-vault-dialog {
+    box-sizing: border-box;
+    width: min(30rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 1rem);
+    max-height: min(90dvh, 48rem);
+    margin: auto;
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid #d8dfe9;
+    border-radius: 1rem;
+    background: #fff;
+    color: #1f2937;
+    box-shadow: 0 1.5rem 4rem rgb(17 24 39 / 23%);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.875rem;
+}
+.history-vault-dialog::backdrop {
+    background: rgb(16 25 39 / 56%);
+    backdrop-filter: blur(0.18rem);
+}
+.history-vault-dialog__surface { padding: clamp(1.15rem, 3.5vw, 1.75rem); }
+.history-vault-dialog__eyebrow { margin: 0 0 .4rem; color: #64748b; font-size: .7rem; font-weight: 750; letter-spacing: .11em; }
+.history-vault-dialog__title { margin: 0; color: #1f2937; font-size: 1.18rem; font-weight: 750; line-height: 1.4; }
+.history-vault-dialog__description { margin: .65rem 0 1.3rem; color: #596578; line-height: 1.75; }
+.history-vault-dialog__form { display: flex; flex-direction: column; gap: 1rem; }
+.history-vault-dialog__field { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
+.history-vault-dialog__label { color: #374151; font-size: .79rem; font-weight: 650; }
+.history-vault-dialog__input {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-height: 2.8rem;
+    padding: .65rem .8rem;
+    border: 1px solid #cbd5e1;
+    border-radius: .65rem;
+    outline: none;
+    background: #fff;
+    color: #111827;
+    font: inherit;
+}
+.history-vault-dialog__input:focus-visible { border-color: #647c99; box-shadow: 0 0 0 3px rgb(77 112 160 / 15%); }
+.history-vault-dialog__hint { margin: 0; color: #6b7280; font-size: .76rem; line-height: 1.6; }
+.history-vault-dialog__warning {
+    margin: 0;
+    padding: .85rem;
+    color: #922d2d;
+    background: #fff2f2;
+    border: 1px solid #f3c7c7;
+    border-radius: .65rem;
+    font-size: .8rem;
+    line-height: 1.7;
+}
+.history-vault-dialog__error { min-height: 1em; margin: 0; color: #b42318; font-size: .79rem; line-height: 1.5; }
+.history-vault-dialog__error:empty { display: none; }
+.history-vault-dialog__progress { margin: 0; color: #475569; font-size: .78rem; line-height: 1.6; }
+.history-vault-dialog__progress:empty { display: none; }
+.history-vault-dialog__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .6rem; }
+.history-vault-dialog__action-left { flex: 1 1 100%; }
+.history-vault-dialog__button {
+    min-height: 2.5rem;
+    padding: .6rem .85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: .62rem;
+    background: #f8fafc;
+    color: #334155;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+.history-vault-dialog__button:hover:not(:disabled) { background: #eaf0f8; }
+.history-vault-dialog__button:focus-visible { outline: 2px solid #4672b2; outline-offset: 2px; }
+.history-vault-dialog__button--primary { border-color: #2f5e93; color: #fff; background: #356aa5; }
+.history-vault-dialog__button--primary:hover:not(:disabled) { background: #285a91; }
+.history-vault-dialog__button--danger { border-color: #b42318; color: #fff; background: #b42318; }
+.history-vault-dialog__button--danger:hover:not(:disabled) { background: #912018; }
+.history-vault-dialog__button--link { min-height: auto; padding: .35rem 0; border: 0; background: transparent; color: #325d92; text-decoration: underline; }
+.history-vault-dialog__button--link:hover:not(:disabled) { background: transparent; color: #143a70; }
+.history-vault-dialog__button:disabled { opacity: .55; cursor: wait; }
+.print-history-dialog__header-actions { display: flex; gap: .45rem; align-items: center; }
+.print-history-dialog__password-change {
+    padding: .52rem .7rem;
+    border: 1px solid #ccd6e3;
+    border-radius: .65rem;
+    color: #355679;
+    background: #f6f9fd;
+    font: inherit;
+    font-size: .75rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+.print-history-dialog__password-change:hover:not(:disabled) { background: #e8f1fc; }
+.print-history-dialog__password-change:focus-visible { outline: 2px solid #4672b2; outline-offset: 2px; }
+.print-history-dialog__password-change:disabled { opacity: .55; cursor: wait; }
+@media (max-width: 33rem) {
+    .print-history-dialog__header-actions { align-self: center; flex-wrap: wrap; justify-content: flex-end; }
+    .print-history-dialog__password-change { font-size: .7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .history-vault-dialog *, .print-history-dialog__password-change { transition: none; }
+}

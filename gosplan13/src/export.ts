@@ -3,6 +3,7 @@ export type { ExportLabelData, ExportSettings, Gosplan13ExportData, ExportElemen
 import { getProductLabels, getLabelJan, getLabelImage } from "./export-utils.js";
 import { getLabelName } from "./export-utils.js";
 import { downloadJson } from "./export-utils.js";
+import { assertExportJsonFits } from "./json-file-policy.js";
 
 /**
  * export.ts
@@ -192,6 +193,9 @@ export function exportToJson(
     const json =
         stringifyExportData(data);
 
+    // 出力できるものは、必ず同じアプリで再インポートできる容量に制限する。
+    assertExportJsonFits(json);
+
     const fileName =
         createExportFileName();
 
@@ -233,6 +237,7 @@ export function initializeExport(
                     "JSONの出力に失敗しました。",
                     error,
                 );
+                window.alert(error instanceof Error ? error.message : "JSONを出力できませんでした。");
             }
         },
     );

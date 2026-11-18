@@ -38,6 +38,8 @@
 
     <link rel="stylesheet" href="./css/styles.css">
 
+    <link rel="stylesheet" href="./css/history-vault.css">
+
     <link rel="stylesheet" href="./css/print.css" media="print">
 
 
@@ -409,10 +411,13 @@
                     <p class="print-history-dialog__eyebrow">PRINT HISTORY</p>
                     <h2 id="print-history-title" class="print-history-dialog__title">出力履歴</h2>
                 </div>
-                <button id="print-history-close-button" type="button" class="print-history-dialog__close"
-                    aria-label="履歴を閉じる">×</button>
+                <div class="print-history-dialog__header-actions">
+                    <button id="print-history-password-button" type="button" class="print-history-dialog__password-change">パスワードを変更</button>
+                    <button id="print-history-close-button" type="button" class="print-history-dialog__close"
+                        aria-label="履歴を閉じる">×</button>
+                </div>
             </header>
-            <p class="print-history-dialog__description">保存したPDFを、当時の内容のままダウンロードできます。不要な履歴は個別に削除できます。</p>
+            <p class="print-history-dialog__description">PDF履歴は暗号化されています。解除後にPDFの再ダウンロード、個別削除、パスワードの変更ができます。</p>
             <p id="print-history-stats" class="print-history-dialog__stats" aria-live="polite"></p>
             <div id="print-history-list" class="print-history-dialog__list" aria-live="polite">
                 <p class="print-history-dialog__empty">履歴を読み込んでいます...</p>

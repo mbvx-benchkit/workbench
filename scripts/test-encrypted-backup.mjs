@@ -6,7 +6,7 @@ import { createBackupArchive, readBackupArchive } from '../dist/backup/backup-zi
 const snapshot = { documentTemplates: [], redIndex: null, presetDocuments: [], printHistory: [] };
 const legacyZip = await createBackupArchive(snapshot);
 const oldArchive = await readBackupArchive(new Uint8Array(await legacyZip.arrayBuffer()));
-assert.equal(oldArchive.sourceBackupVersion, 2);
+assert.equal(oldArchive.sourceBackupVersion, 3);
 const password = 'とても長いテストパスワード_2026!';
 const encrypted = await encryptBackupZip(legacyZip, password);
 assert.equal(await isEncryptedBackup(encrypted), true);
@@ -14,7 +14,7 @@ assert.equal(await isEncryptedBackup(legacyZip), false);
 const bytes = await decryptBackupFile(encrypted, password);
 assert.equal(bytes.byteLength, legacyZip.size);
 const restored = await readBackupArchive(bytes);
-assert.equal(restored.sourceBackupVersion, 2);
+assert.equal(restored.sourceBackupVersion, 3);
 await assert.rejects(decryptBackupFile(encrypted, 'incorrect-password'), /パスワードが違う|破損/);
 const tampered = new Uint8Array(await encrypted.arrayBuffer());
 tampered[tampered.length - 1] ^= 1;
