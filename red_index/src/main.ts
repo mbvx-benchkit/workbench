@@ -124,6 +124,15 @@ const editorElements = {
 renderAll();
 
 
+let saveErrorShown = false;
+function reportSaveFailure(error: unknown): void {
+    console.error("RED INDEXの自動保存に失敗しました。", error);
+    if (!saveErrorShown) {
+        saveErrorShown = true;
+        window.alert("入力内容を保存できませんでした。別タブで復元した場合は再読み込みしてください。必要ならJSONで作業内容を退避してください。");
+    }
+}
+
 /* =========================================================
    Change
    ========================================================= */
@@ -135,9 +144,7 @@ function handleDataChange(): void {
      *
      * 保存ボタンは存在しない。
      */
-    saveRedIndexData(
-        data
-    );
+    void saveRedIndexData(data).catch(reportSaveFailure);
 
 
     /*
@@ -166,9 +173,7 @@ categoryAddButton.addEventListener(
         );
 
 
-        saveRedIndexData(
-            data
-        );
+        void saveRedIndexData(data).catch(reportSaveFailure);
 
 
         renderAll();
@@ -232,9 +237,7 @@ jsonImportInput.addEventListener(
              * インポートした内容も
              * 即座にデフォルト状態として保存。
              */
-            saveRedIndexData(
-                data
-            );
+            await saveRedIndexData(data);
 
 
             renderAll();
@@ -310,9 +313,7 @@ printButton.addEventListener(
         /*
          * 印刷直前にも現在状態を保存しておく。
          */
-        saveRedIndexData(
-            data
-        );
+        void saveRedIndexData(data).catch(reportSaveFailure);
 
 
         /*

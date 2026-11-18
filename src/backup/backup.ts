@@ -1,3 +1,4 @@
+import { withWorkbenchSnapshotLock } from "../workbench-data-lock.js";
 /* WORKBENCH_EXTRACT_requestBackupPassword */
 import { requestBackupPasswordDialog } from "./backup-password-dialog.js";
 import type { WorkbenchBackupOptions } from "./backup-ui-utils.js";
@@ -190,8 +191,10 @@ export function setupWorkbenchBackup(
         try {
 
             // 実体のPDFを全件取得する前に容量・件数を検査する。
-            await estimateWorkbenchBackupFootprint();
-            const snapshot = await readWorkbenchSnapshot();
+            const snapshot = await withWorkbenchSnapshotLock(async () => {
+                await estimateWorkbenchBackupFootprint();
+                return readWorkbenchSnapshot();
+            });
 
 
             const archive =

@@ -1,3 +1,4 @@
+import { withWorkbenchSnapshotLock } from "../workbench-data-lock.js";
 /* WORKBENCH_EXTRACT_requestBackupPassword */
 import { requestBackupPasswordDialog } from "./backup-password-dialog.js";
 import { downloadBlob } from "./backup-ui-utils.js";
@@ -126,8 +127,10 @@ export function setupWorkbenchBackup(options) {
         showStatus("バックアップを作成しています...");
         try {
             // 実体のPDFを全件取得する前に容量・件数を検査する。
-            await estimateWorkbenchBackupFootprint();
-            const snapshot = await readWorkbenchSnapshot();
+            const snapshot = await withWorkbenchSnapshotLock(async () => {
+                await estimateWorkbenchBackupFootprint();
+                return readWorkbenchSnapshot();
+            });
             const archive = await createBackupArchive(snapshot);
             // ファイルヘッダー・ZIP管理情報も含む実サイズを最終確認する。
             if (archive.size > MAX_IMPORT_FILE_SIZE - 56) {

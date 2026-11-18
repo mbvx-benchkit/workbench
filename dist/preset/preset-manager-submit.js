@@ -1,6 +1,7 @@
 /** PRESET MANAGER editor validation and database save lifecycle. */
 import { createPresetDocumentId, isPdfFile, isPreviewImageFile } from "./preset.js";
 import { getNextPresetSortOrder, putPresetDocument, requestPersistentStorage } from "./preset-db.js";
+import { assertRestorablePresetPdf, detectPresetPreviewMimeType } from "./preset-file-policy.js";
 export function createPresetEditorSubmit(deps) {
     const { titleInput, descriptionInput, pdfInput, previewInput, saveButton, dialog, getSelectedOrientation, hideEditorError, showEditorError, notifyChanged, refreshManagerList, resetEditor, showListView } = deps;
     async function handleSubmit(event) {
@@ -57,6 +58,13 @@ export function createPresetEditorSubmit(deps) {
         // DBのコミット以降は、画面更新の失敗を保存失敗として扱わない。
         let storageCommitted = false;
         try {
+            if (selectedPdf)
+                await assertRestorablePresetPdf(selectedPdf);
+            const selectedPreviewMime = selectedPreview
+                ? await detectPresetPreviewMimeType(selectedPreview) : null;
+            if (selectedPreview && !selectedPreviewMime) {
+                throw new Error("プレビュー画像の内容がPNG、JPEG、WebPのいずれでもありません。");
+            }
             const now = Date.now();
             let presetDocument;
             /* -------------------------------------------------
@@ -72,8 +80,7 @@ export function createPresetEditorSubmit(deps) {
                         ? selectedPdf.name
                         : editingDocument.pdfFileName,
                     pdfMimeType: selectedPdf
-                        ? (selectedPdf.type ||
-                            "application/pdf")
+                        ? ("application/pdf")
                         : editingDocument.pdfMimeType,
                     pdfBlob: selectedPdf ??
                         editingDocument.pdfBlob,
@@ -81,8 +88,7 @@ export function createPresetEditorSubmit(deps) {
                         ? selectedPreview.name
                         : editingDocument.previewFileName,
                     previewMimeType: selectedPreview
-                        ? (selectedPreview.type ||
-                            null)
+                        ? (selectedPreviewMime)
                         : editingDocument.previewMimeType,
                     previewBlob: selectedPreview ??
                         editingDocument.previewBlob,
@@ -103,15 +109,13 @@ export function createPresetEditorSubmit(deps) {
                     description,
                     orientation,
                     pdfFileName: selectedPdf.name,
-                    pdfMimeType: selectedPdf.type ||
-                        "application/pdf",
+                    pdfMimeType: "application/pdf",
                     pdfBlob: selectedPdf,
                     previewFileName: selectedPreview
                         ? selectedPreview.name
                         : null,
                     previewMimeType: selectedPreview
-                        ? (selectedPreview.type ||
-                            null)
+                        ? (selectedPreviewMime)
                         : null,
                     previewBlob: selectedPreview,
                     sortOrder,
@@ -153,7 +157,7 @@ export function createPresetEditorSubmit(deps) {
         catch (error) {
             const message = storageCommitted
                 ? "保存は完了しましたが、画面の更新に失敗しました。ページを再読み込みしてください。再度保存する必要はありません。"
-                : "定型印刷物を保存できませんでした。";
+                : `定型印刷物を保存できませんでした。${error instanceof Error ? error.message : ""}`;
             console.error(message, error);
             showEditorError(message);
         }

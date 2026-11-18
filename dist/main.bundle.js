@@ -2400,6 +2400,153 @@ var require_jszip_min = __commonJS({
   }
 });
 
+// dist/workbench-data-lock.js
+var LOCK_NAME = "workbench:data-integrity:v1";
+var GENERATION_KEY = "workbench:data-generation:v1";
+var RESTORE_PENDING_KEY = "workbench:restore-in-progress:v1";
+var RECOVERY_DATABASE = "workbench-restore-recovery";
+var RECOVERY_STORE = "snapshots";
+var isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+function localValue(key) {
+  if (!isBrowser)
+    return null;
+  return window.localStorage.getItem(key);
+}
+var openedGeneration = null;
+var openedWithPendingRestore = false;
+var initialStorageError = null;
+try {
+  openedGeneration = localValue(GENERATION_KEY);
+  openedWithPendingRestore = Boolean(localValue(RESTORE_PENDING_KEY));
+} catch (error) {
+  initialStorageError = error;
+}
+function ensureCurrentGeneration() {
+  if (initialStorageError) {
+    throw new Error("\u30D6\u30E9\u30A6\u30B6\u306E\u4FDD\u5B58\u9818\u57DF\u3092\u78BA\u8A8D\u3067\u304D\u306A\u3044\u305F\u3081\u3001\u5B89\u5168\u306A\u4FDD\u5B58\u3084\u5FA9\u5143\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002\u30D6\u30E9\u30A6\u30B6\u306E\u8A2D\u5B9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (openedWithPendingRestore || localValue(GENERATION_KEY) !== openedGeneration) {
+    throw new Error("\u5225\u306E\u30BF\u30D6\u3067WORKBENCH\u306E\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u53E4\u3044\u753B\u9762\u304B\u3089\u306E\u4E0A\u66F8\u304D\u3092\u9632\u3050\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (localValue(RESTORE_PENDING_KEY)) {
+    throw new Error("WORKBENCH\u306E\u5FA9\u5143\u307E\u305F\u306F\u5FA9\u65E7\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5FA9\u65E7\u64CD\u4F5C\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+}
+function webLocks() {
+  if (!isBrowser)
+    return null;
+  const locks = navigator.locks;
+  if (!locks || typeof locks.request !== "function") {
+    throw new Error("\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306F\u30BF\u30D6\u9593\u306E\u30C7\u30FC\u30BF\u4FDD\u8B77\uFF08Web Locks\uFF09\u306B\u5BFE\u5FDC\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5BFE\u5FDC\u30D6\u30E9\u30A6\u30B6\u3067\u958B\u3044\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return locks;
+}
+function hasRecoveryJournal() {
+  if (!isBrowser)
+    return Promise.resolve(false);
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(RECOVERY_DATABASE, 1);
+    open.onupgradeneeded = () => {
+      if (!open.result.objectStoreNames.contains(RECOVERY_STORE)) {
+        open.result.createObjectStore(RECOVERY_STORE, { keyPath: "id" });
+      }
+    };
+    open.onerror = () => reject(open.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+    open.onblocked = () => reject(new Error("\u5225\u30BF\u30D6\u304C\u5FA9\u65E7\u8A18\u9332\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002"));
+    open.onsuccess = () => {
+      const db = open.result;
+      db.onversionchange = () => db.close();
+      let done2 = false;
+      const finish = (result, error) => {
+        if (done2)
+          return;
+        done2 = true;
+        db.close();
+        if (error)
+          reject(error);
+        else
+          resolve(result);
+      };
+      try {
+        const tx = db.transaction(RECOVERY_STORE, "readonly");
+        const request = tx.objectStore(RECOVERY_STORE).get("pending");
+        request.onsuccess = () => finish(Boolean(request.result));
+        request.onerror = () => finish(false, request.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+        tx.onabort = () => finish(false, tx.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+      } catch (error) {
+        finish(false, error instanceof Error ? error : new Error(String(error)));
+      }
+    };
+  });
+}
+async function ensureSafe() {
+  ensureCurrentGeneration();
+  if (await hasRecoveryJournal()) {
+    throw new Error("\u5FA9\u65E7\u5F85\u3061\u306E\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u3059\u3002\u5148\u306BWORKBENCH\u30DB\u30FC\u30E0\u753B\u9762\u304B\u3089\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  ensureCurrentGeneration();
+}
+async function withWorkbenchWriteLock(operation) {
+  const locks = webLocks();
+  if (!locks)
+    return operation();
+  const requestedGeneration = localValue(GENERATION_KEY);
+  const requestedDuringRestore = Boolean(localValue(RESTORE_PENDING_KEY));
+  return locks.request(LOCK_NAME, { mode: "shared" }, async () => {
+    if (requestedDuringRestore || requestedGeneration !== localValue(GENERATION_KEY)) {
+      throw new Error("\u5225\u306E\u30BF\u30D6\u3067WORKBENCH\u306E\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u53E4\u3044\u753B\u9762\u304B\u3089\u306E\u4E0A\u66F8\u304D\u3092\u9632\u3050\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    await ensureSafe();
+    return operation();
+  });
+}
+async function withWorkbenchSnapshotLock(operation) {
+  const locks = webLocks();
+  if (!locks)
+    return operation();
+  const requestedGeneration = localValue(GENERATION_KEY);
+  return locks.request(LOCK_NAME, { mode: "exclusive" }, async () => {
+    if (requestedGeneration !== localValue(GENERATION_KEY)) {
+      throw new Error("\u5225\u306E\u30BF\u30D6\u3067\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304B\u3089\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    await ensureSafe();
+    return operation();
+  });
+}
+async function withWorkbenchRestoreLock(operation, recovery = false) {
+  const locks = webLocks();
+  if (!locks)
+    return operation({ beginReplacement: () => {
+    }, finishReplacement: () => {
+    } });
+  const requestedGeneration = localValue(GENERATION_KEY);
+  return locks.request(LOCK_NAME, { mode: "exclusive" }, async () => {
+    if (!recovery && requestedGeneration !== localValue(GENERATION_KEY)) {
+      throw new Error("\u4ED6\u306E\u30BF\u30D6\u3067\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    if (!recovery)
+      ensureCurrentGeneration();
+    const session = {
+      beginReplacement: () => {
+        const next = crypto.randomUUID();
+        localStorage.setItem(RESTORE_PENDING_KEY, next);
+        try {
+          localStorage.setItem(GENERATION_KEY, next);
+        } catch (error) {
+          localStorage.removeItem(RESTORE_PENDING_KEY);
+          throw error;
+        }
+        openedGeneration = next;
+      },
+      finishReplacement: () => {
+        localStorage.removeItem(RESTORE_PENDING_KEY);
+        openedWithPendingRestore = false;
+      }
+    };
+    return operation(session);
+  });
+}
+
 // dist/preset/preset-db-utils.js
 async function requestPersistentStorage() {
   if (!navigator.storage || typeof navigator.storage.persist !== "function") {
@@ -2535,22 +2682,26 @@ async function getPresetDocuments() {
   return sortPresetDocuments(documents);
 }
 async function putPresetDocument(document2) {
-  const database = await openPresetDatabase();
-  const transaction = database.transaction(STORE_NAME, "readwrite");
-  const completion = waitForTransaction(transaction);
-  const store = transaction.objectStore(STORE_NAME);
-  const request = store.put(document2);
-  await requestToPromise(request);
-  await completion;
+  return withWorkbenchWriteLock(async () => {
+    const database = await openPresetDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(document2);
+    await requestToPromise(request);
+    await completion;
+  });
 }
 async function deletePresetDocument(id) {
-  const database = await openPresetDatabase();
-  const transaction = database.transaction(STORE_NAME, "readwrite");
-  const completion = waitForTransaction(transaction);
-  const store = transaction.objectStore(STORE_NAME);
-  const request = store.delete(id);
-  await requestToPromise(request);
-  await completion;
+  return withWorkbenchWriteLock(async () => {
+    const database = await openPresetDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    await requestToPromise(request);
+    await completion;
+  });
 }
 async function replaceAllPresetDocuments(documents) {
   const database = await openPresetDatabase();
@@ -2867,6 +3018,110 @@ function bindPresetManagerEvents(elements, handlers) {
   });
 }
 
+// dist/backup/archive-file-utils.js
+function createBlob(bytes, mimeType) {
+  const copy = new Uint8Array(bytes);
+  return new Blob([
+    copy.buffer
+  ], {
+    type: mimeType
+  });
+}
+function stringifyJson(value) {
+  return JSON.stringify(value, null, 2);
+}
+function getImageExtension(mimeType) {
+  switch (mimeType) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    default:
+      throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
+  }
+}
+function isPng(bytes) {
+  const signature = [
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10
+  ];
+  if (bytes.length < signature.length) {
+    return false;
+  }
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+function isJpeg(bytes) {
+  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+}
+function isWebp(bytes) {
+  if (bytes.length < 12) {
+    return false;
+  }
+  return bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
+}
+function sanitizeFileName(value) {
+  const normalized = value.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/\.+$/g, "");
+  if (normalized.length === 0) {
+    return "document";
+  }
+  return normalized.slice(0, 80);
+}
+
+// dist/preset/preset-file-policy.js
+async function detectPresetPreviewMimeType(blob) {
+  if (blob.size === 0 || blob.size > MAX_ARCHIVE_IMAGE_BYTES) {
+    throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306F32MiB\u4EE5\u4E0B\u306EPNG\u3001JPEG\u3001WebP\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+  if (isPng(bytes))
+    return "image/png";
+  if (isJpeg(bytes))
+    return "image/jpeg";
+  if (isWebp(bytes))
+    return "image/webp";
+  return null;
+}
+async function assertRestorablePresetPdf(blob) {
+  if (blob.size < 128 || blob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+    throw new Error("\u5B9A\u578B\u5370\u5237\u7269PDF\u306F128\u30D0\u30A4\u30C8\u4EE5\u4E0A\u300164MiB\u4EE5\u4E0B\u306EPDF\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  const headerBytes = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+  const header = String.fromCharCode(...headerBytes);
+  if (!/^%PDF-(?:1\.[0-7]|2\.0)/.test(header)) {
+    throw new Error("PDF\u306E\u30D5\u30A1\u30A4\u30EB\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+  const tail = new TextDecoder("latin1").decode(await blob.slice(Math.max(0, blob.size - 8192)).arrayBuffer());
+  const matches = [...tail.matchAll(/startxref\s+(\d+)\s+%%EOF/g)];
+  const last = matches[matches.length - 1];
+  if (!last)
+    throw new Error("PDF\u306E\u7D42\u7AEF\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  const offset = Number(last[1]);
+  if (!Number.isSafeInteger(offset) || offset <= 0 || offset >= blob.size) {
+    throw new Error("PDF\u306E\u53C2\u7167\u4F4D\u7F6E\u304C\u4E0D\u6B63\u3067\u3059\u3002");
+  }
+}
+async function validateRestorablePresetFile(document2) {
+  try {
+    await assertRestorablePresetPdf(document2.pdfBlob);
+    if (!document2.previewBlob)
+      return null;
+    const format = await detectPresetPreviewMimeType(document2.previewBlob);
+    if (!format)
+      throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306E\u5185\u5BB9\u304CPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u3067\u3082\u3042\u308A\u307E\u305B\u3093\u3002");
+    return format;
+  } catch (error) {
+    throw new Error(`\u5B9A\u578B\u5370\u5237\u7269\u300C${document2.title}\u300D\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u307E\u305B\u3093: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 // dist/preset/preset-manager-submit.js
 function createPresetEditorSubmit(deps) {
   const { titleInput, descriptionInput, pdfInput, previewInput, saveButton, dialog, getSelectedOrientation, hideEditorError, showEditorError, notifyChanged, refreshManagerList, resetEditor, showListView } = deps;
@@ -2904,6 +3159,12 @@ function createPresetEditorSubmit(deps) {
     saveButton.textContent = "\u4FDD\u5B58\u4E2D...";
     let storageCommitted = false;
     try {
+      if (selectedPdf)
+        await assertRestorablePresetPdf(selectedPdf);
+      const selectedPreviewMime = selectedPreview ? await detectPresetPreviewMimeType(selectedPreview) : null;
+      if (selectedPreview && !selectedPreviewMime) {
+        throw new Error("\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u306E\u5185\u5BB9\u304CPNG\u3001JPEG\u3001WebP\u306E\u3044\u305A\u308C\u3067\u3082\u3042\u308A\u307E\u305B\u3093\u3002");
+      }
       const now = Date.now();
       let presetDocument;
       if (editingDocument) {
@@ -2913,10 +3174,10 @@ function createPresetEditorSubmit(deps) {
           description,
           orientation,
           pdfFileName: selectedPdf ? selectedPdf.name : editingDocument.pdfFileName,
-          pdfMimeType: selectedPdf ? selectedPdf.type || "application/pdf" : editingDocument.pdfMimeType,
+          pdfMimeType: selectedPdf ? "application/pdf" : editingDocument.pdfMimeType,
           pdfBlob: selectedPdf ?? editingDocument.pdfBlob,
           previewFileName: selectedPreview ? selectedPreview.name : editingDocument.previewFileName,
-          previewMimeType: selectedPreview ? selectedPreview.type || null : editingDocument.previewMimeType,
+          previewMimeType: selectedPreview ? selectedPreviewMime : editingDocument.previewMimeType,
           previewBlob: selectedPreview ?? editingDocument.previewBlob,
           updatedAt: now
         };
@@ -2931,10 +3192,10 @@ function createPresetEditorSubmit(deps) {
           description,
           orientation,
           pdfFileName: selectedPdf.name,
-          pdfMimeType: selectedPdf.type || "application/pdf",
+          pdfMimeType: "application/pdf",
           pdfBlob: selectedPdf,
           previewFileName: selectedPreview ? selectedPreview.name : null,
-          previewMimeType: selectedPreview ? selectedPreview.type || null : null,
+          previewMimeType: selectedPreview ? selectedPreviewMime : null,
           previewBlob: selectedPreview,
           sortOrder,
           createdAt: now,
@@ -2955,7 +3216,7 @@ function createPresetEditorSubmit(deps) {
       }
       deps.editingDocument = null;
     } catch (error) {
-      const message = storageCommitted ? "\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u518D\u5EA6\u4FDD\u5B58\u3059\u308B\u5FC5\u8981\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : "\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002";
+      const message = storageCommitted ? "\u4FDD\u5B58\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u518D\u5EA6\u4FDD\u5B58\u3059\u308B\u5FC5\u8981\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : `\u5B9A\u578B\u5370\u5237\u7269\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${error instanceof Error ? error.message : ""}`;
       console.error(message, error);
       showEditorError(message);
     } finally {
@@ -3223,11 +3484,27 @@ function setupPresetManager(options) {
     }
     try {
       await deletePresetDocument(presetDocument.id);
+    } catch (error) {
+      console.error("\u5B9A\u578B\u5370\u5237\u7269\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      window.alert("\u5B9A\u578B\u5370\u5237\u7269\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30C7\u30FC\u30BF\u306F\u5909\u66F4\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002");
+      return;
+    }
+    let viewFailed = false;
+    try {
       await notifyChanged();
+    } catch (error) {
+      viewFailed = true;
+      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u30E1\u30A4\u30F3\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+    }
+    try {
       await refreshManagerList();
     } catch (error) {
-      console.error("\u5B9A\u578B\u5370\u5237\u7269\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
-      window.alert("\u5B9A\u578B\u5370\u5237\u7269\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002");
+      viewFailed = true;
+      console.error("\u524A\u9664\u6E08\u307F\u3067\u3059\u304C\u7BA1\u7406\u4E00\u89A7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      renderManagerListError();
+    }
+    if (viewFailed) {
+      window.alert("\u5B9A\u578B\u5370\u5237\u7269\u306F\u524A\u9664\u6E08\u307F\u3067\u3059\u3002\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
     }
   }
   async function handleSubmit(event) {
@@ -3390,63 +3667,6 @@ function formatErrorMessage(error) {
     return error.message;
   }
   return "\u4E0D\u660E\u306A\u30A8\u30E9\u30FC\u304C\u767A\u751F\u3057\u307E\u3057\u305F\u3002";
-}
-
-// dist/backup/archive-file-utils.js
-function createBlob(bytes, mimeType) {
-  const copy = new Uint8Array(bytes);
-  return new Blob([
-    copy.buffer
-  ], {
-    type: mimeType
-  });
-}
-function stringifyJson(value) {
-  return JSON.stringify(value, null, 2);
-}
-function getImageExtension(mimeType) {
-  switch (mimeType) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-      return "jpg";
-    case "image/webp":
-      return "webp";
-    default:
-      throw new Error(`\u5BFE\u5FDC\u3057\u3066\u3044\u306A\u3044\u30D7\u30EC\u30D3\u30E5\u30FC\u753B\u50CF\u5F62\u5F0F\u3067\u3059: ${mimeType}`);
-  }
-}
-function isPng(bytes) {
-  const signature = [
-    137,
-    80,
-    78,
-    71,
-    13,
-    10,
-    26,
-    10
-  ];
-  if (bytes.length < signature.length) {
-    return false;
-  }
-  return signature.every((byte, index) => bytes[index] === byte);
-}
-function isJpeg(bytes) {
-  return bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-}
-function isWebp(bytes) {
-  if (bytes.length < 12) {
-    return false;
-  }
-  return bytes[0] === 82 && bytes[1] === 73 && bytes[2] === 70 && bytes[3] === 70 && bytes[8] === 87 && bytes[9] === 69 && bytes[10] === 66 && bytes[11] === 80;
-}
-function sanitizeFileName(value) {
-  const normalized = value.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\s+/g, " ").trim().replace(/\.+$/g, "");
-  if (normalized.length === 0) {
-    return "document";
-  }
-  return normalized.slice(0, 80);
 }
 
 // dist/backup/backup-zip.js
@@ -3760,6 +3980,8 @@ async function createBackupArchive(snapshot) {
   let previewImageCount = 0;
   for (let index = 0; index < snapshot.presetDocuments.length; index += 1) {
     const document2 = snapshot.presetDocuments[index];
+    const normalizedPreviewMime = await validateRestorablePresetFile(document2);
+    const normalizedPreviewName = document2.previewBlob && normalizedPreviewMime ? document2.previewFileName || `preview.${getImageExtension(normalizedPreviewMime)}` : null;
     const sequence = String(index + 1).padStart(3, "0");
     const safeTitle = sanitizeFileName(document2.title);
     const pdfPath = [
@@ -3771,8 +3993,8 @@ async function createBackupArchive(snapshot) {
     ].join("");
     addBinary(pdfPath, document2.pdfBlob);
     let previewPath = null;
-    if (document2.previewBlob && document2.previewFileName && document2.previewMimeType) {
-      const extension = getImageExtension(document2.previewMimeType);
+    if (document2.previewBlob && normalizedPreviewName && normalizedPreviewMime) {
+      const extension = getImageExtension(normalizedPreviewMime);
       previewPath = [
         "preset_documents/images/",
         sequence,
@@ -3790,10 +4012,10 @@ async function createBackupArchive(snapshot) {
       description: document2.description,
       orientation: document2.orientation,
       pdfFileName: document2.pdfFileName,
-      pdfMimeType: document2.pdfMimeType,
+      pdfMimeType: "application/pdf",
       pdfPath,
-      previewFileName: document2.previewFileName,
-      previewMimeType: document2.previewMimeType,
+      previewFileName: normalizedPreviewName,
+      previewMimeType: normalizedPreviewMime,
       previewPath,
       sortOrder: document2.sortOrder,
       createdAt: document2.createdAt,
@@ -3804,6 +4026,7 @@ async function createBackupArchive(snapshot) {
     version: PRESET_DOCUMENTS_VERSION,
     documents: presetMetadata
   };
+  parsePresetDocumentsArchive(presetArchive);
   addJson(PRESET_DOCUMENTS_PATH, presetArchive);
   const historyMetadata = [];
   for (let index = 0; index < snapshot.printHistory.length; index += 1) {
@@ -4462,38 +4685,54 @@ var defaultRestoreDependencies = {
   clearRecovery: clearPendingRecovery
 };
 async function restoreWithRecovery(imported, deps = defaultRestoreDependencies) {
-  if (await deps.getRecovery()) {
-    throw new Error("\u524D\u56DE\u306E\u5FA9\u65E7\u30C7\u30FC\u30BF\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5148\u306B\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u3092\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-  }
-  const original = await deps.read();
-  const target = createRestoredSnapshot(imported, original);
-  await deps.saveRecovery(original);
-  try {
-    await deps.replace(target);
-  } catch (restoreError) {
-    try {
-      await deps.replace(original);
-      await deps.clearRecovery();
-    } catch (rollbackError) {
-      console.error("\u5143\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002", rollbackError);
-      throw new Error("\u5FA9\u5143\u3068\u81EA\u52D5\u5FA9\u65E7\u306E\u4E21\u65B9\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u753B\u9762\u306E\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u30DC\u30BF\u30F3\u304B\u3089\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  return withWorkbenchRestoreLock(async (session) => {
+    if (await deps.getRecovery()) {
+      throw new Error("\u524D\u56DE\u306E\u5FA9\u65E7\u30C7\u30FC\u30BF\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u5148\u306B\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u3092\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
     }
-    throw restoreError;
-  }
-  try {
-    await deps.clearRecovery();
-  } catch {
-    throw new Error("\u5FA9\u5143\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5FA9\u65E7\u64CD\u4F5C\u3067\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-  }
-  return target;
+    const original = await deps.read();
+    const target = createRestoredSnapshot(imported, original);
+    await deps.saveRecovery(original);
+    try {
+      session.beginReplacement();
+    } catch (error) {
+      await deps.clearRecovery();
+      throw error;
+    }
+    try {
+      await deps.replace(target);
+    } catch (restoreError) {
+      try {
+        await deps.replace(original);
+        await deps.clearRecovery();
+        session.finishReplacement();
+      } catch (rollbackError) {
+        console.error("\u5143\u30C7\u30FC\u30BF\u3078\u306E\u5FA9\u65E7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002", rollbackError);
+        throw new Error("\u5FA9\u5143\u3068\u81EA\u52D5\u5FA9\u65E7\u306E\u4E21\u65B9\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002\u5FA9\u65E7\u30B3\u30D4\u30FC\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u753B\u9762\u306E\u300C\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u300D\u30DC\u30BF\u30F3\u304B\u3089\u623B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
+      throw restoreError;
+    }
+    try {
+      await deps.clearRecovery();
+    } catch {
+      throw new Error("\u5FA9\u5143\u306F\u5B8C\u4E86\u3057\u307E\u3057\u305F\u304C\u3001\u5FA9\u65E7\u30B3\u30D4\u30FC\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5FA9\u65E7\u64CD\u4F5C\u3067\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    session.finishReplacement();
+    return target;
+  });
 }
 async function recoverPreviousState(deps = defaultRestoreDependencies) {
-  const record = await deps.getRecovery();
-  if (!record)
-    return false;
-  await deps.replace(record.snapshot);
-  await deps.clearRecovery();
-  return true;
+  return withWorkbenchRestoreLock(async (session) => {
+    const record = await deps.getRecovery();
+    if (!record) {
+      session.finishReplacement();
+      return false;
+    }
+    session.beginReplacement();
+    await deps.replace(record.snapshot);
+    await deps.clearRecovery();
+    session.finishReplacement();
+    return true;
+  }, true);
 }
 
 // dist/backup/encrypted-backup.js
@@ -4631,8 +4870,10 @@ function setupWorkbenchBackup(options) {
     setBusy(true);
     showStatus("\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u4F5C\u6210\u3057\u3066\u3044\u307E\u3059...");
     try {
-      await estimateWorkbenchBackupFootprint();
-      const snapshot = await readWorkbenchSnapshot();
+      const snapshot = await withWorkbenchSnapshotLock(async () => {
+        await estimateWorkbenchBackupFootprint();
+        return readWorkbenchSnapshot();
+      });
       const archive = await createBackupArchive(snapshot);
       if (archive.size > MAX_IMPORT_FILE_SIZE - 56) {
         throw new Error("\u4F5C\u6210\u3055\u308C\u305F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304C\u5BB9\u91CF\u4E0A\u9650\u3092\u8D85\u3048\u3066\u3044\u307E\u3059\u3002");

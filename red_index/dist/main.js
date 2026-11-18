@@ -36,6 +36,14 @@ const editorElements = {
  * localStorageの内容へ置き換わる。
  */
 renderAll();
+let saveErrorShown = false;
+function reportSaveFailure(error) {
+    console.error("RED INDEXの自動保存に失敗しました。", error);
+    if (!saveErrorShown) {
+        saveErrorShown = true;
+        window.alert("入力内容を保存できませんでした。別タブで復元した場合は再読み込みしてください。必要ならJSONで作業内容を退避してください。");
+    }
+}
 /* =========================================================
    Change
    ========================================================= */
@@ -45,7 +53,7 @@ function handleDataChange() {
      *
      * 保存ボタンは存在しない。
      */
-    saveRedIndexData(data);
+    void saveRedIndexData(data).catch(reportSaveFailure);
     /*
      * Editor自体は再描画しない。
      *
@@ -59,7 +67,7 @@ function handleDataChange() {
    ========================================================= */
 categoryAddButton.addEventListener("click", () => {
     data.categories.push(createEmptyCategory());
-    saveRedIndexData(data);
+    void saveRedIndexData(data).catch(reportSaveFailure);
     renderAll();
 });
 /* =========================================================
@@ -90,7 +98,7 @@ jsonImportInput.addEventListener("change", async () => {
          * インポートした内容も
          * 即座にデフォルト状態として保存。
          */
-        saveRedIndexData(data);
+        await saveRedIndexData(data);
         renderAll();
         window.alert("JSONを読み込みました。");
     }
@@ -122,7 +130,7 @@ printButton.addEventListener("click", () => {
     /*
      * 印刷直前にも現在状態を保存しておく。
      */
-    saveRedIndexData(data);
+    void saveRedIndexData(data).catch(reportSaveFailure);
     /*
      * CSS側の @media print により
      * A4プレビュー部分だけ印刷される。

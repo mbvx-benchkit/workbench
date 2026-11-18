@@ -20368,6 +20368,107 @@ function resolveDocumentRecipientName(activeTemplate2, activeValues2) {
   return "";
 }
 
+// document_builder/dist/workbench-data-lock.js
+var LOCK_NAME = "workbench:data-integrity:v1";
+var GENERATION_KEY = "workbench:data-generation:v1";
+var RESTORE_PENDING_KEY = "workbench:restore-in-progress:v1";
+var RECOVERY_DATABASE = "workbench-restore-recovery";
+var RECOVERY_STORE = "snapshots";
+var isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+function localValue(key) {
+  if (!isBrowser)
+    return null;
+  return window.localStorage.getItem(key);
+}
+var openedGeneration = null;
+var openedWithPendingRestore = false;
+var initialStorageError = null;
+try {
+  openedGeneration = localValue(GENERATION_KEY);
+  openedWithPendingRestore = Boolean(localValue(RESTORE_PENDING_KEY));
+} catch (error) {
+  initialStorageError = error;
+}
+function ensureCurrentGeneration() {
+  if (initialStorageError) {
+    throw new Error("\u30D6\u30E9\u30A6\u30B6\u306E\u4FDD\u5B58\u9818\u57DF\u3092\u78BA\u8A8D\u3067\u304D\u306A\u3044\u305F\u3081\u3001\u5B89\u5168\u306A\u4FDD\u5B58\u3084\u5FA9\u5143\u3092\u958B\u59CB\u3067\u304D\u307E\u305B\u3093\u3002\u30D6\u30E9\u30A6\u30B6\u306E\u8A2D\u5B9A\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (openedWithPendingRestore || localValue(GENERATION_KEY) !== openedGeneration) {
+    throw new Error("\u5225\u306E\u30BF\u30D6\u3067WORKBENCH\u306E\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u53E4\u3044\u753B\u9762\u304B\u3089\u306E\u4E0A\u66F8\u304D\u3092\u9632\u3050\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  if (localValue(RESTORE_PENDING_KEY)) {
+    throw new Error("WORKBENCH\u306E\u5FA9\u5143\u307E\u305F\u306F\u5FA9\u65E7\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5FA9\u65E7\u64CD\u4F5C\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+}
+function webLocks() {
+  if (!isBrowser)
+    return null;
+  const locks = navigator.locks;
+  if (!locks || typeof locks.request !== "function") {
+    throw new Error("\u3053\u306E\u30D6\u30E9\u30A6\u30B6\u306F\u30BF\u30D6\u9593\u306E\u30C7\u30FC\u30BF\u4FDD\u8B77\uFF08Web Locks\uFF09\u306B\u5BFE\u5FDC\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5BFE\u5FDC\u30D6\u30E9\u30A6\u30B6\u3067\u958B\u3044\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return locks;
+}
+function hasRecoveryJournal() {
+  if (!isBrowser)
+    return Promise.resolve(false);
+  return new Promise((resolve, reject) => {
+    const open2 = indexedDB.open(RECOVERY_DATABASE, 1);
+    open2.onupgradeneeded = () => {
+      if (!open2.result.objectStoreNames.contains(RECOVERY_STORE)) {
+        open2.result.createObjectStore(RECOVERY_STORE, { keyPath: "id" });
+      }
+    };
+    open2.onerror = () => reject(open2.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+    open2.onblocked = () => reject(new Error("\u5225\u30BF\u30D6\u304C\u5FA9\u65E7\u8A18\u9332\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002"));
+    open2.onsuccess = () => {
+      const db = open2.result;
+      db.onversionchange = () => db.close();
+      let done = false;
+      const finish = (result, error) => {
+        if (done)
+          return;
+        done = true;
+        db.close();
+        if (error)
+          reject(error);
+        else
+          resolve(result);
+      };
+      try {
+        const tx = db.transaction(RECOVERY_STORE, "readonly");
+        const request = tx.objectStore(RECOVERY_STORE).get("pending");
+        request.onsuccess = () => finish(Boolean(request.result));
+        request.onerror = () => finish(false, request.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002"));
+        tx.onabort = () => finish(false, tx.error ?? new Error("\u5FA9\u65E7\u8A18\u9332\u306E\u78BA\u8A8D\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002"));
+      } catch (error) {
+        finish(false, error instanceof Error ? error : new Error(String(error)));
+      }
+    };
+  });
+}
+async function ensureSafe() {
+  ensureCurrentGeneration();
+  if (await hasRecoveryJournal()) {
+    throw new Error("\u5FA9\u65E7\u5F85\u3061\u306E\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u3059\u3002\u5148\u306BWORKBENCH\u30DB\u30FC\u30E0\u753B\u9762\u304B\u3089\u5143\u306E\u30C7\u30FC\u30BF\u3092\u5FA9\u65E7\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  ensureCurrentGeneration();
+}
+async function withWorkbenchWriteLock(operation) {
+  const locks = webLocks();
+  if (!locks)
+    return operation();
+  const requestedGeneration = localValue(GENERATION_KEY);
+  const requestedDuringRestore = Boolean(localValue(RESTORE_PENDING_KEY));
+  return locks.request(LOCK_NAME, { mode: "shared" }, async () => {
+    if (requestedDuringRestore || requestedGeneration !== localValue(GENERATION_KEY)) {
+      throw new Error("\u5225\u306E\u30BF\u30D6\u3067WORKBENCH\u306E\u5FA9\u5143\u304C\u884C\u308F\u308C\u307E\u3057\u305F\u3002\u53E4\u3044\u753B\u9762\u304B\u3089\u306E\u4E0A\u66F8\u304D\u3092\u9632\u3050\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }
+    await ensureSafe();
+    return operation();
+  });
+}
+
 // document_builder/dist/templates/template-db-utils.js
 async function requestPersistentStorage() {
   if (!navigator.storage || typeof navigator.storage.persist !== "function") {
@@ -20427,22 +20528,26 @@ async function getTemplate(id) {
   return template ?? null;
 }
 async function putTemplate(template) {
-  const database = await openTemplateDatabase();
-  const transaction = database.transaction(STORE_NAME, "readwrite");
-  const completion = waitForTransaction(transaction);
-  const store = transaction.objectStore(STORE_NAME);
-  const request = store.put(template);
-  await requestToPromise(request);
-  await completion;
+  return withWorkbenchWriteLock(async () => {
+    const database = await openTemplateDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(template);
+    await requestToPromise(request);
+    await completion;
+  });
 }
 async function deleteTemplate(id) {
-  const database = await openTemplateDatabase();
-  const transaction = database.transaction(STORE_NAME, "readwrite");
-  const completion = waitForTransaction(transaction);
-  const store = transaction.objectStore(STORE_NAME);
-  const request = store.delete(id);
-  await requestToPromise(request);
-  await completion;
+  return withWorkbenchWriteLock(async () => {
+    const database = await openTemplateDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const completion = waitForTransaction(transaction);
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    await requestToPromise(request);
+    await completion;
+  });
 }
 function sortTemplates(templates2) {
   const collator = new Intl.Collator("ja", {
@@ -20634,15 +20739,19 @@ function getSavedActiveTemplateId(storageKey) {
     return null;
   }
 }
-function saveActiveTemplateId(storageKey, id) {
-  try {
-    if (id) {
-      localStorage.setItem(storageKey, id);
-      return;
+async function saveActiveTemplateId(storageKey, id) {
+  await withWorkbenchWriteLock(() => {
+    try {
+      if (id) {
+        localStorage.setItem(storageKey, id);
+        return;
+      }
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn("\u4F7F\u7528\u4E2D\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u4FDD\u5B58\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+      throw error;
     }
-    localStorage.removeItem(storageKey);
-  } catch {
-  }
+  });
 }
 
 // document_builder/dist/pdf/pdf-internals.js
@@ -34274,6 +34383,8 @@ var DATABASE_VERSION2 = 3;
 var STATS_STORE = "history-stats";
 var STATS_KEY = "total";
 var MAX_PAGE_SIZE = 100;
+var MAX_ARCHIVE_ENTRY_BYTES = 64 * 1024 * 1024;
+var MAX_PRINT_HISTORY_RECORDS = 5e3;
 function metadataOf(entry) {
   return {
     id: entry.id,
@@ -34368,24 +34479,45 @@ function updateStats(store, countDelta, bytesDelta) {
   };
 }
 async function addPrintHistory(recipientName, fileName, pdfBlob) {
-  const entry = {
-    id: crypto.randomUUID(),
-    recipientName,
-    fileName,
-    createdAt: Date.now(),
-    pdfBlob
-  };
-  const db = await openDatabase();
-  try {
-    const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-    const done = transactionDone(tx);
-    tx.objectStore(HISTORY_STORE).add(entry);
-    tx.objectStore(METADATA_STORE).add(metadataOf(entry));
-    updateStats(tx.objectStore(STATS_STORE), 1, pdfBlob.size);
-    await done;
-  } finally {
-    db.close();
-  }
+  return withWorkbenchWriteLock(async () => {
+    if (pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+      throw new Error("PDF\u5C65\u6B74\u306B\u4FDD\u5B58\u3067\u304D\u308B\u30D5\u30A1\u30A4\u30EB\u306F64MiB\u4EE5\u4E0B\u3067\u3059\u3002");
+    }
+    if ((await getPrintHistoryStats()).count >= MAX_PRINT_HISTORY_RECORDS) {
+      throw new Error(`PDF\u5C65\u6B74\u304C${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}\u4EF6\u306B\u9054\u3057\u3066\u3044\u307E\u3059\u3002\u4E0D\u8981\u306A\u5C65\u6B74\u3092\u524A\u9664\u3057\u3066\u304B\u3089\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002`);
+    }
+    const entry = {
+      id: crypto.randomUUID(),
+      recipientName,
+      fileName,
+      createdAt: Date.now(),
+      pdfBlob
+    };
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+      const done = transactionDone(tx);
+      tx.objectStore(HISTORY_STORE).add(entry);
+      tx.objectStore(METADATA_STORE).add(metadataOf(entry));
+      const statsStore = tx.objectStore(STATS_STORE);
+      const countRequest = statsStore.get(STATS_KEY);
+      countRequest.onsuccess = () => {
+        const current = countRequest.result;
+        if (!current || current.count >= MAX_PRINT_HISTORY_RECORDS) {
+          tx.abort();
+          return;
+        }
+        statsStore.put({
+          id: STATS_KEY,
+          count: current.count + 1,
+          totalBytes: current.totalBytes + pdfBlob.size
+        });
+      };
+      await done;
+    } finally {
+      db.close();
+    }
+  });
 }
 async function getPrintHistoryPage(before = null, pageSize = 50) {
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
@@ -34454,23 +34586,25 @@ async function getPrintHistory(id) {
   }
 }
 async function deletePrintHistory(id) {
-  const db = await openDatabase();
-  try {
-    const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-    const done = transactionDone(tx);
-    const meta = tx.objectStore(METADATA_STORE);
-    const request = meta.get(id);
-    request.onsuccess = () => {
-      const found = request.result;
-      tx.objectStore(HISTORY_STORE).delete(id);
-      meta.delete(id);
-      if (found)
-        updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
-    };
-    await done;
-  } finally {
-    db.close();
-  }
+  return withWorkbenchWriteLock(async () => {
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+      const done = transactionDone(tx);
+      const meta = tx.objectStore(METADATA_STORE);
+      const request = meta.get(id);
+      request.onsuccess = () => {
+        const found = request.result;
+        tx.objectStore(HISTORY_STORE).delete(id);
+        meta.delete(id);
+        if (found)
+          updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
+      };
+      await done;
+    } finally {
+      db.close();
+    }
+  });
 }
 
 // document_builder/dist/print/print-flow-controller.js
@@ -34783,11 +34917,19 @@ function renderPrintHistoryEntries(list, entries2, deps) {
       void (async () => {
         try {
           await deletePrintHistory2(entry.id);
-          showToast2("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
-          if (printHistoryDialog2.open)
-            await openPrintHistory2();
         } catch (error) {
           showToast2(`\u5C65\u6B74\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage3(error)}`);
+          deleteButton.disabled = false;
+          return;
+        }
+        item.remove();
+        try {
+          if (printHistoryDialog2.open)
+            await openPrintHistory2();
+          showToast2("\u5C65\u6B74\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
+        } catch (error) {
+          console.error("\u524A\u9664\u6E08\u307F\u5C65\u6B74\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+          showToast2("\u5C65\u6B74\u306F\u524A\u9664\u6E08\u307F\u3067\u3059\u3002\u4E00\u89A7\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
         } finally {
           deleteButton.disabled = false;
         }
@@ -35346,24 +35488,30 @@ async function confirmTemplateDelete() {
     templateDeleteDialog.close();
     return;
   }
+  const deletingActiveTemplate = activeTemplate?.id === id;
   try {
-    const deletingActiveTemplate = activeTemplate?.id === id;
     await deleteTemplate(id);
+  } catch (error) {
+    console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+    showToast(`\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002${getErrorMessage(error)}`);
+    return;
+  }
+  try {
     pendingDeleteTemplateId = null;
     templateDeleteDialog.close();
+    if (deletingActiveTemplate) {
+      clearActiveTemplate();
+    }
     await refreshTemplateCollections();
     if (deletingActiveTemplate) {
       const nextTemplate = templates[0] ?? null;
-      if (nextTemplate) {
+      if (nextTemplate)
         applyTemplate(nextTemplate);
-      } else {
-        clearActiveTemplate();
-      }
     }
     showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u3092\u524A\u9664\u3057\u307E\u3057\u305F\u3002");
   } catch (error) {
-    console.error("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
-    showToast(getErrorMessage(error));
+    console.error("\u524A\u9664\u6E08\u307F\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u753B\u9762\u66F4\u65B0\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002", error);
+    showToast("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306F\u524A\u9664\u6E08\u307F\u3067\u3059\u3002\u753B\u9762\u306E\u66F4\u65B0\u306B\u5931\u6557\u3057\u305F\u305F\u3081\u3001\u30DA\u30FC\u30B8\u3092\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   }
 }
 function restoreInitialTemplate() {
@@ -35426,7 +35574,10 @@ function getStoredActiveTemplateId() {
   return getSavedActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY);
 }
 function storeActiveTemplateId(id) {
-  return saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id);
+  void saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id).catch((error) => {
+    console.warn("\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u306E\u9078\u629E\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002", error);
+    showToast("\u9078\u629E\u72B6\u614B\u3092\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u5225\u30BF\u30D6\u3067\u5FA9\u5143\u3057\u305F\u5834\u5408\u306F\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  });
 }
 function showToast(message) {
   if (toastTimer !== null) {

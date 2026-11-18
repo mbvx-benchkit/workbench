@@ -599,71 +599,32 @@ async function confirmTemplateDelete():
     }
 
 
+    const deletingActiveTemplate = activeTemplate?.id === id;
     try {
+        await deleteTemplate(id);
+    } catch (error) {
+        console.error("テンプレート削除に失敗しました。", error);
+        showToast(`テンプレートを削除できませんでした。${getErrorMessage(error)}`);
+        return;
+    }
 
-        const deletingActiveTemplate =
-            activeTemplate?.id ===
-            id;
-
-
-        await deleteTemplate(
-            id
-        );
-
-
-        pendingDeleteTemplateId =
-            null;
-
-
+    // DBの削除は確定済み。再取得の失敗を「削除失敗」と表示しない。
+    try {
+        pendingDeleteTemplateId = null;
         templateDeleteDialog.close();
-
-
-        await refreshTemplateCollections();
-
-
-        if (
-            deletingActiveTemplate
-        ) {
-
-            const nextTemplate =
-                templates[0] ??
-                null;
-
-
-            if (
-                nextTemplate
-            ) {
-
-                applyTemplate(
-                    nextTemplate
-                );
-
-            } else {
-
-                clearActiveTemplate();
-            }
+        if (deletingActiveTemplate) {
+            // 削除済みテンプレートを再描画する前に利用中状態を解除する。
+            clearActiveTemplate();
         }
-
-
-        showToast(
-            "テンプレートを削除しました。"
-        );
-
-    } catch (
-    error
-    ) {
-
-        console.error(
-            "テンプレート削除に失敗しました。",
-            error
-        );
-
-
-        showToast(
-            getErrorMessage(
-                error
-            )
-        );
+        await refreshTemplateCollections();
+        if (deletingActiveTemplate) {
+            const nextTemplate = templates[0] ?? null;
+            if (nextTemplate) applyTemplate(nextTemplate);
+        }
+        showToast("テンプレートを削除しました。");
+    } catch (error) {
+        console.error("削除済みテンプレートの画面更新に失敗しました。", error);
+        showToast("テンプレートは削除済みです。画面の更新に失敗したため、ページを再読み込みしてください。");
     }
 }
 
@@ -903,7 +864,10 @@ function getStoredActiveTemplateId():
 function storeActiveTemplateId(
     id: string | null
 ): void {
-    return saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id);
+    void saveActiveTemplateId(ACTIVE_TEMPLATE_STORAGE_KEY, id).catch(error => {
+        console.warn("テンプレートの選択状態を保存できませんでした。", error);
+        showToast("選択状態を保存できませんでした。別タブで復元した場合は再読み込みしてください。");
+    });
 }
 
 

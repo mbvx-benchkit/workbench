@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 import { requestPersistentStorage, requestToPromise, waitForTransaction } from "./templates/template-db-utils.js";
 export { requestPersistentStorage } from "./templates/template-db-utils.js";
 
@@ -138,6 +139,7 @@ export async function getTemplate(
 export async function putTemplate(
     template: DocumentTemplate
 ): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
 
     const database =
         await openTemplateDatabase();
@@ -174,6 +176,8 @@ export async function putTemplate(
 
 
     await completion;
+
+    });
 }
 
 
@@ -183,6 +187,7 @@ export async function putTemplate(
 export async function deleteTemplate(
     id: string
 ): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
 
     const database =
         await openTemplateDatabase();
@@ -219,6 +224,8 @@ export async function deleteTemplate(
 
 
     await completion;
+
+    });
 }
 
 

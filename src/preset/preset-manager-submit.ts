@@ -1,6 +1,7 @@
 /** PRESET MANAGER editor validation and database save lifecycle. */
 import { createPresetDocumentId, isPdfFile, isPreviewImageFile, type PresetDocument, type PresetOrientation } from "./preset.js";
 import { getNextPresetSortOrder, putPresetDocument, requestPersistentStorage } from "./preset-db.js";
+import { assertRestorablePresetPdf, detectPresetPreviewMimeType } from "./preset-file-policy.js";
 export interface PresetEditorSubmitDeps {
     readonly titleInput: HTMLInputElement;
     readonly descriptionInput: HTMLTextAreaElement;
@@ -156,6 +157,12 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
         let storageCommitted = false;
 
         try {
+            if (selectedPdf) await assertRestorablePresetPdf(selectedPdf);
+            const selectedPreviewMime = selectedPreview
+                ? await detectPresetPreviewMimeType(selectedPreview) : null;
+            if (selectedPreview && !selectedPreviewMime) {
+                throw new Error("プレビュー画像の内容がPNG、JPEG、WebPのいずれでもありません。");
+            }
 
             const now =
                 Date.now();
@@ -191,7 +198,6 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
                     pdfMimeType:
                         selectedPdf
                             ? (
-                                selectedPdf.type ||
                                 "application/pdf"
                             )
                             : editingDocument.pdfMimeType,
@@ -208,8 +214,7 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
                     previewMimeType:
                         selectedPreview
                             ? (
-                                selectedPreview.type ||
-                                null
+                                selectedPreviewMime
                             )
                             : editingDocument.previewMimeType,
 
@@ -258,7 +263,6 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
                         selectedPdf.name,
 
                     pdfMimeType:
-                        selectedPdf.type ||
                         "application/pdf",
 
                     pdfBlob:
@@ -272,8 +276,7 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
                     previewMimeType:
                         selectedPreview
                             ? (
-                                selectedPreview.type ||
-                                null
+                                selectedPreviewMime
                             )
                             : null,
 
@@ -344,7 +347,7 @@ export function createPresetEditorSubmit(deps: PresetEditorSubmitDeps) {
         } catch (error) {
             const message = storageCommitted
                 ? "保存は完了しましたが、画面の更新に失敗しました。ページを再読み込みしてください。再度保存する必要はありません。"
-                : "定型印刷物を保存できませんでした。";
+                : `定型印刷物を保存できませんでした。${error instanceof Error ? error.message : ""}`;
             console.error(message, error);
             showEditorError(message);
 

@@ -52,10 +52,19 @@ export function renderPrintHistoryEntries(
             void (async () => {
                 try {
                     await deletePrintHistory(entry.id);
-                    showToast("履歴を削除しました。");
-                    if (printHistoryDialog.open) await openPrintHistory();
                 } catch (error) {
                     showToast(`履歴を削除できませんでした。${getErrorMessage(error)}`);
+                    deleteButton.disabled = false;
+                    return;
+                }
+                // 削除確定後の一覧更新失敗は、削除失敗とは区別する。
+                item.remove();
+                try {
+                    if (printHistoryDialog.open) await openPrintHistory();
+                    showToast("履歴を削除しました。");
+                } catch (error) {
+                    console.error("削除済み履歴の画面更新に失敗しました。", error);
+                    showToast("履歴は削除済みです。一覧の更新に失敗したため、ページを再読み込みしてください。");
                 } finally {
                     deleteButton.disabled = false;
                 }

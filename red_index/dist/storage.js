@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 import { cloneRedIndexData, createInitialData, parseRedIndexData } from "./model.js";
 /* =========================================================
    Local Storage
@@ -30,13 +31,15 @@ export function loadRedIndexData() {
  * RED INDEXでは保存ボタンを用意せず、
  * 現在の入力状態を常に保存する。
  */
+let lastWrite = Promise.resolve();
 export function saveRedIndexData(data) {
-    try {
-        const safeData = cloneRedIndexData(data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(safeData));
-    }
-    catch (error) {
-        console.error("RED INDEXの入力内容を保存できませんでした。", error);
-    }
+    // Copy immediately: a later input event may mutate the live editor model.
+    const safeData = cloneRedIndexData(data);
+    const serialized = JSON.stringify(safeData);
+    const next = lastWrite.catch(() => { }).then(() => withWorkbenchWriteLock(() => {
+        localStorage.setItem(STORAGE_KEY, serialized);
+    }));
+    lastWrite = next;
+    return next;
 }
 //# sourceMappingURL=storage.js.map

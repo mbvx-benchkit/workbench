@@ -6,7 +6,7 @@ installFakeIndexedDB();
 const { getPresetDocuments } = await import('../dist/preset/preset-db.js');
 const { createPresetEditorSubmit } = await import('../dist/preset/preset-manager-submit.js');
 
-const pdf = new File(['%PDF-1.4'], 'sample.pdf', {type: 'application/pdf'});
+const pdf = new File(['%PDF-1.4\n', ' '.repeat(140), '\nstartxref\n9\n%%EOF\n'], 'sample.pdf', {type: 'application/octet-stream'});
 const errors = [];
 const logs = [];
 const originalConsoleError = console.error;

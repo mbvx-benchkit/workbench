@@ -16,14 +16,14 @@ export type StorageController = {
     /**
      * 現在の状態を即座に保存する。
      */
-    saveNow: () => boolean;
+    saveNow: () => Promise<boolean>;
 
     /**
      * 自動保存データを削除する。
      *
      * 画面上の入力内容は変更しない。
      */
-    clearStorage: () => void;
+    clearStorage: () => Promise<void>;
 
     /**
      * 自動保存データが存在するか確認する。

@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 const DATABASE_NAME = "workbench-document-print-history";
 const HISTORY_STORE = "history";
 const METADATA_STORE = "history-meta";
@@ -6,6 +7,8 @@ const DATABASE_VERSION = 3;
 const STATS_STORE = "history-stats";
 const STATS_KEY = "total";
 const MAX_PAGE_SIZE = 100;
+const MAX_ARCHIVE_ENTRY_BYTES = 64 * 1024 * 1024;
+const MAX_PRINT_HISTORY_RECORDS = 5000;
 function metadataOf(entry) {
     return {
         id: entry.id,
@@ -105,21 +108,40 @@ function updateStats(store, countDelta, bytesDelta) {
     };
 }
 export async function addPrintHistory(recipientName, fileName, pdfBlob) {
-    const entry = {
-        id: crypto.randomUUID(), recipientName, fileName, createdAt: Date.now(), pdfBlob
-    };
-    const db = await openDatabase();
-    try {
-        const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-        const done = transactionDone(tx);
-        tx.objectStore(HISTORY_STORE).add(entry);
-        tx.objectStore(METADATA_STORE).add(metadataOf(entry));
-        updateStats(tx.objectStore(STATS_STORE), 1, pdfBlob.size);
-        await done;
-    }
-    finally {
-        db.close();
-    }
+    return withWorkbenchWriteLock(async () => {
+        if (pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+            throw new Error("PDF履歴に保存できるファイルは64MiB以下です。");
+        }
+        if ((await getPrintHistoryStats()).count >= MAX_PRINT_HISTORY_RECORDS) {
+            throw new Error(`PDF履歴が${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}件に達しています。不要な履歴を削除してから保存してください。`);
+        }
+        const entry = {
+            id: crypto.randomUUID(), recipientName, fileName, createdAt: Date.now(), pdfBlob
+        };
+        const db = await openDatabase();
+        try {
+            const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+            const done = transactionDone(tx);
+            tx.objectStore(HISTORY_STORE).add(entry);
+            tx.objectStore(METADATA_STORE).add(metadataOf(entry));
+            // 別タブからの同時追加も上限を超えないよう、同一TX内で再確認する。
+            const statsStore = tx.objectStore(STATS_STORE);
+            const countRequest = statsStore.get(STATS_KEY);
+            countRequest.onsuccess = () => {
+                const current = countRequest.result;
+                if (!current || current.count >= MAX_PRINT_HISTORY_RECORDS) {
+                    tx.abort();
+                    return;
+                }
+                statsStore.put({ id: STATS_KEY, count: current.count + 1,
+                    totalBytes: current.totalBytes + pdfBlob.size });
+            };
+            await done;
+        }
+        finally {
+            db.close();
+        }
+    });
 }
 /** PDF本体を取得しない降順ページング。 */
 export async function getPrintHistoryPage(before = null, pageSize = 50) {
@@ -196,23 +218,25 @@ export async function getPrintHistory(id) {
 }
 /** バックアップと食い違わないよう、PDFとメタデータを同時削除する。 */
 export async function deletePrintHistory(id) {
-    const db = await openDatabase();
-    try {
-        const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
-        const done = transactionDone(tx);
-        const meta = tx.objectStore(METADATA_STORE);
-        const request = meta.get(id);
-        request.onsuccess = () => {
-            const found = request.result;
-            tx.objectStore(HISTORY_STORE).delete(id);
-            meta.delete(id);
-            if (found)
-                updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
-        };
-        await done;
-    }
-    finally {
-        db.close();
-    }
+    return withWorkbenchWriteLock(async () => {
+        const db = await openDatabase();
+        try {
+            const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
+            const done = transactionDone(tx);
+            const meta = tx.objectStore(METADATA_STORE);
+            const request = meta.get(id);
+            request.onsuccess = () => {
+                const found = request.result;
+                tx.objectStore(HISTORY_STORE).delete(id);
+                meta.delete(id);
+                if (found)
+                    updateStats(tx.objectStore(STATS_STORE), -1, -found.pdfBytes);
+            };
+            await done;
+        }
+        finally {
+            db.close();
+        }
+    });
 }
 //# sourceMappingURL=print-history-db.js.map

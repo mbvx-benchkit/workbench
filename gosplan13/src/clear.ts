@@ -149,7 +149,7 @@ export function initializeClear(
 
     clearButton.addEventListener(
         "click",
-        () => {
+        async () => {
             const confirmed =
                 window.confirm(
                     CLEAR_CONFIRM_MESSAGE,
@@ -159,6 +159,7 @@ export function initializeClear(
                 return;
             }
 
+            let screenCleared = false;
             try {
                 /*
                  * 先に画面を空にする。
@@ -170,6 +171,7 @@ export function initializeClear(
                 clearAllLabels(
                     preview,
                 );
+                screenCleared = true;
 
                 /*
                  * 最後にstorage.tsへ保存削除を依頼する。
@@ -184,16 +186,16 @@ export function initializeClear(
                  *
                  * という動作も防げる。
                  */
-                clearStoredData();
+                await clearStoredData();
             } catch (error) {
                 console.error(
                     "入力内容のクリアに失敗しました。",
                     error,
                 );
 
-                window.alert(
-                    "入力内容を削除できませんでした。",
-                );
+                window.alert(screenCleared
+                    ? "画面の入力はクリアしましたが、自動保存データを削除できませんでした。再読み込みすると以前の内容が戻る可能性があります。"
+                    : "入力内容を削除できませんでした。");
             }
         },
     );

@@ -129,5 +129,5 @@ export type ClearElements = {
      * storageController.clearStorage
      * を渡す。
      */
-    clearStoredData: () => void;
+    clearStoredData: () => Promise<void>;
 };

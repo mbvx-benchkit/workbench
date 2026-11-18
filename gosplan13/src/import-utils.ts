@@ -159,6 +159,11 @@ export function createFileInput():
 export async function readJsonFile(
     file: File,
 ): Promise<unknown> {
+    // Base64画像を含むJSONを想定した余裕のある上限。読込前に拒否する。
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+        throw new Error("JSONファイルは10MiB以下を選択してください。");
+    }
     const text =
         await file.text();
 

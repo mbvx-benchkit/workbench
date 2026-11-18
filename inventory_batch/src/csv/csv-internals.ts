@@ -129,6 +129,7 @@ export type CsvRowError = {
  * CSV読込そのものを継続できない場合のエラーコード。
  */
 export type InventoryCsvErrorCode =
+    | "FILE_TOO_LARGE"
     | "EMPTY_FILE"
     | "UNSUPPORTED_ENCODING"
     | "INVALID_CSV"

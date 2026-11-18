@@ -28,6 +28,7 @@ import { getImageExtension } from "./archive-file-utils.js";
  */
 import JSZip from "jszip";
 import { BackupSizeBudget, assertBackupEntrySize, MAX_JSON_TEXT_LENGTH, MAX_ARCHIVE_ENTRIES, MAX_ARCHIVE_EXPANDED_BYTES, MAX_ARCHIVE_ENTRY_BYTES, MAX_ARCHIVE_IMAGE_BYTES } from "./backup-limits.js";
+import { validateRestorablePresetFile } from "../preset/preset-file-policy.js";
 import { DOCUMENT_TEMPLATES_VERSION, PRESET_DOCUMENTS_VERSION, PRINT_HISTORY_ARCHIVE_VERSION, MAX_PRINT_HISTORY_RECORDS, WORKBENCH_BACKUP_VERSION, parseDocumentTemplatesArchive, parsePresetDocumentsArchive, parsePrintHistoryArchive, parseRedIndexData, parseWorkbenchBackupManifest } from "./backup-types.js";
 /* =========================================================
    Paths
@@ -78,6 +79,12 @@ export async function createBackupArchive(snapshot) {
     for (let index = 0; index <
         snapshot.presetDocuments.length; index += 1) {
         const document = snapshot.presetDocuments[index];
+        // Old IndexedDB rows may have null/wrong MIME. Derive from actual bytes.
+        // Reject irrecoverable rows *before* generating an apparently valid archive.
+        const normalizedPreviewMime = await validateRestorablePresetFile(document);
+        const normalizedPreviewName = document.previewBlob && normalizedPreviewMime
+            ? (document.previewFileName || `preview.${getImageExtension(normalizedPreviewMime)}`)
+            : null;
         const sequence = String(index + 1)
             .padStart(3, "0");
         const safeTitle = sanitizeFileName(document.title);
@@ -97,9 +104,9 @@ export async function createBackupArchive(snapshot) {
            ------------------------------------------------- */
         let previewPath = null;
         if (document.previewBlob &&
-            document.previewFileName &&
-            document.previewMimeType) {
-            const extension = getImageExtension(document.previewMimeType);
+            normalizedPreviewName &&
+            normalizedPreviewMime) {
+            const extension = getImageExtension(normalizedPreviewMime);
             previewPath =
                 [
                     "preset_documents/images/",
@@ -119,10 +126,10 @@ export async function createBackupArchive(snapshot) {
             description: document.description,
             orientation: document.orientation,
             pdfFileName: document.pdfFileName,
-            pdfMimeType: document.pdfMimeType,
+            pdfMimeType: "application/pdf",
             pdfPath,
-            previewFileName: document.previewFileName,
-            previewMimeType: document.previewMimeType,
+            previewFileName: normalizedPreviewName,
+            previewMimeType: normalizedPreviewMime,
             previewPath,
             sortOrder: document.sortOrder,
             createdAt: document.createdAt,
@@ -133,6 +140,8 @@ export async function createBackupArchive(snapshot) {
         version: PRESET_DOCUMENTS_VERSION,
         documents: presetMetadata
     };
+    // Validate with the same schema used during restore before encrypting/exporting.
+    parsePresetDocumentsArchive(presetArchive);
     addJson(PRESET_DOCUMENTS_PATH, presetArchive);
     /* -----------------------------------------------------
        DOCUMENT BUILDER PDF HISTORY

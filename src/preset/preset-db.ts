@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "../workbench-data-lock.js";
 import { requestPersistentStorage, requestToPromise, waitForTransaction } from "./preset-db-utils.js";
 export { requestPersistentStorage } from "./preset-db-utils.js";
 
@@ -146,6 +147,7 @@ export async function getPresetDocument(
 export async function putPresetDocument(
     document: PresetDocument
 ): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
 
     const database =
         await openPresetDatabase();
@@ -182,6 +184,8 @@ export async function putPresetDocument(
 
 
     await completion;
+
+    });
 }
 
 
@@ -191,6 +195,7 @@ export async function putPresetDocument(
 export async function deletePresetDocument(
     id: string
 ): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
 
     const database =
         await openPresetDatabase();
@@ -225,6 +230,8 @@ export async function deletePresetDocument(
 
 
     await completion;
+
+    });
 }
 
 

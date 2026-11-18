@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 import { isObject } from "./storage-utils.js";
 /**
  * storage.ts
@@ -167,6 +168,7 @@ export function initializeStorage(elements) {
        状態
        ===================================================== */
     let saveTimer = null;
+    let saveGeneration = 0;
     let destroyed = false;
     /*
      * Importによる復元中に、
@@ -201,15 +203,13 @@ export function initializeStorage(elements) {
      * この関数自身ではエラー処理を行わず、
      * 呼び出し元へ例外を返す。
      */
-    function writeCurrentState() {
-        const data = createExportData(preview, imageModeToggle);
-        const json = JSON.stringify(data);
-        /*
-         * 毎回同じキーへ上書きする。
-         *
-         * 保存履歴が増殖することはない。
-         */
-        persistAutosave(localStorage, STORAGE_KEY, json);
+    async function writeCurrentState(expectedGeneration) {
+        await withWorkbenchWriteLock(() => {
+            if (destroyed || isRestoring || saveGeneration !== expectedGeneration)
+                return;
+            const data = createExportData(preview, imageModeToggle);
+            persistAutosave(localStorage, STORAGE_KEY, JSON.stringify(data));
+        });
     }
     /* =====================================================
        保存失敗処理
@@ -253,15 +253,14 @@ export function initializeStorage(elements) {
     /* =====================================================
        即時保存
        ===================================================== */
-    function saveNow() {
-        if (destroyed
-            || isRestoring) {
+    async function saveNow() {
+        if (destroyed || isRestoring)
             return false;
-        }
         cancelScheduledSave();
+        const generation = saveGeneration;
         try {
-            writeCurrentState();
-            return true;
+            await writeCurrentState(generation);
+            return generation === saveGeneration;
         }
         catch (error) {
             handleSaveFailure(error);
@@ -367,19 +366,16 @@ export function initializeStorage(elements) {
     /* =====================================================
        保存データ削除
        ===================================================== */
-    function clearStorage() {
-        /*
-         * 予約中の自動保存も解除する。
-         *
-         * clear.tsから呼ばれた直後に、
-         * 空データが再保存されることを防ぐ。
-         */
+    async function clearStorage() {
         cancelScheduledSave();
+        // Pending writes captured before the clear are no longer allowed to commit.
+        saveGeneration++;
         try {
-            localStorage.removeItem(STORAGE_KEY);
+            await withWorkbenchWriteLock(() => localStorage.removeItem(STORAGE_KEY));
         }
         catch (error) {
-            console.warn("自動保存データを削除できませんでした。", error);
+            console.error("自動保存データを削除できませんでした。", error);
+            throw new Error("自動保存データの削除に失敗しました。");
         }
     }
     /* =====================================================

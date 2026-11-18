@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "../workbench-data-lock.js";
 /** Last-selected template persistence. Unavailable localStorage remains nonfatal. */
 export function getSavedActiveTemplateId(storageKey) {
     try {
@@ -7,19 +8,19 @@ export function getSavedActiveTemplateId(storageKey) {
         return null;
     }
 }
-export function saveActiveTemplateId(storageKey, id) {
-    try {
-        if (id) {
-            localStorage.setItem(storageKey, id);
-            return;
+export async function saveActiveTemplateId(storageKey, id) {
+    await withWorkbenchWriteLock(() => {
+        try {
+            if (id) {
+                localStorage.setItem(storageKey, id);
+                return;
+            }
+            localStorage.removeItem(storageKey);
         }
-        localStorage.removeItem(storageKey);
-    }
-    catch {
-        /*
-         * localStorage不可でも
-         * 文書作成機能自体は継続する。
-         */
-    }
+        catch (error) {
+            console.warn("使用中テンプレートの保存に失敗しました。", error);
+            throw error;
+        }
+    });
 }
 //# sourceMappingURL=active-template-storage.js.map

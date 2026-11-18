@@ -51,6 +51,10 @@ export async function parseInventoryCsv(
     file: File
 ): Promise<CsvImportResult> {
 
+    // 全量読込と2通りの文字コード解析に入る前に上限を判定する。
+    if (file.size > 10 * 1024 * 1024) {
+        throw new InventoryCsvError("FILE_TOO_LARGE", "CSVファイルは10MiB以下を選択してください。");
+    }
     const buffer = await file.arrayBuffer();
 
     if (buffer.byteLength === 0) {

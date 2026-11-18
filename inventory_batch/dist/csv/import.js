@@ -23,6 +23,10 @@ export class InventoryCsvError extends Error {
  * 必須ヘッダーを正常に取得できた方を採用する。
  */
 export async function parseInventoryCsv(file) {
+    // 全量読込と2通りの文字コード解析に入る前に上限を判定する。
+    if (file.size > 10 * 1024 * 1024) {
+        throw new InventoryCsvError("FILE_TOO_LARGE", "CSVファイルは10MiB以下を選択してください。");
+    }
     const buffer = await file.arrayBuffer();
     if (buffer.byteLength === 0) {
         throw new InventoryCsvError("EMPTY_FILE", "CSVファイルが空です。");

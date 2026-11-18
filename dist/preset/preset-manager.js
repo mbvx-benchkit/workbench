@@ -264,14 +264,34 @@ export function setupPresetManager(options) {
         if (!confirmed) {
             return;
         }
+        // IndexedDBの確定と、保存後の画面更新は独立した操作。
         try {
             await deletePresetDocument(presetDocument.id);
+        }
+        catch (error) {
+            console.error("定型印刷物の削除に失敗しました。", error);
+            window.alert("定型印刷物を削除できませんでした。データは変更されていません。");
+            return;
+        }
+        // notifyChangedが失敗しても管理一覧の再読込を試みる。
+        let viewFailed = false;
+        try {
             await notifyChanged();
+        }
+        catch (error) {
+            viewFailed = true;
+            console.error("削除済みですがメイン画面の更新に失敗しました。", error);
+        }
+        try {
             await refreshManagerList();
         }
         catch (error) {
-            console.error("定型印刷物を削除できませんでした。", error);
-            window.alert("定型印刷物を削除できませんでした。");
+            viewFailed = true;
+            console.error("削除済みですが管理一覧の更新に失敗しました。", error);
+            renderManagerListError();
+        }
+        if (viewFailed) {
+            window.alert("定型印刷物は削除済みです。画面の更新に失敗したため、ページを再読み込みしてください。");
         }
     }
     /* =====================================================

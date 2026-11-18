@@ -41,6 +41,7 @@ import {
 import type {
     PresetDocument
 } from "../preset/preset.js";
+import { validateRestorablePresetFile } from "../preset/preset-file-policy.js";
 
 
 import {
@@ -168,6 +169,12 @@ export async function createBackupArchive(
             index
             ];
 
+        // Old IndexedDB rows may have null/wrong MIME. Derive from actual bytes.
+        // Reject irrecoverable rows *before* generating an apparently valid archive.
+        const normalizedPreviewMime = await validateRestorablePresetFile(document);
+        const normalizedPreviewName = document.previewBlob && normalizedPreviewMime
+            ? (document.previewFileName || `preview.${getImageExtension(normalizedPreviewMime)}`)
+            : null;
 
         const sequence =
             String(
@@ -214,13 +221,13 @@ export async function createBackupArchive(
 
         if (
             document.previewBlob &&
-            document.previewFileName &&
-            document.previewMimeType
+            normalizedPreviewName &&
+            normalizedPreviewMime
         ) {
 
             const extension =
                 getImageExtension(
-                    document.previewMimeType
+                    normalizedPreviewMime
                 );
 
 
@@ -261,15 +268,15 @@ export async function createBackupArchive(
                     document.pdfFileName,
 
                 pdfMimeType:
-                    document.pdfMimeType,
+                    "application/pdf",
 
                 pdfPath,
 
                 previewFileName:
-                    document.previewFileName,
+                    normalizedPreviewName,
 
                 previewMimeType:
-                    document.previewMimeType,
+                    normalizedPreviewMime,
 
                 previewPath,
 
@@ -298,6 +305,8 @@ export async function createBackupArchive(
     };
 
 
+    // Validate with the same schema used during restore before encrypting/exporting.
+    parsePresetDocumentsArchive(presetArchive);
     addJson(PRESET_DOCUMENTS_PATH, presetArchive);
 
 

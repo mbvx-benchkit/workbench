@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "../workbench-data-lock.js";
 import { requestToPromise, waitForTransaction } from "./preset-db-utils.js";
 export { requestPersistentStorage } from "./preset-db-utils.js";
 /**
@@ -52,25 +53,29 @@ export async function getPresetDocument(id) {
  * idが同じ場合は洗い替える。
  */
 export async function putPresetDocument(document) {
-    const database = await openPresetDatabase();
-    const transaction = database.transaction(STORE_NAME, "readwrite");
-    const completion = waitForTransaction(transaction);
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(document);
-    await requestToPromise(request);
-    await completion;
+    return withWorkbenchWriteLock(async () => {
+        const database = await openPresetDatabase();
+        const transaction = database.transaction(STORE_NAME, "readwrite");
+        const completion = waitForTransaction(transaction);
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(document);
+        await requestToPromise(request);
+        await completion;
+    });
 }
 /**
  * 定型印刷物を削除する。
  */
 export async function deletePresetDocument(id) {
-    const database = await openPresetDatabase();
-    const transaction = database.transaction(STORE_NAME, "readwrite");
-    const completion = waitForTransaction(transaction);
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
-    await requestToPromise(request);
-    await completion;
+    return withWorkbenchWriteLock(async () => {
+        const database = await openPresetDatabase();
+        const transaction = database.transaction(STORE_NAME, "readwrite");
+        const completion = waitForTransaction(transaction);
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        await requestToPromise(request);
+        await completion;
+    });
 }
 /**
  * バックアップ復元用：全件置換を一つのIndexedDBトランザクションで行う。

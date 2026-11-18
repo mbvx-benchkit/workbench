@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 import { requestToPromise, waitForTransaction } from "./templates/template-db-utils.js";
 export { requestPersistentStorage } from "./templates/template-db-utils.js";
 /* =========================================================
@@ -42,25 +43,29 @@ export async function getTemplate(id) {
  * 同じidなら洗い替え。
  */
 export async function putTemplate(template) {
-    const database = await openTemplateDatabase();
-    const transaction = database.transaction(STORE_NAME, "readwrite");
-    const completion = waitForTransaction(transaction);
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(template);
-    await requestToPromise(request);
-    await completion;
+    return withWorkbenchWriteLock(async () => {
+        const database = await openTemplateDatabase();
+        const transaction = database.transaction(STORE_NAME, "readwrite");
+        const completion = waitForTransaction(transaction);
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(template);
+        await requestToPromise(request);
+        await completion;
+    });
 }
 /**
  * テンプレート削除。
  */
 export async function deleteTemplate(id) {
-    const database = await openTemplateDatabase();
-    const transaction = database.transaction(STORE_NAME, "readwrite");
-    const completion = waitForTransaction(transaction);
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
-    await requestToPromise(request);
-    await completion;
+    return withWorkbenchWriteLock(async () => {
+        const database = await openTemplateDatabase();
+        const transaction = database.transaction(STORE_NAME, "readwrite");
+        const completion = waitForTransaction(transaction);
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        await requestToPromise(request);
+        await completion;
+    });
 }
 /* =========================================================
    Sort

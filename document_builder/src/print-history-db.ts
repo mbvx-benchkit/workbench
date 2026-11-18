@@ -1,3 +1,4 @@
+import { withWorkbenchWriteLock } from "./workbench-data-lock.js";
 /**
  * ビジネス文書のPDF履歴。v2では一覧用の軽量メタデータを分離する。
  * 旧v1の履歴はIndexedDBのバージョン更新トランザクション内で移行する。
@@ -29,6 +30,8 @@ const DATABASE_VERSION = 3;
 const STATS_STORE = "history-stats";
 const STATS_KEY = "total";
 const MAX_PAGE_SIZE = 100;
+const MAX_ARCHIVE_ENTRY_BYTES = 64 * 1024 * 1024;
+const MAX_PRINT_HISTORY_RECORDS = 5_000;
 
 function metadataOf(entry: PrintHistoryEntry): PrintHistoryMetadata {
     return {
@@ -129,6 +132,13 @@ function updateStats(store: IDBObjectStore, countDelta: number, bytesDelta: numb
 }
 
 export async function addPrintHistory(recipientName: string, fileName: string, pdfBlob: Blob): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
+    if (pdfBlob.size > MAX_ARCHIVE_ENTRY_BYTES) {
+        throw new Error("PDF履歴に保存できるファイルは64MiB以下です。");
+    }
+    if ((await getPrintHistoryStats()).count >= MAX_PRINT_HISTORY_RECORDS) {
+        throw new Error(`PDF履歴が${MAX_PRINT_HISTORY_RECORDS.toLocaleString("ja-JP")}件に達しています。不要な履歴を削除してから保存してください。`);
+    }
     const entry: PrintHistoryEntry = {
         id: crypto.randomUUID(), recipientName, fileName, createdAt: Date.now(), pdfBlob
     };
@@ -138,11 +148,24 @@ export async function addPrintHistory(recipientName: string, fileName: string, p
         const done = transactionDone(tx);
         tx.objectStore(HISTORY_STORE).add(entry);
         tx.objectStore(METADATA_STORE).add(metadataOf(entry));
-        updateStats(tx.objectStore(STATS_STORE), 1, pdfBlob.size);
+        // 別タブからの同時追加も上限を超えないよう、同一TX内で再確認する。
+        const statsStore = tx.objectStore(STATS_STORE);
+        const countRequest = statsStore.get(STATS_KEY);
+        countRequest.onsuccess = () => {
+            const current = countRequest.result as (PrintHistoryStats & { id: string }) | undefined;
+            if (!current || current.count >= MAX_PRINT_HISTORY_RECORDS) {
+                tx.abort();
+                return;
+            }
+            statsStore.put({ id: STATS_KEY, count: current.count + 1,
+                totalBytes: current.totalBytes + pdfBlob.size });
+        };
         await done;
     } finally {
         db.close();
     }
+
+    });
 }
 
 /** PDF本体を取得しない降順ページング。 */
@@ -225,6 +248,7 @@ export async function getPrintHistory(id: string): Promise<PrintHistoryEntry | n
 
 /** バックアップと食い違わないよう、PDFとメタデータを同時削除する。 */
 export async function deletePrintHistory(id: string): Promise<void> {
+    return withWorkbenchWriteLock(async () => {
     const db = await openDatabase();
     try {
         const tx = db.transaction([HISTORY_STORE, METADATA_STORE, STATS_STORE], "readwrite");
@@ -241,4 +265,6 @@ export async function deletePrintHistory(id: string): Promise<void> {
     } finally {
         db.close();
     }
+
+    });
 }
