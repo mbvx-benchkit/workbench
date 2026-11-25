@@ -73,6 +73,26 @@ try {
   mkdirSync(join(repo,'.github/workflows'),{recursive:true});put('.github/workflows/security.yml','name: fixture\n');git('add','.github');assert.equal(audit('--staged').status,0);
   put('.github/workflows/other.yml','name: fixture\n');git('add','.github');assert.equal(audit('--staged').status,1);git('reset','-q','HEAD','--','.github');rmSync(join(repo,'.github'),{recursive:true});
   put('index.html',readFileSync(join(project,'index.html'),'utf8').replace("connect-src 'none'","connect-src *"));git('add','index.html');assert.equal(audit('--staged').status,1);git('restore','--staged','--worktree','index.html');
+  // Inspect original markup: comments cannot synthesize tags or hide an early load.
+  const html=readFileSync(join(project,'index.html'),'utf8');
+  const policyTag=html.match(/<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?>/i)[0];
+  const cspCase=(replacement, expected)=>{
+    put('index.html',html.replace(policyTag,()=>replacement));git('add','index.html');
+    assert.equal(audit('--staged').status,expected,'CSP original-markup fixture');
+  };
+  cspCase('<!-- ordinary comment -->\n'+policyTag,0);
+  cspCase('<!-- '+policyTag+' -->\n'+policyTag,0);
+  cspCase(policyTag+'\n<!-- '+policyTag+' -->',0);
+  cspCase(policyTag.replace('<meta','<me<!-- join -->ta'),1);
+  cspCase('<!-- '+policyTag+' -->',1);
+  cspCase('<!--> <script src="early.js"></script> -->'+policyTag,1);
+  cspCase('<title>'+policyTag+'</title>',1);
+  cspCase('<template>'+policyTag+'</template>',1);
+  cspCase('<script src="early.js"></script>'+policyTag,1);
+  cspCase(policyTag+'\n'+policyTag,1);
+  cspCase(policyTag.replace("script-src 'self'","script-src\u00a0'self'"),1);
+  git('restore','--staged','--worktree','index.html');
+  console.log('PASS: CSP checks original leading markup, rejects comment-joined tags and hidden or duplicate policies');
   git('rm','-q','-f','sample.ts');assert.equal(audit('--staged').status,0);git('restore','--staged','--worktree','sample.ts');
   git('init','--bare','-q',remote);git('push','-q',remote,'main');
   const before=git('rev-parse','HEAD');

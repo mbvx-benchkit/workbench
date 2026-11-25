@@ -59,14 +59,24 @@ export function scanPrivacy(s, p, dictionary=[], allowMetadataEmail=()=>false) {
   return [...rules];
 }
 function cspOkay(s) {
-  const clean=s.replace(/<!--[\s\S]*?-->/g,'');
-  const head=clean.match(/<head\b[^>]*>([\s\S]*?)<\/head\s*>/i)?.[1]??'';
-  const metas=[...head.matchAll(/<meta\b[^>]*>/gi)].filter(x=>/http-equiv\s*=\s*['"]Content-Security-Policy['"]/i.test(x[0]));
-  if(metas.length!==1) return false;
-  if (/<(?:script|link|base|iframe|object)\b/i.test(head.slice(0,metas[0].index))) return false;
-  const value=metas[0][0].match(/\bcontent\s*=\s*(["'])(.*?)\1/is)?.[2];
+  // Verify the real, leading head markup without deleting or joining input.
+  // The five static pages use this simple HTML prologue; unfamiliar markup fails closed.
+  const head=s.match(/^\uFEFF?[ \t\r\n\f]*<!doctype[ \t\r\n\f]+html[ \t\r\n\f]*>[ \t\r\n\f]*<html(?:[ \t\r\n\f]+lang[ \t\r\n\f]*=[ \t\r\n\f]*(?:"[a-z0-9-]+"|'[a-z0-9-]+'))?[ \t\r\n\f]*>[ \t\r\n\f]*<head[ \t\r\n\f]*>/i);
+  if(!head) return false;
+  const rest=s.slice(head[0].length);
+  // Only whitespace, ordinary HTML comments and UTF-8 charset metadata may precede CSP.
+  const policy=rest.match(/^(?:[ \t\r\n\f]|<!--(?!>|->)(?:[^-]|-(?!-))*-->|<meta[ \t\r\n\f]+charset[ \t\r\n\f]*=[ \t\r\n\f]*(?:"utf-8"|'utf-8')[ \t\r\n\f]*\/?>)*<meta[ \t\r\n\f]+http-equiv[ \t\r\n\f]*=[ \t\r\n\f]*(?:"content-security-policy"|'content-security-policy')[ \t\r\n\f]+content[ \t\r\n\f]*=[ \t\r\n\f]*(?:"([^"]*)"|'([^']*)')[ \t\r\n\f]*\/?>/i);
+  if(!policy) return false;
+  const value=policy[1]??policy[2];
+  if(/[^\x20-\x7e\t\r\n\f]/.test(value)) return false;
   const norm=v=>v.split(';').map(x=>x.trim().replace(/\s+/g,' ')).filter(Boolean).sort().join(';');
-  return !!value && norm(value)===norm(csp);
+  if(norm(value)!==norm(csp)) return false;
+  // Preserve the single-policy check; skip comment tokens rather than modifying markup.
+  for(const token of rest.slice(policy[0].length).matchAll(/<!--[\s\S]*?-->|<\/head\s*>|<meta\b[^>]*>/gi)) {
+    if(/^<\/head/i.test(token[0])) break;
+    if(/^<meta\b/i.test(token[0]) && /http-equiv\s*=\s*['"]Content-Security-Policy['"]/i.test(token[0])) return false;
+  }
+  return true;
 }
 function entries(ref) {
   const map=new Map();
