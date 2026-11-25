@@ -8,9 +8,6 @@
    ========================================================= */
 
 body {
-    min-width:
-        72rem;
-
     background:
         linear-gradient(180deg,
             #f7f8fa 0%,
@@ -134,4 +131,10 @@ body {
 
     font-weight:
         750;
+}
+
+@media screen and (max-width: 76rem) {
+    .red-index-field__input {
+        min-width: 0;
+    }
 }

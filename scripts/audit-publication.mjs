@@ -7,7 +7,7 @@ import { resolve, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanText } from './check-source-secrets.mjs';
 
-const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml']);
+const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml','scripts/e2e-workbench.py']);
 const pages = new Set(['index.html','gosplan13/index.html','inventory_batch/index.html','red_index/index.html','document_builder/index.html']);
 const csp = "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'self' blob:; worker-src 'none'; form-action 'self'; base-uri 'none'; media-src 'none'; manifest-src 'self'";
 // Exact public third-party license lines, only in the existing bundled jsPDF output.

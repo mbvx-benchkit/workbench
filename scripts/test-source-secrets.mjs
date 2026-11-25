@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { scanText } from './check-source-secrets.mjs';
-import { scanCommitMetadata, scanPrivacy } from './audit-publication.mjs';
+import { scanCommitMetadata, scanPrivacy, pathAllowed } from './audit-publication.mjs';
 const githubToken = 'ghp_' + 'A'.repeat(36);
 const awsAccessKey = 'AKIA' + 'A'.repeat(16);
 const pem = '-----BEGIN ' + 'PRIVATE KEY-----';
@@ -11,6 +11,9 @@ assert.equal(scanText('const normalPassword = passwordInput.value;').length,0);
 assert.equal(scanText('const myApi = "https://example.test/api";').length,0);
 assert.equal(scanText('const token = "example";').length,0);
 console.log('PASS: source scanner catches known credentials without printing values');
+
+assert.equal(pathAllowed('scripts/e2e-workbench.py'),true);
+for (const path of ['other.py','scripts/other.py','private/e2e-workbench.py','scripts/e2e-workbench.py.pdf']) assert.equal(pathAllowed(path),false);
 
 // Privacy exceptions must not allow arbitrary metadata or source content.
 const reviewed='88e5334133c26c39843211f5043edf8d94a1b195';

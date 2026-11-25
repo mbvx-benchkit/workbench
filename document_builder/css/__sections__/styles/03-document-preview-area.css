@@ -136,3 +136,9 @@
     overflow-wrap:
         anywhere;
 }
+
+@media screen and (max-width: 76rem) {
+    .document-preview-stage {
+        justify-content: safe center;
+    }
+}

@@ -106,6 +106,27 @@ body {
 }
 
 
+/* Narrow screens: keep the editor and A4 preview in separate rows. */
+@media screen and (max-width: 76rem) {
+    :root {
+        --workbench-editor-columns: minmax(0, 1fr);
+    }
+
+    .workbench-ribbon,
+    .workbench-ribbon__group {
+        flex-wrap: wrap;
+    }
+
+    .workbench-ribbon {
+        gap: 0.55rem;
+    }
+
+    .workbench-ribbon__group {
+        max-width: 100%;
+    }
+}
+
+
 /* =========================================================
    フッター
    ========================================================= */

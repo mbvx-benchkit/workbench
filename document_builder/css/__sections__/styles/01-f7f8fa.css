@@ -8,8 +8,6 @@
    ========================================================= */
 
 body {
-    min-width: 72rem;
-
     background:
         linear-gradient(180deg,
             #f7f8fa 0%,
@@ -267,4 +265,31 @@ body {
 
     white-space:
         nowrap;
+}
+
+@media screen and (max-width: 76rem) {
+    .document-fields-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .document-ribbon__separator {
+        display: none;
+    }
+
+    .template-selector {
+        flex: 1 1 14rem;
+        max-width: 100%;
+    }
+
+    .template-selector__select {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .document-field__input,
+    .document-field__textarea {
+        min-width: 0;
+    }
 }
