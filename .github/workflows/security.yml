@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: workbench-security-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  group: workbench-security-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && 'push' || github.event_name }}
   cancel-in-progress: false
 
 jobs:
@@ -81,7 +81,7 @@ jobs:
           "$py" -m playwright install --with-deps chromium
           "$py" scripts/e2e-workbench.py --project "$GITHUB_WORKSPACE/site" --site
 
-      - name: Upload verified Pages artifact (no deployment yet)
+      - name: Upload verified Pages artifact
         if: github.event_name != 'schedule'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
@@ -92,3 +92,37 @@ jobs:
       - name: Weekly dependency audit without rebuilding
         if: github.event_name == 'schedule'
         run: npm audit --audit-level=high
+
+  deploy:
+    name: Deploy audited Pages artifact
+    needs: security
+    # Explicit opt-in prevents a deployment while Pages still uses the legacy source.
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.WORKBENCH_PAGES_DEPLOY == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Reject stale main deployments
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$current" != "$GITHUB_SHA" ]]; then
+            echo 'Main has moved; this older run must not deploy.' >&2
+            exit 1
+          fi
+
+      # No checkout, installation or rebuild: deploy only this run's audited artifact.
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+        with:
+          artifact_name: workbench-site

@@ -165,6 +165,8 @@ PR・main更新時の `security` で、既存のビルド・回帰テストに�
 ローカルで実行する場合は `npm run build` の後、リポジトリ外の Python 仮想環境に `playwright==1.57.0` を導入し、`python -m playwright install chromium`、`python scripts/e2e-workbench.py --project .` を実行してください。通常のブラウザや保存済み業務データは使用しません。
 
 
-## Pages配信成果物（移行準備）
+## Pages配信成果物とデプロイ
 
-`npm run build:site` はビルド済みの実行ファイルと追跡済みの静的資産だけを `site/` に集め、構成・実ファイル・CSP・機密情報を監査します。CIのE2Eはこの成果物を直接検証し、合格時だけ `workbench-site` をアップロードします。現時点ではPagesの配信設定は変更せず、従来の `dist/` のコミットも維持します。週次監査では成果物作成・E2E・アップロードを行いません。
+`npm run build:site` はビルド済みの実行ファイルと追跡済みの静的資産だけを `site/` に集め、構成・実ファイル・CSP・機密情報を監査します。CIのE2Eはこの成果物を直接検証し、合格時だけ `workbench-site` をアップロードします。`security` が合格した同一ワークフローの成果物を、main の push または手動実行時に限り `github-pages` 環境からデプロイします。公開権限はデプロイジョブだけに付与し、再ビルドは行いません。PRと週次監査からはデプロイしません。週次監査では成果物作成・E2E・アップロードも行いません。
+
+移行時は Pages の公開元を GitHub Actions に切り替えた後、リポジトリ変数 `WORKBENCH_PAGES_DEPLOY` を `true` に設定して main のワークフローを手動実行します。変数が未設定または `true` 以外の場合は公開処理を停止します。新方式での配信確認が完了するまで従来の `dist/` のコミットを維持します。
