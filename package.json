@@ -1,8 +1,13 @@
 {
   "name": "workbench",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Static browser-based utilities for label generation, inventory printing, preset documents, and document templates.",
   "private": true,
+  "type": "module",
+  "allowScripts": {
+    "core-js": false,
+    "esbuild@0.28.2": true
+  },
   "license": "UNLICENSED",
   "scripts": {
     "prebuild:root": "node scripts/generate-build-info.mjs",

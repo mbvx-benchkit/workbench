@@ -137,7 +137,7 @@
         anywhere;
 }
 
-@media screen and (max-width: 76rem) {
+@media screen {
     .document-preview-stage {
         justify-content: safe center;
     }

@@ -106,23 +106,14 @@ body {
 }
 
 
-/* Narrow screens: keep the editor and A4 preview in separate rows. */
+/* PC-first tool ribbons stay on one row; narrow viewports can scroll. */
 @media screen and (max-width: 76rem) {
-    :root {
-        --workbench-editor-columns: minmax(0, 1fr);
+    :is(.red-index-ribbon, .document-ribbon).workbench-ribbon {
+        overflow-x: auto;
     }
 
-    .workbench-ribbon,
-    .workbench-ribbon__group {
-        flex-wrap: wrap;
-    }
-
-    .workbench-ribbon {
-        gap: 0.55rem;
-    }
-
-    .workbench-ribbon__group {
-        max-width: 100%;
+    :is(.red-index-ribbon, .document-ribbon) .workbench-ribbon__group {
+        flex-shrink: 0;
     }
 }
 

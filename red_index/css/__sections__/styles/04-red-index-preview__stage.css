@@ -156,7 +156,7 @@
         1.25;
 }
 
-@media screen and (max-width: 76rem) {
+@media screen {
     .red-index-preview__stage {
         justify-content: safe center;
     }
