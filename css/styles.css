@@ -108,11 +108,11 @@ body {
 
 /* PC-first tool ribbons stay on one row; narrow viewports can scroll. */
 @media screen and (max-width: 76rem) {
-    .workbench-ribbon {
+    :is(.red-index-ribbon, .document-ribbon).workbench-ribbon {
         overflow-x: auto;
     }
 
-    .workbench-ribbon__group {
+    :is(.red-index-ribbon, .document-ribbon) .workbench-ribbon__group {
         flex-shrink: 0;
     }
 }
