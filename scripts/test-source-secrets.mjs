@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { scanText } from './check-source-secrets.mjs';
-import { scanCommitMetadata, scanPrivacy, pathAllowed } from './audit-publication.mjs';
+import { scanCommitMetadata, scanPrivacy, pathAllowed, runtimePaths } from './audit-publication.mjs';
 const githubToken = 'ghp_' + 'A'.repeat(36);
 const awsAccessKey = 'AKIA' + 'A'.repeat(16);
 const pem = '-----BEGIN ' + 'PRIVATE KEY-----';
@@ -49,7 +49,7 @@ console.log('PASS: Dependabot service metadata across commits, exact trailer, an
 
 
 // Exercise real Git snapshots and incoming ranges without touching the user's checkout.
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -70,6 +70,35 @@ try {
   }
   put('sample.ts','export const value = 1;\n');git('add','.');git('commit','-qm','fixture');
   assert.equal(audit('--head').status,0);
+  // The publication directory must contain only the expected, unchanged runtime files.
+  const fixturePaths=['gosplan13/src/main.ts','gosplan13/src/types.d.ts','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts'];
+  for(const p of fixturePaths) {mkdirSync(join(repo,p,'..'),{recursive:true});put(p,'fixture');}
+  git('add','--','gosplan13/src','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts');
+  const output=runtimePaths(['index.html',...fixturePaths]);
+  for(const p of ['gosplan13/dist/main.js','css/styles.css','dist/main.bundle.js','document_builder/dist/main.bundle.js']) assert.ok(output.includes(p));
+  for(const p of ['gosplan13/dist/types.d.js','dist/stale.js','src/main.ts','document_builder/dist/main.js','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts']) assert.ok(!output.includes(p));
+  // Populate the fixture's fixed outputs; actual HTML comes from the approved pages.
+  const buildPaths=runtimePaths(['gosplan13/src/main.ts','css/styles.css']);
+  for(const p of buildPaths) {
+    if(p.endsWith('index.html') || p==='css/styles.css') continue;
+    mkdirSync(join(repo,p,'..'),{recursive:true});
+    put(p,p==='favicon.ico'?readFileSync(join(project,'favicon.ico')):'');
+  }
+  const buildSite=()=>run(process.execPath,[join(project,'scripts/build-site.mjs')]);
+  assert.equal(buildSite().status,0);
+  assert.equal(audit('--site').status,0);
+  put('site/extra.txt','fixture');assert.notEqual(audit('--site').status,0);
+  rmSync(join(repo,'site/extra.txt'));
+  put('site/css/styles.css','changed');assert.notEqual(audit('--site').status,0);
+  assert.equal(buildSite().status,0);
+  rmSync(join(repo,'site/gosplan13/dist/main.js'));assert.notEqual(audit('--site').status,0);
+  symlinkSync(join(repo,'gosplan13/dist/main.js'),join(repo,'site/gosplan13/dist/main.js'));
+  assert.notEqual(audit('--site').status,0);
+  rmSync(join(repo,'site'),{recursive:true});
+  git('reset','-q','HEAD','--','gosplan13/src','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts');
+  for(const p of ['gosplan13/src','gosplan13/dist','css','src','dist','document_builder/src','document_builder/dist','private','scripts','shared','favicon.ico','.nojekyll']) rmSync(join(repo,p),{recursive:true,force:true});
+  console.log('PASS: Pages runtime allowlist, missing/extra/modified/symlink artifacts');
+
   // Verify the real Git-history path with a synthetic server-style committer.
   const serverCommit=run('git',['commit','--allow-empty','-qm','synthetic server merge'],{env:{...env,GIT_COMMITTER_NAME:'GitHub',GIT_COMMITTER_EMAIL:service}});
   assert.equal(serverCommit.status,0);
