@@ -154,7 +154,7 @@ body {
         grid;
 
     grid-template-columns:
-        minmax(18rem, 22rem) minmax(52rem, 1fr);
+        var(--workbench-editor-columns);
 
     align-items:
         start;
@@ -215,7 +215,6 @@ body {
 
 
 .document-fields-panel__eyebrow,
-.document-preview-header__eyebrow,
 .template-dialog__eyebrow,
 .print-flow-dialog__eyebrow {
     margin:

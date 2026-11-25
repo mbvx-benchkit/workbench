@@ -36,6 +36,18 @@ body {
 }
 
 
+/* 共通編集パネル幅（割引不可商品リスト / ビジネス文書出力） */
+:root {
+    --workbench-editor-columns: minmax(20rem, 23rem) minmax(52rem, 1fr);
+}
+
+@media (max-width: 88rem) {
+    :root {
+        --workbench-editor-columns: 20rem minmax(50rem, 1fr);
+    }
+}
+
+
 /* =========================================================
    上部パネル
    ========================================================= */

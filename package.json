@@ -23,7 +23,12 @@
     "watch:gosplan13": "tsc -p gosplan13/tsconfig.json --watch",
     "watch:inventory": "tsc -p inventory_batch/tsconfig.json --watch",
     "watch:red-index": "tsc -p red_index/tsconfig.json --watch",
-    "watch:document": "tsc -p document_builder/tsconfig.json --watch"
+    "watch:document": "tsc -p document_builder/tsconfig.json --watch",
+    "test": "npm run test:workbench",
+    "audit:tree": "node scripts/audit-publication.mjs --tracked",
+    "audit:staged": "node scripts/audit-publication.mjs --staged",
+    "audit:history": "node scripts/audit-publication.mjs --history && gitleaks git --log-opts=--all --redact --no-banner .",
+    "verify": "npm run build && npm test && npm run audit:tree && npm audit --audit-level=high"
   },
   "dependencies": {
     "html2canvas": "1.4.1",

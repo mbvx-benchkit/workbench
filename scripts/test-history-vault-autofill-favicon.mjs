@@ -1,6 +1,7 @@
 /** Credential form hints and the shared transparent favicon remain wired across every page. */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {pathAllowed} from './audit-publication.mjs';
 const root = new URL('../', import.meta.url);
 const ui = readFileSync(new URL('shared/history-vault-ui.js',root),'utf8');
 const vault = readFileSync(new URL('shared/print-history-vault.js',root),'utf8');
@@ -34,6 +35,8 @@ for(const page of ['index.html','gosplan13/index.html','inventory_batch/index.ht
 }
 const ignored=readFileSync(new URL('.gitignore',root),'utf8');
 assert.match(ignored,/^!\/favicon\.ico$/m,'only the root favicon must be exempted from the image ignore rule');
-const scan=readFileSync(new URL('scripts/check-git-sensitive-files.sh',root),'utf8');
-assert.match(scan,/favicon\.ico\|\.nojekyll\|\.gitignore/,'only the shared public favicon may be staged');
+assert.equal(pathAllowed('favicon.ico'),true,'the shared public favicon may be staged');
+for(const path of ['other.ico','gosplan13/favicon.ico','private/favicon.ico','favicon.ico.pdf']) {
+  assert.equal(pathAllowed(path),false,'other icons and private files must remain blocked');
+}
 console.log('PASS: history password form identity, autofill hints, migration UI, favicon and 5-page references');

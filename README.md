@@ -6,10 +6,7 @@
 
 ```bash
 npm ci
-npm run check
-npm run build
-npm run test:workbench
-bash scripts/check-git-sensitive-files.sh --tracked
+npm run verify
 ```
 
 ## バックアップと復元

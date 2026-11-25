@@ -215,6 +215,9 @@ initializeCopyMenu({
 printButton.addEventListener("click", () => {
     window.print();
 });
+document.querySelector("#preview-focus-print-button")?.addEventListener("click", () => {
+    window.print();
+});
 /* =========================================================
    テキスト入力
    ========================================================= */

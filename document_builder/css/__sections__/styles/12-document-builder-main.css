@@ -17,12 +17,6 @@
 
 @media (max-width: 88rem) {
 
-    .document-builder-main {
-        grid-template-columns:
-            19rem minmax(50rem, 1fr);
-    }
-
-
     .template-selector__select {
         width:
             13rem;

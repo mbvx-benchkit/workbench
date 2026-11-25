@@ -43,7 +43,7 @@ body {
         grid;
 
     grid-template-columns:
-        minmax(20rem, 23rem) minmax(52rem, 1fr);
+        var(--workbench-editor-columns);
 
     align-items:
         start;
@@ -104,8 +104,7 @@ body {
 }
 
 
-.red-index-editor__eyebrow,
-.red-index-preview__eyebrow {
+.red-index-editor__eyebrow {
     margin:
         0 0 0.25rem;
 
@@ -135,19 +134,4 @@ body {
 
     font-weight:
         750;
-}
-
-
-.red-index-editor__description {
-    margin:
-        0.6rem 0 0;
-
-    color:
-        #777d87;
-
-    font-size:
-        0.76rem;
-
-    line-height:
-        1.6;
 }
