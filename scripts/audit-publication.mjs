@@ -7,7 +7,7 @@ import { resolve, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanText } from './check-source-secrets.mjs';
 
-const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml']);
+const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml','scripts/e2e-workbench.py']);
 const pages = new Set(['index.html','gosplan13/index.html','inventory_batch/index.html','red_index/index.html','document_builder/index.html']);
 const csp = "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'self' blob:; worker-src 'none'; form-action 'self'; base-uri 'none'; media-src 'none'; manifest-src 'self'";
 // Exact public third-party license lines, only in the existing bundled jsPDF output.
@@ -102,13 +102,16 @@ function identity(s) {
 // GitHub web-flow uses a public service mailbox for server-generated commits.
 // This is a privacy exception, not proof of the signature or author identity.
 const githubCommitterEmail='noreply'+'@'+'github.com';
-const historicalSupportEmail='support'+'@'+'github.com';
-// Reviewed through the GitHub API: valid GitHub signature, public service trailer.
-// Scope this second exception to the exact immutable historical commit, never source files.
-const reviewedSupportCommit='88e5334133c26c39843211f5043edf8d94a1b195';
-export function scanCommitMetadata(commit, meta, dictionary=[]) {
+const githubSupportEmail='support'+'@'+'github.com';
+// Public Dependabot service metadata, not proof of authentication or signature.
+// Both reviewed bot commits use this same identity and exact sign-off line.
+// Keep the exception in commit metadata only; dictionary and secret scans remain intact.
+const dependabotAuthor='dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>';
+const dependabotTrailer=`Signed-off-by: dependabot[bot] <${githubSupportEmail}>`;
+export function scanCommitMetadata(_commit, meta, dictionary=[]) {
   const lines=meta.split('\n');
   const githubCommitter=lines[1]===`GitHub <${githubCommitterEmail}>`;
+  const dependabotMetadata=githubCommitter && lines[0]===dependabotAuthor;
   const findings=[];
   for(const [index,ident] of lines.slice(0,2).entries()) {
     if(!identity(ident) && !(index===1 && githubCommitter)) findings.push('コミット作者/コミッターの公開用メール未設定');
@@ -116,7 +119,7 @@ export function scanCommitMetadata(commit, meta, dictionary=[]) {
   for(const rule of new Set(scanText(meta).map(x=>x.rule))) findings.push(rule);
   for(const rule of scanPrivacy(meta,'',dictionary,(email,line,index)=>
     (index===1 && githubCommitter && email===githubCommitterEmail) ||
-    (commit===reviewedSupportCommit && index>=2 && /^Signed-off-by: [^<>]+ <[^<>]+>\s*$/.test(line) && email===historicalSupportEmail && line.endsWith(`<${historicalSupportEmail}>`))
+    (dependabotMetadata && index>=2 && line===dependabotTrailer && email===githubSupportEmail)
   )) findings.push(rule);
   return findings;
 }

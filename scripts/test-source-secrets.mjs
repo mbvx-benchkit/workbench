@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { scanText } from './check-source-secrets.mjs';
-import { scanCommitMetadata, scanPrivacy } from './audit-publication.mjs';
+import { scanCommitMetadata, scanPrivacy, pathAllowed } from './audit-publication.mjs';
 const githubToken = 'ghp_' + 'A'.repeat(36);
 const awsAccessKey = 'AKIA' + 'A'.repeat(16);
 const pem = '-----BEGIN ' + 'PRIVATE KEY-----';
@@ -12,26 +12,40 @@ assert.equal(scanText('const myApi = "https://example.test/api";').length,0);
 assert.equal(scanText('const token = "example";').length,0);
 console.log('PASS: source scanner catches known credentials without printing values');
 
+assert.equal(pathAllowed('scripts/e2e-workbench.py'),true);
+for (const path of ['other.py','scripts/other.py','private/e2e-workbench.py','scripts/e2e-workbench.py.pdf']) assert.equal(pathAllowed(path),false);
+
 // Privacy exceptions must not allow arbitrary metadata or source content.
 const reviewed='88e5334133c26c39843211f5043edf8d94a1b195';
+const latestBotCommit='a3ef4f0fd51cfcdfa64bc369f6865314d8f2df9b';
 const other='a'.repeat(40);
 const service='noreply'+'@'+'github.com';
 const support='support'+'@'+'github.com';
 const author='Synthetic <1+fixture@users.noreply.github.com>';
+const botName='dependabot[bot]';
+const botEmail='49699333+dependabot[bot]@users.noreply.github.com';
+const botAuthor=`${botName} <${botEmail}>`;
 const system=`GitHub <${service}>`;
-const trailer=`Signed-off-by: Synthetic Service <${support}>`;
+const trailer=`Signed-off-by: ${botName} <${support}>`;
 const metadata=(a,c,m)=>[a,c,m].join('\n');
-assert.deepEqual(scanCommitMetadata(reviewed,metadata(author,system,trailer)),[]);
+for(const sha of [reviewed,latestBotCommit,other]) {
+  assert.deepEqual(scanCommitMetadata(sha,metadata(botAuthor,system,trailer)),[]);
+  assert.ok(scanCommitMetadata(sha,metadata(author,system,trailer)).includes('メールアドレス'));
+}
 assert.deepEqual(scanCommitMetadata(other,metadata(author,system,'merge fixture')),[]);
-assert.ok(scanCommitMetadata(other,metadata(author,system,trailer)).includes('メールアドレス'));
-assert.ok(scanCommitMetadata(reviewed,metadata(system,system,trailer)).includes('コミット作者/コミッターの公開用メール未設定'));
-assert.ok(scanCommitMetadata(reviewed,metadata(author,`Synthetic <${service}>`,trailer)).includes('コミット作者/コミッターの公開用メール未設定'));
-assert.ok(scanCommitMetadata(reviewed,metadata(author,system,`message ${support}`)).includes('メールアドレス'));
-assert.ok(scanCommitMetadata(reviewed,metadata(author,system,`${trailer}\n${service}`)).includes('メールアドレス'));
-assert.ok(scanCommitMetadata(reviewed,metadata(author,system,trailer),['synthetic service']).includes('非公開辞書'));
+assert.ok(scanCommitMetadata(other,metadata(system,system,trailer)).includes('コミット作者/コミッターの公開用メール未設定'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,`Synthetic <${service}>`,trailer)).includes('コミット作者/コミッターの公開用メール未設定'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,author,trailer)).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor.replace('49699333','1'),system,trailer)).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,system,`message ${support}`)).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,system,trailer+' extra')).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,system,trailer.replace(botName,'Synthetic Service'))).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,system,`${trailer}\n${service}`)).includes('メールアドレス'));
+assert.ok(scanCommitMetadata(other,metadata(botAuthor,system,trailer),['dependabot[bot]']).includes('非公開辞書'));
 assert.ok(scanPrivacy(service,'sample.ts').includes('メールアドレス'));
 assert.ok(scanPrivacy(support,'sample.ts').includes('メールアドレス'));
-console.log('PASS: GitHub service identity, exact historical trailer, and unchanged privacy boundaries');
+assert.ok(scanPrivacy(trailer,'sample.ts').includes('メールアドレス'));
+console.log('PASS: Dependabot service metadata across commits, exact trailer, and unchanged privacy boundaries');
 
 
 // Exercise real Git snapshots and incoming ranges without touching the user's checkout.
@@ -63,6 +77,13 @@ try {
   git('commit','--allow-empty','-qm','synthetic trailer'+String.fromCharCode(10,10)+trailer);
   const invalidTrailer=audit('--history');assert.equal(invalidTrailer.status,1);assert.match(invalidTrailer.stderr,/メールアドレス/);assert.ok(!invalidTrailer.stderr.includes(support));
   git('reset','--hard','HEAD^');
+  // A new bot commit on an unrelated ref must pass the full history audit as in CI.
+  git('switch','-qc','dependabot/fixture');
+  const botCommit=run('git',['commit','--allow-empty','-qm','synthetic bot update\n\n'+trailer],{env:{...env,GIT_AUTHOR_NAME:botName,GIT_AUTHOR_EMAIL:botEmail,GIT_COMMITTER_NAME:'GitHub',GIT_COMMITTER_EMAIL:service}});
+  assert.equal(botCommit.status,0);
+  git('switch','-q','main');
+  assert.equal(audit('--history').status,0);
+  git('branch','-D','dependabot/fixture');
 
   const email=['fixture','unapproved','invalid'].join('@').replace('@invalid','.invalid');
   put('sample.ts',`const contact = ${JSON.stringify(email)};\n`);git('add','sample.ts');put('sample.ts','export const value = 2;\n');
