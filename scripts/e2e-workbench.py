@@ -3,7 +3,6 @@ import argparse
 import functools
 import http.server
 import pathlib
-import subprocess
 import threading
 import time
 from urllib.parse import unquote, urlsplit
@@ -11,13 +10,15 @@ from playwright.sync_api import sync_playwright, expect
 
 ROOT = None
 PAGES = ('', 'gosplan13/', 'inventory_batch/', 'red_index/', 'document_builder/')
+BASE_PATH = '/workbench/'
 
 
 def serve(site=False):
-    # Only tracked runtime assets, never a directory listing or local data.
-    tracked = ([p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*') if p.is_file()]
-               if site else subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0'))
-    runtime_roots = ('css/', 'dist/', 'shared/') + tuple(t + d for t in PAGES[1:] for d in ('css/', 'dist/'))
+    # The same audited output is used in CI and local smoke tests. Never serve a source tree.
+    if not site:
+        raise ValueError('Use npm run build:site and --project site --site')
+    tracked = [p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*') if p.is_file()]
+    runtime_roots = ('css/', 'dist/') + tuple(t + d for t in PAGES[1:] for d in ('css/', 'dist/'))
     runtime_pages = {t + 'index.html' for t in PAGES} | {'favicon.ico'}
     allowed = {p for p in tracked if (p in runtime_pages or (p.startswith(runtime_roots) and pathlib.PurePosixPath(p).suffix in ('.css', '.js'))) and (ROOT / p).is_file() and (ROOT / p).resolve() == ROOT / p}
 
@@ -26,7 +27,11 @@ def serve(site=False):
             pass
 
         def do_GET(self):
-            path = unquote(urlsplit(self.path).path).lstrip('/')
+            url_path = unquote(urlsplit(self.path).path)
+            if not url_path.startswith(BASE_PATH):
+                self.send_error(404)
+                return
+            path = url_path[len(BASE_PATH):]
             if path in PAGES:
                 path += 'index.html'
             if path not in allowed:
@@ -43,7 +48,8 @@ def serve(site=False):
 def wait_for_saved_product(context, base, timeout=10):
     # Playwright's storage snapshot reads storage without page-side string eval.
     # Poll in Python, keeping the real CSP and actual asynchronous write intact.
-    origin = base.rstrip('/')
+    parsed = urlsplit(base)
+    origin = f'{parsed.scheme}://{parsed.netloc}'
     deadline = time.monotonic() + timeout
     while True:
         for entry in context.storage_state().get('origins', []):
@@ -82,16 +88,106 @@ def run(browser, base):
     def ready(page):
         expect(page.locator('[data-workbench-build-info]')).to_contain_text('WORKBENCH v')
 
-    ctx = new_context(viewport={'width': 1440, 'height': 1000}, accept_downloads=True)
+    def release_history(page, expected=None, mobile=False):
+        trigger = page.locator('.footer__release-button')
+        footer = page.locator('[data-workbench-build-info]')
+        expect(footer).to_contain_text('build:')
+        trigger.click()
+        dialog = page.get_by_role('dialog', name='アップデート履歴')
+        expect(dialog).to_be_visible()
+        expect(page.locator('body > .release-history')).to_have_count(1)
+        expect(dialog.locator('.release-history__badge')).to_have_count(1)
+        versions = dialog.locator('.release-history__entry h3').all_text_contents()
+        assert len(versions) >= 1 and versions[0].startswith(trigger.inner_text().replace('WORKBENCH ', ''))
+        content = dialog.locator('.release-history__content').inner_text()
+        if expected is not None:
+            assert content == expected, 'release history differs between tools'
+        close = dialog.get_by_role('button', name='閉じる')
+        dialog.locator('.release-history__header h2').hover()
+        expect(close.locator('svg')).to_have_count(1)
+        expect(close).to_have_css('width', '32px')
+        expect(close).to_have_css('height', '32px')
+        expect(close).to_have_css('background-color', 'rgba(0, 0, 0, 0)')
+        # Existing WORKBENCH dialogs are light even under OS dark mode.
+        expect(dialog).to_have_css('background-color', 'rgb(255, 255, 255)')
+        expect(dialog).to_have_css('color-scheme', 'light')
+        expect(close).to_have_css('color', 'rgb(107, 114, 128)')
+        if mobile:
+            bounds = dialog.bounding_box()
+            assert bounds and bounds['x'] >= -1 and bounds['x'] + bounds['width'] <= 391, 'release dialog overflows mobile viewport'
+        page.emulate_media(media='print')
+        expect(dialog).to_be_hidden()
+        page.emulate_media(media='screen')
+        expect(dialog).to_be_visible()
+        if mobile:
+            dialog.get_by_role('button', name='閉じる').click()
+        else:
+            page.keyboard.press('Escape')
+        expect(page.locator('.release-history')).to_have_count(0)
+        expect(trigger).to_be_focused()
+        return content
+
+    def desktop_editor_layout(page, path, viewport_width):
+        selectors = (
+            ('.red-index-main', '.red-index-editor', '.red-index-preview__stage', '#red-index-page')
+            if path == 'red_index/' else
+            ('.document-builder-main', '.document-fields-panel', '.document-preview-stage', '#document-page')
+        )
+        geometry = page.evaluate('''([mainSelector, editorSelector, stageSelector, paperSelector]) => {
+            const main = document.querySelector(mainSelector);
+            const editor = document.querySelector(editorSelector);
+            const stage = document.querySelector(stageSelector);
+            const paper = document.querySelector(paperSelector);
+            const ribbon = document.querySelector('.workbench-ribbon');
+            const groups = [...ribbon.querySelectorAll('.workbench-ribbon__group')];
+            const left = editor.getBoundingClientRect();
+            const right = stage.getBoundingClientRect();
+            stage.scrollLeft = 0;
+            const first = paper.getBoundingClientRect();
+            stage.scrollLeft = stage.scrollWidth;
+            const last = paper.getBoundingClientRect();
+            stage.scrollLeft = 0;
+            main.scrollLeft = main.scrollWidth;
+            const reached = main.scrollLeft;
+            const stageRightAtEnd = stage.getBoundingClientRect().right;
+            main.scrollLeft = 0;
+            ribbon.scrollLeft = ribbon.scrollWidth;
+            const ribbonEnd = groups[groups.length - 1].getBoundingClientRect().right;
+            ribbon.scrollLeft = 0;
+            return {mainRight: main.getBoundingClientRect().right,
+                bodyRight: document.body.getBoundingClientRect().right,
+                stageRightAtEnd, ribbonEnd, ribbonRight: ribbon.getBoundingClientRect().right,
+                rootWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth,
+                editorRight: left.right, stageLeft: right.left, topDelta: Math.abs(left.top - right.top),
+                ribbonWrap: getComputedStyle(ribbon).flexWrap,
+                groupWrap: groups.map(g => getComputedStyle(g).flexWrap),
+                paperWidth: first.width, paperHeight: first.height,
+                paperLeft: first.left - right.left, paperRight: right.right - last.right,
+                mainWidth: main.scrollWidth, mainClient: main.clientWidth, reached};
+        }''', list(selectors))
+        assert geometry['rootWidth'] <= geometry['clientWidth'] + 2, 'page shell overflows'
+        assert geometry['mainRight'] <= geometry['bodyRight'] + 2, 'editor exceeds its workspace'
+        assert geometry['editorRight'] <= geometry['stageLeft'] + 2 and geometry['topDelta'] <= 2, 'editor and preview must remain side by side'
+        assert geometry['ribbonWrap'] == 'nowrap' and all(w == 'nowrap' for w in geometry['groupWrap']), 'PC ribbon wrapped'
+        assert abs(geometry['paperWidth'] - 210 * 96 / 25.4) <= 2 and geometry['paperHeight'] >= 297 * 96 / 25.4 - 2, 'A4 preview geometry changed'
+        assert geometry['paperLeft'] >= -2 and geometry['paperRight'] >= -2, 'A4 preview edges are not reachable'
+        assert geometry['ribbonEnd'] <= geometry['ribbonRight'] + 2, 'last ribbon control is not reachable'
+        assert geometry['stageRightAtEnd'] <= geometry['mainRight'] + 2, 'preview workspace right edge is not reachable'
+        if viewport_width < 1152:
+            assert geometry['mainWidth'] > geometry['mainClient'] and geometry['reached'] > 0, 'narrow PC workspace cannot scroll horizontally'
+
+    ctx = new_context(viewport={'width': 1440, 'height': 1000}, accept_downloads=True, color_scheme='light')
     try:
         page = new_page(ctx)
         page.goto(base, wait_until='load'); ready(page)
+        history = release_history(page)
         for path in PAGES[1:]:
             page.locator(f'a.tool-card[href="./{path}"]').click()
             expect(page).to_have_url(base + path)
             ready(page)
+            release_history(page, history)
             page.goto(base, wait_until='load')
-        print('PASS: five-page desktop navigation and startup', flush=True)
+        print('PASS: five-page desktop navigation, release history, close and print exclusion', flush=True)
 
         page.goto(base + 'gosplan13/', wait_until='load')
         row = page.locator('#a4-preview .product-label').first
@@ -145,45 +241,31 @@ def run(browser, base):
         expect(page.locator('#print-flow-dialog')).to_be_visible()
         page.locator('#print-flow-close-button').click()
         print('PASS: DOCUMENT BUILDER template, preview and print dialog', flush=True)
+        for width in (1280, 1024):
+            page.set_viewport_size({'width': width, 'height': 900})
+            for path in ('red_index/', 'document_builder/'):
+                page.goto(base + path, wait_until='load'); ready(page)
+                desktop_editor_layout(page, path, width)
+        print('PASS: PC-first editors at 1280px and 1024px, ribbon and A4 preview', flush=True)
     finally:
         ctx.close()
 
-    mobile = new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True, device_scale_factor=2)
+    mobile = new_context(viewport={'width':390,'height':844}, is_mobile=True, has_touch=True, device_scale_factor=2, color_scheme='dark')
     try:
         page = new_page(mobile)
         mobile_failures = []
         for path in PAGES:
             try:
                 page.goto(base + path, wait_until='load'); ready(page)
-                # The page shell must fit; internal A4 previews remain scrollable.
-                width = page.evaluate('() => ({client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth})')
-                if width['scroll'] > width['client'] + 2:
-                    raise AssertionError(f"document overflow: client={width['client']}, scroll={width['scroll']}")
                 if path in ('red_index/', 'document_builder/'):
-                    stage_selector, paper_selector = (
-                        ('.red-index-preview__stage', '#red-index-page') if path == 'red_index/'
-                        else ('.document-preview-stage', '#document-page')
-                    )
-                    # Preserve actual A4 geometry and ensure both edges are reachable.
-                    geometry = page.evaluate('''([stageSelector, paperSelector]) => {
-                        const stage = document.querySelector(stageSelector);
-                        const paper = document.querySelector(paperSelector);
-                        const box = stage.getBoundingClientRect();
-                        stage.scrollLeft = 0;
-                        const first = paper.getBoundingClientRect();
-                        stage.scrollLeft = stage.scrollWidth;
-                        const last = paper.getBoundingClientRect();
-                        stage.scrollLeft = 0;
-                        return {width: first.width, height: first.height,
-                            left: first.left - box.left, right: box.right - last.right,
-                            scroll: stage.scrollWidth, client: stage.clientWidth};
-                    }''', [stage_selector, paper_selector])
-                    if (abs(geometry['width'] - 210 * 96 / 25.4) > 2 or
-                            geometry['height'] < 297 * 96 / 25.4 - 2):
-                        raise AssertionError('A4 preview geometry changed')
-                    if (geometry['scroll'] <= geometry['client'] or
-                            geometry['left'] < -2 or geometry['right'] < -2):
-                        raise AssertionError('A4 preview edges are not reachable')
+                    # These two editors are PC-first: deliberate horizontal scrolling,
+                    # not a stacked layout, preserves the A4 workspace on narrow screens.
+                    desktop_editor_layout(page, path, 390)
+                else:
+                    width = page.evaluate('() => ({client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth})')
+                    if width['scroll'] > width['client'] + 2:
+                        raise AssertionError(f"document overflow: client={width['client']}, scroll={width['scroll']}")
+                release_history(page, history, mobile=True)
                 print('PASS: mobile ' + (path or 'home'), flush=True)
             except Exception as exc:
                 mobile_failures.append((path or 'home') + ': ' + str(exc))
@@ -191,7 +273,7 @@ def run(browser, base):
         if mobile_failures:
             errors.extend(mobile_failures)
         else:
-            print('PASS: mobile five-page startup and viewport width', flush=True)
+            print('PASS: mobile five-page startup, responsive pages and scrollable PC editors', flush=True)
     finally:
         mobile.close()
     if errors:
@@ -213,7 +295,7 @@ def main():
             options = {'executable_path': args.chromium_executable} if args.chromium_executable else {}
             browser = p.chromium.launch(headless=True, **options)
             try:
-                run(browser, f'http://127.0.0.1:{server.server_port}/')
+                run(browser, f'http://127.0.0.1:{server.server_port}{BASE_PATH}')
             finally:
                 browser.close()
     finally:

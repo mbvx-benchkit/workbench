@@ -12,7 +12,7 @@ Thumbs.db
 *.swo
 *~
 
-# Dependencies, build caches and logs (keep built dist/*.js for GitHub Pages)
+# Dependencies, build caches and logs
 node_modules/
 *.tsbuildinfo
 *.js.map
@@ -105,6 +105,7 @@ id_ed25519*
 *.json
 !package.json
 !package-lock.json
+!/release-notes.json
 !tsconfig.json
 !tsconfig.*.json
 !**/tsconfig.json
@@ -141,6 +142,7 @@ document_builder/json/
 *.sqlite-wal
 *.sqlite-shm
 !/README.md
+!/CHANGELOG.md
 !/COPYRIGHT.md
 !/SECURITY_GUIDE.md
 !/CSP_GUIDE.md
@@ -153,7 +155,12 @@ document_builder/json/
 !/.github/workflows/pages.yml
 !/.github/dependabot.yml
 
-# Disposable, audited Pages deployment output.
+# Generated outputs: never commit; CI builds and audits from source.
+/dist/
+/gosplan13/dist/
+/inventory_batch/dist/
+/red_index/dist/
+/document_builder/dist/
 /site/
 
 # Python test caches.

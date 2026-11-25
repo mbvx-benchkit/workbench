@@ -13,6 +13,8 @@ assert.equal(scanText('const token = "example";').length,0);
 console.log('PASS: source scanner catches known credentials without printing values');
 
 assert.equal(pathAllowed('scripts/e2e-workbench.py'),true);
+for (const path of ['release-notes.json','CHANGELOG.md']) assert.equal(pathAllowed(path),true);
+for (const path of ['other/release-notes.json','private/release-notes.json','other/CHANGELOG.md','release-notes-backup.json']) assert.equal(pathAllowed(path),false);
 for (const path of ['other.py','scripts/other.py','private/e2e-workbench.py','scripts/e2e-workbench.py.pdf']) assert.equal(pathAllowed(path),false);
 
 // Privacy exceptions must not allow arbitrary metadata or source content.
@@ -71,12 +73,15 @@ try {
   put('sample.ts','export const value = 1;\n');git('add','.');git('commit','-qm','fixture');
   assert.equal(audit('--head').status,0);
   // The publication directory must contain only the expected, unchanged runtime files.
-  const fixturePaths=['gosplan13/src/main.ts','gosplan13/src/types.d.ts','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts'];
+  const fixturePaths=['gosplan13/src/main.ts','gosplan13/src/types.d.ts','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts','shared/print-history-vault.js','shared/history-vault-ui.js','release-notes.json','CHANGELOG.md'];
   for(const p of fixturePaths) {mkdirSync(join(repo,p,'..'),{recursive:true});put(p,'fixture');}
   git('add','--','gosplan13/src','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts');
+  assert.equal(audit('--staged').status,1);
+  assert.equal(audit('--tracked').status,1);
+  git('rm','-q','--cached','dist/stale.js');
   const output=runtimePaths(['index.html',...fixturePaths]);
-  for(const p of ['gosplan13/dist/main.js','css/styles.css','dist/main.bundle.js','document_builder/dist/main.bundle.js']) assert.ok(output.includes(p));
-  for(const p of ['gosplan13/dist/types.d.js','dist/stale.js','src/main.ts','document_builder/dist/main.js','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts']) assert.ok(!output.includes(p));
+  for(const p of ['gosplan13/dist/main.js','css/styles.css','dist/main.bundle.js','document_builder/dist/main.bundle.js','dist/release-history.js']) assert.ok(output.includes(p));
+  for(const p of ['gosplan13/dist/types.d.js','dist/stale.js','src/main.ts','document_builder/dist/main.js','private/data.ts','scripts/test.js','shared/print-history-vault.d.ts','shared/print-history-vault.js','shared/history-vault-ui.js','release-notes.json','CHANGELOG.md']) assert.ok(!output.includes(p));
   // Populate the fixture's fixed outputs; actual HTML comes from the approved pages.
   const buildPaths=runtimePaths(['gosplan13/src/main.ts','css/styles.css']);
   for(const p of buildPaths) {
@@ -95,9 +100,22 @@ try {
   symlinkSync(join(repo,'gosplan13/dist/main.js'),join(repo,'site/gosplan13/dist/main.js'));
   assert.notEqual(audit('--site').status,0);
   rmSync(join(repo,'site'),{recursive:true});
-  git('reset','-q','HEAD','--','gosplan13/src','css/styles.css','src/main.ts','dist/stale.js','document_builder/src/main.ts');
-  for(const p of ['gosplan13/src','gosplan13/dist','css','src','dist','document_builder/src','document_builder/dist','private','scripts','shared','favicon.ico','.nojekyll']) rmSync(join(repo,p),{recursive:true,force:true});
+  git('reset','-q','HEAD','--','gosplan13/src','css/styles.css','src/main.ts','document_builder/src/main.ts');
+  for(const p of ['gosplan13/src','gosplan13/dist','css','src','dist','document_builder/src','document_builder/dist','private','scripts','shared','favicon.ico','.nojekyll','release-notes.json','CHANGELOG.md']) rmSync(join(repo,p),{recursive:true,force:true});
   console.log('PASS: Pages runtime allowlist, missing/extra/modified/symlink artifacts');
+
+  // Generated outputs are forbidden in new snapshots, but old blobs remain auditable.
+  for(const p of ['dist/old.js','gosplan13/dist/old.js','inventory_batch/dist/old.js','red_index/dist/old.js','document_builder/dist/old.js','site/old.js']) {
+    mkdirSync(join(repo,p,'..'),{recursive:true});put(p,'export const value = 1;');git('add',p);
+    const staged=audit('--staged');assert.equal(staged.status,1);assert.match(staged.stderr,/生成物のGit登録/);
+    git('reset','-q','HEAD','--',p);rmSync(join(repo,p));
+  }
+  mkdirSync(join(repo,'dist'),{recursive:true});put('dist/old.js','export const value = 1;');git('add','dist/old.js');
+  git('commit','-qm','historical generated output');assert.equal(audit('--head').status,1);assert.equal(audit('--history').status,0);
+  git('rm','-q','--cached','dist/old.js');git('commit','-qm','remove generated output from index');
+  assert.equal(audit('--head').status,0);assert.equal(audit('--history').status,0);
+  rmSync(join(repo,'dist/old.js'));
+  console.log('PASS: generated outputs rejected in current snapshots, history retained');
 
   // Verify the real Git-history path with a synthetic server-style committer.
   const serverCommit=run('git',['commit','--allow-empty','-qm','synthetic server merge'],{env:{...env,GIT_COMMITTER_NAME:'GitHub',GIT_COMMITTER_EMAIL:service}});

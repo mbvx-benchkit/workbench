@@ -4,6 +4,8 @@
 
 ## ビルド・テスト
 
+Node.js 24 / npm 11（インストールスクリプト制御対応版）を使用します。依存関係はlockfileに固定し、ESMとして扱います。`allowScripts` はレビュー済みのesbuildのバージョンだけを許可し、core-jsの案内用postinstallは拒否します。CIでは未承認のインストールスクリプトをエラーにします。依存関係の更新時はこの設定も確認してください。
+
 ```bash
 npm ci
 npm run verify
@@ -54,7 +56,7 @@ WORKBENCHはGitHub Pages上で動作する静的なツール集です。HTML/CSS
 | `red_index/src/` | 割引不可商品リストの編集、プレビューと印刷 |
 | `document_builder/src/` | テンプレート編集、文書作成、PDF保存・印刷履歴 |
 | `css/` | 共通ヘッダー、ボタン、トグル、フッター等のスタイル |
-| `*/dist/`, `dist/` | ビルド済みJS。GitHub Pagesへの公開に必要なのでコミット対象 |
+| `*/dist/`, `dist/` | ビルド済みJS。ローカル・CIで生成し、Git管理対象外 |
 | `scripts/` | ビルド情報生成、回帰テスト、機密ファイル検査 |
 
 ### モジュール分割の原則
@@ -65,20 +67,21 @@ WORKBENCHはGitHub Pages上で動作する静的なツール集です。HTML/CSS
 - 公開関数の名前、保存データの形式、バックアップ互換性はリファクタリング前と同じです。
 - ブラウザ内の保存には現行のIndexedDB等を使用しています。変更前にユーザーデータのバックアップを取ってください。
 
-### バージョンとビルド日時
+### バージョン・リリース管理（開発担当者 / GPT）
 
-`package.json` の `version` が全画面のフッターに表示されるWORKBENCHのバージョンです。`npm run build` 時に `scripts/generate-build-info.mjs` が `dist/workbench-build-info.js` を生成し、フッターへ日本時間のビルド日時を表示します。
+バージョンの正本は `package.json`（`package-lock.json` のルートも同期）、履歴の正本は `release-notes.json` です。`npm run build` 時に共通フッター用のJSと GitHub 閲覧用 [CHANGELOG.md](./CHANGELOG.md) を自動生成します。CHANGELOG は生成結果をGitに登録し、手編集しません。アプリはフッターのバージョンから同じ履歴を表示します。
 
-パッチバージョンを上げる場合：
+公開を伴う改修では、コミットごとではなくリリース単位で SemVer を決定します。互換性のない変更は MAJOR、互換性を保つ機能追加は MINOR、修正・UI調整・性能改善等は PATCH。`npm version major|minor|patch --no-git-tag-version` の該当コマンドで番号を同期し、同一リリースの追加変更では再度バージョンを上げず、先頭の履歴に統合します。
 
-```bash
-npm version patch --no-git-tag-version
-npm run check
-npm run build
-npm run test:workbench
-```
+1. 要件を整理して実装し、変更内容に応じてバージョンを決定する。
+2. `release-notes.json` の先頭にリリースを追加または更新し、利用者視点の説明を記載する。過去の公開済み履歴は事実訂正以外変更しない。
+3. リリース日は日本時間で確定した日だけ `date` に記録する。未確定なら省略し、ビルド日時から推定しない。PR番号・差分統計も実績確定後に記録する。公開直後の補完は同じリリースの事実情報の追記とする。過去の復元履歴は実在したバージョンと確認できるコミット日を使い、後続更新の期間・統計の範囲を明記する。
+4. `npm run verify` と `npm run build:site` を実行し、必要なE2Eを確認する。生成された `CHANGELOG.md` を含め、ステージング対象と公開監査を確認する。
+5. PR・CI合格・マージ・監査済み成果物のデプロイ・公開確認を行う。公開日等が未確定だった場合、確定後に同一バージョンの履歴を補完する。
 
-新しく作られた `dist` 配下のJSも、`git add` とコミットの対象に含めます。
+リリースノートの `sections` には `features` / `ux` / `fixes` / `security` / `internal` の該当する項目だけを記載します。`statistics` は範囲を示す `label` と `files` / `additions` / `deletions`、`links` は `label` と `target`（このリポジトリの `commit/<完全SHA>`、`pull/<番号>`、`compare/<完全SHA>...<完全SHA>`）を使用します。個人情報や業務データを記載しないこと。初期履歴の統計には当時追跡されていた生成物も含まれます。未確定値は空欄の代わりに項目自体を省略します。
+
+`dist/` と `site/` は生成物なのでコミットしません。新規クローンやソースZIP展開後は `npm ci` と `npm run build` を実行してください。
 
 ### 開発・検証フロー
 
@@ -162,11 +165,11 @@ DOCUMENT BUILDERのPDF履歴だけを専用パスワードで暗号化します�
 
 PR・main更新時の `security` で、既存のビルド・回帰テストに続けて Chromium の E2E を実行します。架空データと独立したブラウザコンテキストを使用し、5画面の起動、代表操作、スマートフォンの横幅、外部通信・ブラウザエラーを検証します。週次監査では実行しません。
 
-ローカルで実行する場合は `npm run build` の後、リポジトリ外の Python 仮想環境に `playwright==1.57.0` を導入し、`python -m playwright install chromium`、`python scripts/e2e-workbench.py --project .` を実行してください。通常のブラウザや保存済み業務データは使用しません。
+ローカルで実行する場合は `npm run build` の後、リポジトリ外の Python 仮想環境に `playwright==1.57.0` を導入し、`python -m playwright install chromium`、`npm run build:site`、`python scripts/e2e-workbench.py --project site --site` を実行してください。通常のブラウザや保存済み業務データは使用しません。
 
 
 ## Pages配信成果物とデプロイ
 
-`npm run build:site` はビルド済みの実行ファイルと追跡済みの静的資産だけを `site/` に集め、構成・実ファイル・CSP・機密情報を監査します。CIのE2Eはこの成果物を直接検証し、合格時だけ `workbench-site` をアップロードします。`security` が合格した同一ワークフローの成果物を、main の push または手動実行時に限り `github-pages` 環境からデプロイします。公開権限はデプロイジョブだけに付与し、再ビルドは行いません。PRと週次監査からはデプロイしません。週次監査では成果物作成・E2E・アップロードも行いません。
+`npm run build:site` はビルド済みの実行ファイルと追跡済みの静的資産だけを `site/` に集め、構成・実ファイル・CSP・機密情報を監査します。CIでは生成済み成果物にもGitleaksを適用し、E2Eはその成果物を直接検証します。合格時だけ `workbench-site` をアップロードします。`security` が合格した同一ワークフローの成果物を、main の push または手動実行時に限り `github-pages` 環境からデプロイします。公開権限はデプロイジョブだけに付与し、再ビルドは行いません。共通の履歴保管庫モジュールはバンドル済みのため、元のJSを重複配信しません。PRと週次監査からはデプロイしません。週次監査では成果物作成・E2E・アップロードも行いません。
 
-移行時は Pages の公開元を GitHub Actions に切り替えた後、リポジトリ変数 `WORKBENCH_PAGES_DEPLOY` を `true` に設定して main のワークフローを手動実行します。変数が未設定または `true` 以外の場合は公開処理を停止します。新方式での配信確認が完了するまで従来の `dist/` のコミットを維持します。
+移行時は Pages の公開元を GitHub Actions に切り替えた後、リポジトリ変数 `WORKBENCH_PAGES_DEPLOY` を `true` に設定して main のワークフローを手動実行します。変数が未設定または `true` 以外の場合は公開処理を停止します。配信方式の移行は完了済みです。すべての `dist/` はGit管理対象外とし、CIは追跡済みソースから新規生成します。過去のコミットに含まれる生成物は引き続き履歴監査の対象です。

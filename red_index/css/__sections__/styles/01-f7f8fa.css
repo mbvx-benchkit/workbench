@@ -133,8 +133,9 @@ body {
         750;
 }
 
+/* Keep the desktop grid; only the workspace scrolls on narrow screens. */
 @media screen and (max-width: 76rem) {
-    .red-index-field__input {
-        min-width: 0;
+    .red-index-main {
+        overflow-x: auto;
     }
 }

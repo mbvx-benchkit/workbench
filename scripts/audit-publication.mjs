@@ -7,7 +7,7 @@ import { resolve, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanText } from './check-source-secrets.mjs';
 
-const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml','scripts/e2e-workbench.py']);
+const exact = new Set(['favicon.ico','.nojekyll','.gitignore','package.json','package-lock.json','release-notes.json','CHANGELOG.md','README.md','COPYRIGHT.md','SECURITY_GUIDE.md','CSP_GUIDE.md','SECURITY_FIXES.md','document_builder/PRINT_HISTORY.md','.github/workflows/security.yml','.github/workflows/codeql.yml','.github/workflows/pages.yml','.github/dependabot.yml','scripts/e2e-workbench.py']);
 const pages = new Set(['index.html','gosplan13/index.html','inventory_batch/index.html','red_index/index.html','document_builder/index.html']);
 const csp = "default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'self' blob:; worker-src 'none'; form-action 'self'; base-uri 'none'; media-src 'none'; manifest-src 'self'";
 // Exact public third-party license lines, only in the existing bundled jsPDF output.
@@ -37,16 +37,21 @@ export function pathAllowed(p) {
   if (p.startsWith('.github/')) return false;
   return /\.(?:ts|js|html|css|sh|mjs)$/.test(p);
 }
+// Only current source snapshots reject generated outputs; historical blobs and
+// actual deployment assets must still be scanned by their original policy.
+function generatedPath(p) {
+  return /^(?:dist|(?:gosplan13|inventory_batch|red_index|document_builder)\/dist|site)(?:\/|$)/.test(p);
+}
 // Runtime output is derived from tracked static assets and TypeScript sources,
 // not from arbitrary files left in dist or the working tree.
 export function runtimePaths(tracked) {
   const result=new Set([...pages,'.nojekyll','favicon.ico',
-    'dist/site-header.js','dist/main.bundle.js','dist/workbench-build-info.js',
+    'dist/site-header.js','dist/main.bundle.js','dist/workbench-build-info.js','dist/release-history.js',
     'document_builder/dist/main.bundle.js']);
   for(const p of tracked) {
     if(!pathAllowed(p)) continue;
-    if(/^(?:(?:gosplan13|inventory_batch|red_index|document_builder)\/)?css\/(?:[\w.-]+\/)*[\w.-]+\.css$/.test(p) ||
-       p==='shared/history-vault-ui.js' || p==='shared/print-history-vault.js') result.add(p);
+    // Shared vault modules are already bundled by esbuild in the home and document tool.
+    if(/^(?:(?:gosplan13|inventory_batch|red_index|document_builder)\/)?css\/(?:[\w.-]+\/)*[\w.-]+\.css$/.test(p)) result.add(p);
     if(/^(?:gosplan13|inventory_batch|red_index)\/src\/(?:[\w.-]+\/)*[\w.-]+\.ts$/.test(p) && !p.endsWith('.d.ts')) {
       result.add(p.replace('/src/','/dist/').replace(/\.ts$/,'.js'));
     }
@@ -180,6 +185,7 @@ export function main(args=[]) {
     };
     const tree=(ref,paths,checkCsp=true)=>{
       const m=entries(ref==='worktree'?'index':ref);
+      if(checkCsp) for(const p of m.keys()) if(generatedPath(p)) fail('生成物のGit登録',label(p));
       if(checkCsp && paths===null) for(const p of pages) if(!m.has(p) || (ref==='worktree' && currentPath(root,p)===null)) fail('必須ページ欠落',label(p));
       for(const p of paths??m.keys()) if(m.has(p)) inspect(p,m.get(p),ref,checkCsp);
     };

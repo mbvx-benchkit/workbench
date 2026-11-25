@@ -40,3 +40,136 @@
         overflow-wrap: anywhere;
     }
 }
+
+/* Shared release history: the existing footer keeps its original line height. */
+@media screen {
+    .footer .footer__release-button {
+        display: inline;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        line-height: inherit;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 0.18em;
+    }
+    .footer .footer__release-button:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+        border-radius: 0.15rem;
+    }
+    .release-history {
+        /* Match the existing light dialogs independently of the OS theme. */
+        color-scheme: light;
+        --release-surface: #fff;
+        --release-text: #1f2937;
+        --release-muted: #596475;
+        --release-line: #e5e7eb;
+        --release-border: #e1e4e8;
+        --release-close: #6b7280;
+        --release-close-hover: #f3f4f6;
+        --release-close-focus: #9ca3af;
+        --release-link: #285d96;
+        --release-accent: #eaf1f9;
+        box-sizing: border-box;
+        width: min(calc(100% - 2rem), 44rem);
+        max-height: min(calc(100dvh - 2rem), 46rem);
+        margin: auto;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--release-border);
+        border-radius: 1rem;
+        background: var(--release-surface);
+        color: var(--release-text);
+        box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 18%);
+        font-family: inherit;
+        font-size: 0.9rem;
+        line-height: 1.65;
+        text-align: left;
+    }
+    .release-history[open] { display: flex; flex-direction: column; }
+    .release-history::backdrop { background: rgb(17 24 39 / 32%); backdrop-filter: blur(0.125rem); }
+    .release-history__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex: 0 0 auto;
+        gap: 1rem;
+        padding: 1.2rem 1.25rem;
+        border-bottom: 1px solid var(--release-line);
+    }
+    /* Match the existing preset-manager dialog heading and icon close control. */
+    .release-history__heading { min-width: 0; }
+    .release-history__eyebrow {
+        margin: 0 0 0.2rem;
+        color: var(--release-muted);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+    }
+    .release-history__header h2 {
+        margin: 0;
+        color: var(--release-text);
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+    .release-history__close {
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+        display: grid;
+        place-items: center;
+        margin: 0;
+        padding: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        border: 1px solid transparent;
+        border-radius: 0.55rem;
+        background: transparent;
+        color: var(--release-close);
+        cursor: pointer;
+        transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+    .release-history__close:hover {
+        color: var(--release-text);
+        background: var(--release-close-hover);
+        border-color: var(--release-line);
+    }
+    .release-history__close:focus-visible {
+        outline: 0.125rem solid var(--release-close-focus);
+        outline-offset: 0.125rem;
+    }
+    .release-history__close svg {
+        width: 1.1rem;
+        height: 1.1rem;
+        display: block;
+        fill: currentColor;
+    }
+    .release-history a:focus-visible { outline: 2px solid var(--release-link); outline-offset: 2px; }
+    .release-history__content {
+        min-height: 0;
+        min-width: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+        padding: 1rem 1.25rem 1.4rem;
+        overflow-wrap: anywhere;
+    }
+    .release-history__entry { padding: 1.25rem 0; border-bottom: 1px solid var(--release-line); }
+    .release-history__entry:last-child { border-bottom: 0; padding-bottom: 0; }
+    .release-history__entry h3 { font-size: 1.25rem; font-weight: 650; }
+    .release-history__badge { display: inline-block; margin-left: 0.6rem; padding: 0.1rem 0.5rem; border-radius: 0.35rem; background: var(--release-accent); color: var(--release-link); font-size: 0.72rem; vertical-align: middle; }
+    .release-history__meta { display: block; font-size: 0.77rem; color: var(--release-muted); }
+    .release-history__title { margin: 0.55rem 0 0.3rem; font-weight: 650; }
+    .release-history__entry section { margin-top: 0.9rem; }
+    .release-history__entry h4 { font-size: 0.84rem; margin-bottom: 0.25rem; font-weight: 650; }
+    .release-history__entry ul { padding-left: 1.3rem; list-style: disc; }
+    .release-history__entry li + li { margin-top: 0.3rem; }
+    .release-history a { color: var(--release-link); text-decoration: underline; text-underline-offset: 0.15em; }
+}
+@media print {
+    .release-history, .footer__release-button { display: none !important; }
+    .release-history::backdrop { display: none !important; }
+}
