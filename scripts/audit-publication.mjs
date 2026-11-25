@@ -1,6 +1,6 @@
 // One publication policy for staged, working-tree and committed snapshots.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, lstatSync, realpathSync } from 'node:fs';
+import { readFileSync, lstatSync, realpathSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import { resolve, join, relative, sep } from 'node:path';
@@ -36,6 +36,36 @@ export function pathAllowed(p) {
   if (exact.has(p) || /^(?:[^/]+\/)*tsconfig(?:\.[\w-]+)?\.json$/.test(p)) return true;
   if (p.startsWith('.github/')) return false;
   return /\.(?:ts|js|html|css|sh|mjs)$/.test(p);
+}
+// Runtime output is derived from tracked static assets and TypeScript sources,
+// not from arbitrary files left in dist or the working tree.
+export function runtimePaths(tracked) {
+  const result=new Set([...pages,'.nojekyll','favicon.ico',
+    'dist/site-header.js','dist/main.bundle.js','dist/workbench-build-info.js',
+    'document_builder/dist/main.bundle.js']);
+  for(const p of tracked) {
+    if(!pathAllowed(p)) continue;
+    if(/^(?:(?:gosplan13|inventory_batch|red_index|document_builder)\/)?css\/(?:[\w.-]+\/)*[\w.-]+\.css$/.test(p) ||
+       p==='shared/history-vault-ui.js' || p==='shared/print-history-vault.js') result.add(p);
+    if(/^(?:gosplan13|inventory_batch|red_index)\/src\/(?:[\w.-]+\/)*[\w.-]+\.ts$/.test(p) && !p.endsWith('.d.ts')) {
+      result.add(p.replace('/src/','/dist/').replace(/\.ts$/,'.js'));
+    }
+  }
+  return [...result].sort();
+}
+function siteEntries(root) {
+  const found=new Set();
+  function walk(dir, prefix='') {
+    for(const name of readdirSync(dir)) {
+      const p=prefix+name, child=join(dir,name), stat=lstatSync(child);
+      if(stat.isSymbolicLink() || realpathSync(child)!==child) throw Error('site contains a symbolic link');
+      if(stat.isDirectory()) walk(child,p+'/');
+      else if(stat.isFile()) found.add(p);
+      else throw Error('site contains a non-regular file');
+    }
+  }
+  if(!lstatSync(root).isDirectory() || realpathSync(root)!==root) throw Error('site must be a normal directory');
+  walk(root); return found;
 }
 function normal(s) { return s.normalize('NFKC').toLowerCase(); }
 function terms(root) {
@@ -126,20 +156,20 @@ export function scanCommitMetadata(_commit, meta, dictionary=[]) {
 export function main(args=[]) {
   try {
     const mode=args[0]??'--staged';
-    if(!['--staged','--tracked','--head','--history','--push'].includes(mode)) throw Error('監査モードが不正です。');
+    if(!['--staged','--tracked','--head','--history','--push','--site'].includes(mode)) throw Error('監査モードが不正です。');
     const root=realpathSync(text('rev-parse','--show-toplevel').trim()); process.chdir(root);
     const dict=terms(root); let count=0, failures=0; const seen=new Set();
     const fail=(rule,where='')=>{failures++; if(failures<=50) console.error(`[WORKBENCH] BLOCKED: ${rule}${where?' ['+where+']':''}`);};
     // Do not expose file names or matching values in logs. Path hash can be matched locally.
     const label=p=>digest(p).slice(0,12);
-    const inspect=(p,e,ref,checkCsp)=>{
+    const inspect=(p,e,ref,checkCsp,base=root)=>{
       count++; const loc=label(p);
       if(!pathAllowed(p)) {fail('未許可パス',loc);return;}
       if(scanPrivacy(p,'',dict).length) fail('パスの機密情報',loc);
       if(!['100644','100755'].includes(e.mode)) {fail('通常ファイル以外',loc);return;}
       const key=ref==='worktree'?null:`${p}:${e.oid}:${checkCsp}`;
       if(key && seen.has(key)) return; if(key) seen.add(key);
-      const b=ref==='worktree'?currentPath(root,p):git('cat-file','blob',e.oid);
+      const b=ref==='worktree'?currentPath(base,p):git('cat-file','blob',e.oid);
       if(b===null) return; if(b===false) {fail('作業ファイルの形式',loc);return;}
       if(p==='favicon.ico') {if(b.length<6 || b.readUInt16LE(0)!==0 || b.readUInt16LE(2)!==1 || b.readUInt16LE(4)<1) fail('ICO形式',loc);return;}
       let s; try {s=decoder.decode(b);}catch{fail('UTF-8以外のデータ',loc);return;}
@@ -167,6 +197,18 @@ export function main(args=[]) {
       const index=entries('index'); for(const p of pages) if(!index.has(p)) fail('必須ページ欠落',label(p));
     } else if(mode==='--tracked') tree('worktree',null);
     else if(mode==='--head') tree('HEAD',null);
+    else if(mode==='--site') {
+      const site=join(root,'site');
+      const expected=new Set(runtimePaths([...entries('index').keys()]));
+      const actual=siteEntries(site);
+      for(const p of actual) if(!expected.has(p)) fail('配信対象外ファイル',label(p));
+      for(const p of expected) {
+        if(!actual.has(p)) {fail('配信ファイル欠落',label(p));continue;}
+        const source=currentPath(root,p), copied=currentPath(site,p);
+        if(!source || !copied || !source.equals(copied)) {fail('配信ファイル不一致',label(p));continue;}
+        inspect(p,{mode:'100644'},'worktree',true,site);
+      }
+    }
     else if(mode==='--history') {
       for(const c of text('rev-list','--all').trim().split(/\s+/).filter(Boolean)) commitAudit(c);
     } else {

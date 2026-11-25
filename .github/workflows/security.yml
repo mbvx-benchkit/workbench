@@ -66,6 +66,10 @@ jobs:
         if: github.event_name != 'schedule'
         run: npm run verify
 
+      - name: Prepare and audit Pages artifact
+        if: github.event_name != 'schedule'
+        run: npm run build:site
+
       - name: Browser smoke tests (Chromium)
         if: github.event_name != 'schedule'
         shell: bash
@@ -75,7 +79,15 @@ jobs:
           py="$RUNNER_TEMP/workbench-e2e-venv/bin/python"
           "$py" -m pip install --disable-pip-version-check 'playwright==1.57.0'
           "$py" -m playwright install --with-deps chromium
-          "$py" scripts/e2e-workbench.py --project "$GITHUB_WORKSPACE"
+          "$py" scripts/e2e-workbench.py --project "$GITHUB_WORKSPACE/site" --site
+
+      - name: Upload verified Pages artifact (no deployment yet)
+        if: github.event_name != 'schedule'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: site
+          name: workbench-site
+          retention-days: 1
 
       - name: Weekly dependency audit without rebuilding
         if: github.event_name == 'schedule'

@@ -163,3 +163,8 @@ DOCUMENT BUILDERのPDF履歴だけを専用パスワードで暗号化します�
 PR・main更新時の `security` で、既存のビルド・回帰テストに続けて Chromium の E2E を実行します。架空データと独立したブラウザコンテキストを使用し、5画面の起動、代表操作、スマートフォンの横幅、外部通信・ブラウザエラーを検証します。週次監査では実行しません。
 
 ローカルで実行する場合は `npm run build` の後、リポジトリ外の Python 仮想環境に `playwright==1.57.0` を導入し、`python -m playwright install chromium`、`python scripts/e2e-workbench.py --project .` を実行してください。通常のブラウザや保存済み業務データは使用しません。
+
+
+## Pages配信成果物（移行準備）
+
+`npm run build:site` はビルド済みの実行ファイルと追跡済みの静的資産だけを `site/` に集め、構成・実ファイル・CSP・機密情報を監査します。CIのE2Eはこの成果物を直接検証し、合格時だけ `workbench-site` をアップロードします。現時点ではPagesの配信設定は変更せず、従来の `dist/` のコミットも維持します。週次監査では成果物作成・E2E・アップロードを行いません。

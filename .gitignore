@@ -152,3 +152,10 @@ document_builder/json/
 !/.github/workflows/codeql.yml
 !/.github/workflows/pages.yml
 !/.github/dependabot.yml
+
+# Disposable, audited Pages deployment output.
+/site/
+
+# Python test caches.
+__pycache__/
+*.pyc

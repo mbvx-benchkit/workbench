@@ -28,6 +28,7 @@
     "audit:tree": "node scripts/audit-publication.mjs --tracked",
     "audit:staged": "node scripts/audit-publication.mjs --staged",
     "audit:history": "node scripts/audit-publication.mjs --history && gitleaks git --log-opts=--all --redact --no-banner .",
+    "build:site": "node scripts/build-site.mjs && node scripts/audit-publication.mjs --site",
     "verify": "npm run build && npm test && npm run audit:tree && npm audit --audit-level=high"
   },
   "dependencies": {

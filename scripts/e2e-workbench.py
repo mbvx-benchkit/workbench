@@ -13,9 +13,10 @@ ROOT = None
 PAGES = ('', 'gosplan13/', 'inventory_batch/', 'red_index/', 'document_builder/')
 
 
-def serve():
+def serve(site=False):
     # Only tracked runtime assets, never a directory listing or local data.
-    tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
+    tracked = ([p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*') if p.is_file()]
+               if site else subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0'))
     runtime_roots = ('css/', 'dist/', 'shared/') + tuple(t + d for t in PAGES[1:] for d in ('css/', 'dist/'))
     runtime_pages = {t + 'index.html' for t in PAGES} | {'favicon.ico'}
     allowed = {p for p in tracked if (p in runtime_pages or (p.startswith(runtime_roots) and pathlib.PurePosixPath(p).suffix in ('.css', '.js'))) and (ROOT / p).is_file() and (ROOT / p).resolve() == ROOT / p}
@@ -202,10 +203,11 @@ def main():
     global ROOT
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', required=True, type=pathlib.Path)
+    parser.add_argument('--site', action='store_true', help='Serve the audited deployment directory')
     parser.add_argument('--chromium-executable', help='Optional system Chromium for an isolated test environment')
     args = parser.parse_args()
     ROOT = args.project.resolve()
-    server = serve()
+    server = serve(args.site)
     try:
         with sync_playwright() as p:
             options = {'executable_path': args.chromium_executable} if args.chromium_executable else {}
