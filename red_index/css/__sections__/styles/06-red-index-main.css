@@ -12,20 +12,6 @@
 
 
 /* =========================================================
-   Medium
-   ========================================================= */
-
-@media (max-width: 88rem) {
-
-    .red-index-main {
-        grid-template-columns:
-            20rem minmax(50rem, 1fr);
-    }
-
-}
-
-
-/* =========================================================
    Print
    ========================================================= */
 
@@ -73,7 +59,6 @@
 
     .top-panel,
     .red-index-editor,
-    .red-index-preview__header,
     .footer {
         display:
             none !important;

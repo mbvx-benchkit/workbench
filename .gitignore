@@ -146,3 +146,9 @@ document_builder/json/
 !/CSP_GUIDE.md
 !/SECURITY_FIXES.md
 !/document_builder/PRINT_HISTORY.md
+
+# Reviewed GitHub configuration (no blanket YAML exception).
+!/.github/workflows/security.yml
+!/.github/workflows/codeql.yml
+!/.github/workflows/pages.yml
+!/.github/dependabot.yml

@@ -386,6 +386,13 @@ printButton.addEventListener(
     }
 );
 
+document.querySelector<HTMLButtonElement>("#preview-focus-print-button")?.addEventListener(
+    "click",
+    () => {
+        window.print();
+    }
+);
+
 
 /* =========================================================
    テキスト入力

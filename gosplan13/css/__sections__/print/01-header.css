@@ -17,7 +17,9 @@ body {
  */
 .header,
 .ribbon,
-.footer {
+.footer,
+.preview-focus-exit-button,
+.preview-focus-print-button {
     display: none !important;
 }
 

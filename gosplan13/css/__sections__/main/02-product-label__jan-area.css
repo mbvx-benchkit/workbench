@@ -28,31 +28,3 @@
 
     font-size: 0.85cqw;
 }
-
-
-
-.ribbon__item {
-    display: flex;
-    gap: 2rem;
-}
-
-.base-options {
-    display: flex;
-    gap: 0.4rem;
-    position: relative;
-}
-
-.base-options::after {
-    content: "";
-    display: inline-block;
-    position: absolute;
-    right: -1rem;
-    top: 10%;
-    width: 1px;
-    height: 80%;
-    border-left: 1px solid #a5a5a5;
-}
-
-.ribbon__option {
-    gap: 0.4rem;
-}

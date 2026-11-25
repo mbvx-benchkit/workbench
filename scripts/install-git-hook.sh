@@ -1,17 +1,33 @@
 #!/usr/bin/env bash
-# Update only a WORKBENCH-owned pre-commit hook; preserve foreign hooks.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Run from a WORKBENCH Git checkout." >&2; exit 2
-fi
-hook="$(git rev-parse --git-path hooks/pre-commit)"
-mkdir -p "$(dirname "$hook")"
-if [[ -e "$hook" ]] && ! grep -Fq 'WORKBENCH: block private-data file types' "$hook" && ! grep -Fq 'WORKBENCH: allow only reviewed source types' "$hook"; then
-  echo "Existing pre-commit hook is not owned by WORKBENCH. Left it untouched: $hook" >&2
-  echo "Add 'bash scripts/check-git-sensitive-files.sh --staged' (includes source secret scan) to that hook manually." >&2
+ROOT="$(git rev-parse --show-toplevel)"
+if git config --get core.hooksPath >/dev/null; then
+  echo '[WORKBENCH] 独自のcore.hooksPathが設定されています。既存設定を維持します。' >&2
   exit 1
 fi
-cp scripts/check-git-sensitive-files.sh "$hook"
-chmod +x "$hook"
-echo "WORKBENCH pre-commit hook installed or updated: $hook"
+cd "$ROOT"
+for name in pre-commit pre-push; do
+  hook="$(git rev-parse --git-path "hooks/$name")"
+  if [[ -L "$hook" || ( -e "$hook" && ! -f "$hook" ) ]]; then
+    echo '[WORKBENCH] 既存の特殊なフックを上書きしません。' >&2; exit 1
+  fi
+  if [[ -f "$hook" ]] && ! grep -Fq 'WORKBENCH: publication hook v1' "$hook"; then
+    if [[ "$name" != pre-commit ]] || ! grep -Eq 'WORKBENCH: (block private-data file types|allow only reviewed source types)' "$hook"; then
+      echo "[WORKBENCH] 外部フックを上書きしません: $name" >&2; exit 1
+    fi
+  fi
+done
+for name in pre-commit pre-push; do
+  hook="$(git rev-parse --git-path "hooks/$name")"
+  mkdir -p "$(dirname "$hook")"
+  tmp="$(mktemp "$(dirname "$hook")/.workbench-hook.XXXXXX")"
+  if [[ "$name" == pre-commit ]]; then
+    printf '%s\n' '#!/usr/bin/env bash' '# WORKBENCH: publication hook v1' 'set -euo pipefail' 'cd "$(git rev-parse --show-toplevel)"' 'exec node scripts/audit-publication.mjs --staged' > "$tmp"
+  else
+    printf '%s\n' '#!/usr/bin/env bash' '# WORKBENCH: publication hook v1' 'set -euo pipefail' 'cd "$(git rev-parse --show-toplevel)"' 'exec node scripts/audit-publication.mjs --push "$2"' > "$tmp"
+  fi
+  chmod 755 "$tmp"
+  mv -f "$tmp" "$hook"
+  echo "[WORKBENCH] $name installed."
+done

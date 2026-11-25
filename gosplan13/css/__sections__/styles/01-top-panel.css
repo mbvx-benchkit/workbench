@@ -99,48 +99,28 @@ body {
    リボン
    ========================================================= */
 
+/* 寸法・余白・ボタン間隔・左右配置は共通 workbench-ribbon に委譲する。 */
 .ribbon {
     position: relative;
     z-index: 110;
-
-    min-width: 0;
-
-    padding: 0.5rem 1rem;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-
-    /**
-     * ツールチップと複製メニューを、
-     * リボン外へ表示できるようにする。
-     */
     overflow: visible;
-
-    background-color: #ffffff;
 }
 
-.ribbon__item {
-    min-width: 0;
+/* 他の2画面の最小幅（72rem）未満でのみ折り返しを許可する。 */
+@media screen and (max-width: 72rem) {
+    .ribbon,
+    .ribbon__item {
+        flex-wrap: wrap;
+    }
 
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    .ribbon__far-item {
+        margin-left: auto;
+    }
 }
 
-.ribbon__far-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    flex: 0 0 auto;
-}
-
-.base-options {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+/* 集中表示解除ボタンの固定位置を維持する。 */
+.preview-focus-exit-button {
+    position: fixed;
 }
 
 
