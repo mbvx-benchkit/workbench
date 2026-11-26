@@ -83,7 +83,6 @@
     color: #23466d;
     cursor: pointer;
 }
-#backup-password-submit { background: #285d96; color: #fff; }
 
 /* 中断した復元の復旧ボタンは、復旧コピーがある場合だけ表示する。 */
 .workbench-backup-recovery-button[hidden] { display: none !important; }
