@@ -88,6 +88,18 @@ def run(browser, base):
     def ready(page):
         expect(page.locator('[data-workbench-build-info]')).to_contain_text('WORKBENCH v')
 
+    def modal_button_feedback(button, normal, hover):
+        expect(button).to_be_enabled()
+        expect(button).to_have_css('background-color', normal)
+        expect(button).to_have_css('background-image', 'none')
+        expect(button).to_have_css('box-shadow', 'none')
+        expect(button).to_have_css('transform', 'none')
+        assert button.evaluate("b => getComputedStyle(b, '::before').content") == 'none'
+        button.hover()
+        expect(button).to_have_css('background-color', hover)
+        expect(button).to_have_css('transform', 'none')
+        expect(button).to_have_css('box-shadow', 'none')
+
     def release_history(page, expected=None, mobile=False):
         trigger = page.locator('.footer__release-button')
         footer = page.locator('[data-workbench-build-info]')
@@ -112,6 +124,8 @@ def run(browser, base):
         expect(dialog).to_have_css('background-color', 'rgb(255, 255, 255)')
         expect(dialog).to_have_css('color-scheme', 'light')
         expect(close).to_have_css('color', 'rgb(107, 114, 128)')
+        if not mobile:
+            modal_button_feedback(close, 'rgba(0, 0, 0, 0)', 'rgb(243, 244, 246)')
         if mobile:
             bounds = dialog.bounding_box()
             assert bounds and bounds['x'] >= -1 and bounds['x'] + bounds['width'] <= 391, 'release dialog overflows mobile viewport'
@@ -188,6 +202,11 @@ def run(browser, base):
             release_history(page, history)
             page.goto(base, wait_until='load')
         print('PASS: five-page desktop navigation, release history, close and print exclusion', flush=True)
+        page.locator('#preset-settings-button').click()
+        expect(page.locator('#preset-manager-dialog')).to_be_visible()
+        modal_button_feedback(page.locator('#preset-manager-add-button'), 'rgb(248, 250, 252)', 'rgb(234, 240, 248)')
+        page.locator('.preset-manager-dialog__close').click()
+        expect(page.locator('#preset-manager-dialog')).to_be_hidden()
 
         page.goto(base + 'gosplan13/', wait_until='load')
         row = page.locator('#a4-preview .product-label').first
@@ -228,16 +247,21 @@ def run(browser, base):
 
         page.goto(base + 'document_builder/', wait_until='load')
         page.locator('#template-settings-button').click()
+        modal_button_feedback(page.locator('#template-builder-button'), 'rgb(248, 250, 252)', 'rgb(234, 240, 248)')
         page.locator('#template-builder-button').click()
         page.locator('#template-builder-name').fill('Synthetic document')
         page.locator('.template-builder-field__label').first.fill('Synthetic field')
         page.locator('#template-builder-body').fill('Synthetic body')
+        modal_button_feedback(page.locator('#template-builder-save-button'), 'rgb(53, 106, 165)', 'rgb(40, 90, 145)')
         page.locator('#template-builder-save-button').click()
         expect(page.locator('#template-select option').filter(has_text='Synthetic document')).to_have_count(1)
         page.locator('#template-dialog-done-button').click()
         page.locator('#template-select').select_option(label='Synthetic document')
         expect(page.locator('#document-body')).to_contain_text('Synthetic body')
-        page.locator('#print-button').click()
+        main_print = page.locator('#print-button')
+        assert 'linear-gradient' in main_print.evaluate('b => getComputedStyle(b).backgroundImage')
+        assert main_print.evaluate("b => getComputedStyle(b, '::before').content") != 'none'
+        main_print.click()
         expect(page.locator('#print-flow-dialog')).to_be_visible()
         page.locator('#print-flow-close-button').click()
         print('PASS: DOCUMENT BUILDER template, preview and print dialog', flush=True)

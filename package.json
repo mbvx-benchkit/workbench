@@ -1,6 +1,6 @@
 {
   "name": "workbench",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Static browser-based utilities for label generation, inventory printing, preset documents, and document templates.",
   "private": true,
   "type": "module",

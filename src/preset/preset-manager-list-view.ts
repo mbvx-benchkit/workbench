@@ -309,6 +309,8 @@ function createManagerActions(
             );
 
 
+        deleteButton.classList.add("modal-button--danger");
+
         deleteButton.addEventListener(
             "click",
             () => {
